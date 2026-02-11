@@ -18,4 +18,9 @@
     <PackageReference Include="Spectre.Console" Version="0.49.*" />
   </ItemGroup>
 
+  <!-- Copy .env to output directory if it exists (for double-click exe scenario) -->
+  <ItemGroup>
+    <None Include=".env" Condition="Exists('.env')" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

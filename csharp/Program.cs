@@ -31,9 +31,14 @@ catch (Exception ex)
     Console.ResetColor();
 }
 
-// When double-clicked (interactive mode, no args), prevent window from closing
+// When double-clicked (interactive mode, no args), prevent window from closing immediately.
+// The REPL itself handles Ctrl+C gracefully (double Ctrl+C to exit), so this only triggers
+// on fatal errors or when the REPL exits normally via /exit.
 if (isInteractive && !Console.IsInputRedirected)
 {
+    // Restore default Ctrl+C behavior so "Press any key" actually works
+    try { Console.TreatControlCAsInput = false; } catch { }
+
     Console.ForegroundColor = ConsoleColor.DarkGray;
     Console.WriteLine("\nPress any key to exit...");
     Console.ResetColor();

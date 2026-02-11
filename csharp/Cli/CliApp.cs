@@ -30,16 +30,26 @@ public class CliApp
             return;
         }
 
-        // --- Load .env ---
+        // --- Load .env from all possible locations ---
         LoadEnvFiles();
 
         // --- Load providers ---
         var providerConfigs = ModelProviderConfig.LoadAll();
         if (providerConfigs.Count == 0)
         {
-            AnsiConsole.MarkupLine("[red]Error: No model provider configured.[/]");
-            AnsiConsole.MarkupLine("[dim]Set at least one API key in .env: OPENAI_API_KEY, DEEPSEEK_API_KEY, or ZHIPU_API_KEY[/]");
-            return;
+            // Interactive setup wizard when no providers configured
+            if (cliArgs.Mode == CliMode.Interactive)
+            {
+                providerConfigs = await RunSetupWizardAsync();
+                if (providerConfigs.Count == 0)
+                    return; // User cancelled
+            }
+            else
+            {
+                AnsiConsole.MarkupLine("[red]Error: No model provider configured.[/]");
+                AnsiConsole.MarkupLine("[dim]Set at least one API key in .env: OPENAI_API_KEY, DEEPSEEK_API_KEY, or ZHIPU_API_KEY[/]");
+                return;
+            }
         }
 
         // --- Resolve active provider ---
@@ -67,7 +77,9 @@ public class CliApp
             activeConfig.ModelId = cliArgs.ModelOverride;
 
         var agentProviderOverrides = ModelProviderConfig.LoadAgentProviderOverrides(providerConfigs);
-        var workDir = Directory.GetCurrentDirectory();
+
+        // --- Resolve working directory ---
+        var workDir = ResolveWorkingDirectory(cliArgs);
 
         // --- Initialize services ---
         var todoManager = new TodoManager();
@@ -151,21 +163,146 @@ public class CliApp
     }
 
     /// <summary>
+    /// Interactive setup wizard for first-time users (no .env found).
+    /// Guides through provider selection and API key entry.
+    /// </summary>
+    private static async Task<Dictionary<ModelProvider, ModelProviderConfig>> RunSetupWizardAsync()
+    {
+        AnsiConsole.Write(new Panel(
+            Align.Center(new Markup(
+                "[bold cyan]Mini Claude Code[/]  [dim]First-Time Setup[/]\n" +
+                "[dim]── C# Semantic Kernel Edition ──[/]")))
+        {
+            Border = BoxBorder.Rounded,
+            BorderStyle = new Style(Color.Cyan1),
+            Padding = new Padding(2, 0, 2, 0),
+        });
+        AnsiConsole.WriteLine();
+
+        AnsiConsole.MarkupLine("[yellow]No API key found.[/] Let's set one up.\n");
+
+        var provider = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("[cyan]Which model provider do you want to use?[/]")
+                .AddChoices("DeepSeek", "Zhipu (GLM)", "OpenAI")
+                .HighlightStyle(new Style(Color.Cyan1)));
+
+        var (envKey, defaultModel) = provider switch
+        {
+            "DeepSeek" => ("DEEPSEEK_API_KEY", "deepseek-chat"),
+            "Zhipu (GLM)" => ("ZHIPU_API_KEY", "glm-4-plus"),
+            _ => ("OPENAI_API_KEY", "gpt-4o"),
+        };
+
+        AnsiConsole.WriteLine();
+        var apiKey = AnsiConsole.Prompt(
+            new TextPrompt<string>($"[cyan]Enter your API key ({envKey}):[/]")
+                .Secret());
+
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            AnsiConsole.MarkupLine("[red]No API key provided. Exiting.[/]");
+            return [];
+        }
+
+        // Save to .env next to the exe
+        var envFilePath = Path.Combine(AppContext.BaseDirectory, ".env");
+        var envContent = $"ACTIVE_PROVIDER={provider switch { "DeepSeek" => "deepseek", "Zhipu (GLM)" => "zhipu", _ => "openai" }}\n{envKey}={apiKey}\n";
+
+        try
+        {
+            await File.WriteAllTextAsync(envFilePath, envContent);
+            AnsiConsole.MarkupLine($"\n[green]Saved to {Markup.Escape(envFilePath)}[/]");
+        }
+        catch
+        {
+            // If can't write to exe dir, try current dir
+            envFilePath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+            try
+            {
+                await File.WriteAllTextAsync(envFilePath, envContent);
+                AnsiConsole.MarkupLine($"\n[green]Saved to {Markup.Escape(envFilePath)}[/]");
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"\n[yellow]Could not save .env: {Markup.Escape(ex.Message)}[/]");
+                AnsiConsole.MarkupLine("[dim]Setting environment variable for this session only.[/]");
+            }
+        }
+
+        // Set the env var for this session
+        Environment.SetEnvironmentVariable(envKey, apiKey);
+
+        AnsiConsole.WriteLine();
+
+        // Reload providers
+        return ModelProviderConfig.LoadAll();
+    }
+
+    /// <summary>
+    /// Resolve the working directory.
+    /// When double-clicking the exe, the CWD might be wrong (e.g. system32).
+    /// In that case, use the exe's directory or prompt the user.
+    /// </summary>
+    private static string ResolveWorkingDirectory(CliArgs cliArgs)
+    {
+        var cwd = Directory.GetCurrentDirectory();
+
+        // If add-dir was specified, use the first one
+        if (cliArgs.AddDirs.Count > 0)
+        {
+            var dir = Path.GetFullPath(cliArgs.AddDirs[0]);
+            if (Directory.Exists(dir))
+            {
+                Directory.SetCurrentDirectory(dir);
+                return dir;
+            }
+        }
+
+        // Check if CWD looks like a system directory (double-click scenario)
+        var isSysDir = cwd.Contains("System32", StringComparison.OrdinalIgnoreCase)
+                    || cwd.Contains("system32", StringComparison.OrdinalIgnoreCase)
+                    || cwd.Equals(Environment.GetFolderPath(Environment.SpecialFolder.Windows), StringComparison.OrdinalIgnoreCase);
+
+        if (isSysDir)
+        {
+            // Use the exe's directory instead
+            var exeDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
+            AnsiConsole.MarkupLine($"[yellow]Working directory is a system folder. Using exe location:[/]");
+            AnsiConsole.MarkupLine($"  [blue]{Markup.Escape(exeDir)}[/]\n");
+            Directory.SetCurrentDirectory(exeDir);
+            return exeDir;
+        }
+
+        return cwd;
+    }
+
+    /// <summary>
     /// Load .env files from multiple locations.
+    /// Search order: exe dir, cwd/csharp, cwd, user home.
     /// </summary>
     private static void LoadEnvFiles()
     {
-        var envPath = Path.Combine(AppContext.BaseDirectory, ".env");
-        if (File.Exists(envPath))
-            DotNetEnv.Env.Load(envPath);
+        // 1. Next to the executable
+        var exeEnv = Path.Combine(AppContext.BaseDirectory, ".env");
+        if (File.Exists(exeEnv))
+            DotNetEnv.Env.Load(exeEnv);
 
+        // 2. cwd/csharp/.env (dev layout)
         var projectEnv = Path.Combine(Directory.GetCurrentDirectory(), "csharp", ".env");
         if (File.Exists(projectEnv))
             DotNetEnv.Env.Load(projectEnv);
 
+        // 3. Current working directory
         var cwdEnv = Path.Combine(Directory.GetCurrentDirectory(), ".env");
         if (File.Exists(cwdEnv))
             DotNetEnv.Env.Load(cwdEnv);
+
+        // 4. User home directory (~/.miniclaudecode/.env)
+        var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var homeEnv = Path.Combine(homeDir, ".miniclaudecode", ".env");
+        if (File.Exists(homeEnv))
+            DotNetEnv.Env.Load(homeEnv);
     }
 
     /// <summary>

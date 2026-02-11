@@ -279,26 +279,52 @@ public class CliApp
 
     /// <summary>
     /// Load .env files from multiple locations.
-    /// Search order: exe dir, cwd/csharp, cwd, user home.
+    /// Search order: exe dir, walk up from exe dir, cwd/csharp, cwd, user home.
+    /// This ensures .env is found whether running via `dotnet run` or double-clicking the exe.
     /// </summary>
     private static void LoadEnvFiles()
     {
-        // 1. Next to the executable
+        var loaded = false;
+
+        // 1. Next to the executable (bin/Debug/net10.0/.env — copied by build)
         var exeEnv = Path.Combine(AppContext.BaseDirectory, ".env");
         if (File.Exists(exeEnv))
+        {
             DotNetEnv.Env.Load(exeEnv);
+            loaded = true;
+        }
 
-        // 2. cwd/csharp/.env (dev layout)
+        // 2. Walk up from exe directory to find .env (handles bin/Debug/net10.0 -> project root)
+        if (!loaded)
+        {
+            var dir = AppContext.BaseDirectory;
+            for (int i = 0; i < 5 && dir != null; i++)
+            {
+                dir = Path.GetDirectoryName(dir);
+                if (dir != null)
+                {
+                    var candidate = Path.Combine(dir, ".env");
+                    if (File.Exists(candidate))
+                    {
+                        DotNetEnv.Env.Load(candidate);
+                        loaded = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 3. cwd/csharp/.env (dev layout: running from repo root)
         var projectEnv = Path.Combine(Directory.GetCurrentDirectory(), "csharp", ".env");
         if (File.Exists(projectEnv))
             DotNetEnv.Env.Load(projectEnv);
 
-        // 3. Current working directory
+        // 4. Current working directory
         var cwdEnv = Path.Combine(Directory.GetCurrentDirectory(), ".env");
         if (File.Exists(cwdEnv))
             DotNetEnv.Env.Load(cwdEnv);
 
-        // 4. User home directory (~/.miniclaudecode/.env)
+        // 5. User home directory (~/.miniclaudecode/.env)
         var homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var homeEnv = Path.Combine(homeDir, ".miniclaudecode", ".env");
         if (File.Exists(homeEnv))

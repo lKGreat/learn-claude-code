@@ -12,6 +12,9 @@ public partial class FileExplorerViewModel : ObservableObject
 {
     public ObservableCollection<FileTreeNode> RootNodes { get; } = [];
 
+    /// <summary>File operations (create, rename, delete) sub-ViewModel.</summary>
+    public FileOperationsViewModel FileOperations { get; } = new();
+
     [ObservableProperty]
     private string _workspacePath = string.Empty;
 
@@ -45,6 +48,7 @@ public partial class FileExplorerViewModel : ObservableObject
     {
         WorkspacePath = path;
         WorkspaceName = Path.GetFileName(path) ?? path;
+        FileOperations.SetWorkspace(path);
         RootNodes.Clear();
 
         if (!Directory.Exists(path)) return;
@@ -114,6 +118,27 @@ public partial class FileExplorerViewModel : ObservableObject
     private void ToggleVisibility()
     {
         IsVisible = !IsVisible;
+    }
+
+    [RelayCommand]
+    private void Refresh()
+    {
+        if (!string.IsNullOrEmpty(WorkspacePath))
+            LoadWorkspace(WorkspacePath);
+    }
+
+    [RelayCommand]
+    private void CollapseAll()
+    {
+        foreach (var node in RootNodes)
+            CollapseRecursive(node);
+    }
+
+    private static void CollapseRecursive(FileTreeNode node)
+    {
+        node.IsExpanded = false;
+        foreach (var child in node.Children)
+            CollapseRecursive(child);
     }
 
     [RelayCommand]

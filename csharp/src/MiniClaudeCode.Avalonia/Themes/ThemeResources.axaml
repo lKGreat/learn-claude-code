@@ -1,0 +1,22 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Theme Color Brushes - Updated at runtime by ThemeService -->
+    <SolidColorBrush x:Key="ThemeBase" Color="#1E1E2E" />
+    <SolidColorBrush x:Key="ThemeMantle" Color="#181825" />
+    <SolidColorBrush x:Key="ThemeCrust" Color="#11111B" />
+    <SolidColorBrush x:Key="ThemeSurface0" Color="#313244" />
+    <SolidColorBrush x:Key="ThemeSurface1" Color="#45475A" />
+    <SolidColorBrush x:Key="ThemeSurface2" Color="#585B70" />
+    <SolidColorBrush x:Key="ThemeOverlay0" Color="#6C7086" />
+    <SolidColorBrush x:Key="ThemeOverlay1" Color="#7F849C" />
+    <SolidColorBrush x:Key="ThemeSubtext0" Color="#A6ADC8" />
+    <SolidColorBrush x:Key="ThemeSubtext1" Color="#BAC2DE" />
+    <SolidColorBrush x:Key="ThemeText" Color="#CDD6F4" />
+    <SolidColorBrush x:Key="ThemeBlue" Color="#89B4FA" />
+    <SolidColorBrush x:Key="ThemeGreen" Color="#A6E3A1" />
+    <SolidColorBrush x:Key="ThemeRed" Color="#F38BA8" />
+    <SolidColorBrush x:Key="ThemeYellow" Color="#F9E2AF" />
+    <SolidColorBrush x:Key="ThemePeach" Color="#FAB387" />
+    <SolidColorBrush x:Key="ThemeMauve" Color="#CBA6F7" />
+    <SolidColorBrush x:Key="ThemeTeal" Color="#94E2D5" />
+</ResourceDictionary>

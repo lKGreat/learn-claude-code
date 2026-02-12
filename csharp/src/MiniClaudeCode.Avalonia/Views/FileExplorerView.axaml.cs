@@ -11,13 +11,9 @@ public partial class FileExplorerView : UserControl
     public FileExplorerView()
     {
         InitializeComponent();
+        FileTree.KeyDown += OnTreeKeyDown;
     }
 
-    /// <summary>
-    /// When a tree node is selected (single click):
-    /// - Directory: lazy-load its children
-    /// - File: open it in the editor
-    /// </summary>
     private void OnTreeSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (DataContext is not FileExplorerViewModel vm) return;
@@ -27,26 +23,16 @@ public partial class FileExplorerView : UserControl
         {
             if (node.IsDirectory)
             {
-                // Lazy load directory children on selection/expand
                 if (!node.IsLoaded)
-                {
                     vm.LoadChildren(node);
-                }
             }
             else if (node.FullPath.Length > 0)
             {
-                // Single click on a file => open it in the editor
                 vm.ViewFileCommand.Execute(node);
             }
         }
     }
 
-    /// <summary>
-    /// When a tree node is double-clicked:
-    /// - Directory: toggle expand and lazy-load
-    /// - File: open in editor (also handled by single click, but this
-    ///   ensures the file opens even if it was already selected)
-    /// </summary>
     private void OnTreeDoubleTapped(object? sender, TappedEventArgs e)
     {
         if (DataContext is not FileExplorerViewModel vm) return;
@@ -56,18 +42,52 @@ public partial class FileExplorerView : UserControl
         {
             if (node.IsDirectory)
             {
-                // Toggle expand and lazy-load
                 node.IsExpanded = !node.IsExpanded;
                 if (!node.IsLoaded)
-                {
                     vm.LoadChildren(node);
-                }
             }
             else
             {
-                // Open file in editor
                 vm.ViewFileCommand.Execute(node);
             }
+        }
+    }
+
+    /// <summary>
+    /// Handle F2 for rename, Delete for delete.
+    /// </summary>
+    private void OnTreeKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (DataContext is not FileExplorerViewModel vm) return;
+
+        if (e.Key == Key.F2 && vm.SelectedNode != null)
+        {
+            vm.FileOperations.StartRenameCommand.Execute(vm.SelectedNode);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Delete && vm.SelectedNode != null)
+        {
+            vm.FileOperations.DeleteNodeCommand.Execute(vm.SelectedNode);
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>
+    /// Handle Enter/Escape in the create new file/folder textbox.
+    /// </summary>
+    private void OnCreateBoxKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (DataContext is not FileExplorerViewModel vm) return;
+
+        if (e.Key == Key.Enter)
+        {
+            vm.FileOperations.ConfirmCreateCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Escape)
+        {
+            vm.FileOperations.CancelCreateCommand.Execute(null);
+            e.Handled = true;
         }
     }
 }

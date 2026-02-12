@@ -77,7 +77,10 @@
                         <Menu Background="Transparent"
                               VerticalAlignment="Center">
                             <MenuItem Header="_File">
-                                <MenuItem Header="_Open Folder..." InputGesture="Ctrl+O" Command="{Binding OpenWorkspaceCommand}" />
+                                <MenuItem Header="_New Conversation" InputGesture="Ctrl+N" Command="{Binding NewConversationCommand}" />
+                                <Separator />
+                                <MenuItem Header="_Open File..." InputGesture="Ctrl+Shift+O" Command="{Binding OpenFileDialogCommand}" />
+                                <MenuItem Header="Open _Folder..." InputGesture="Ctrl+O" Command="{Binding OpenWorkspaceCommand}" />
                                 <MenuItem Header="Recent _Workspaces" ItemsSource="{Binding RecentWorkspaceMenuItems}">
                                     <MenuItem.ItemContainerTheme>
                                         <ControlTheme TargetType="MenuItem" x:DataType="vm:RecentWorkspaceMenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
@@ -87,26 +90,48 @@
                                     </MenuItem.ItemContainerTheme>
                                 </MenuItem>
                                 <Separator />
-                                <MenuItem Header="_New Conversation" InputGesture="Ctrl+N" Command="{Binding NewConversationCommand}" />
-                                <MenuItem Header="_Save File" InputGesture="Ctrl+S" Command="{Binding Editor.SaveFileCommand}" />
+                                <MenuItem Header="_Save" InputGesture="Ctrl+S" Command="{Binding Editor.SaveFileCommand}" />
+                                <MenuItem Header="Save _As..." InputGesture="Ctrl+Shift+S" Command="{Binding SaveFileAsCommand}" />
+                                <Separator />
+                                <MenuItem Header="_Close Editor" InputGesture="Ctrl+W" Command="{Binding CloseActiveEditorCommand}" />
                                 <Separator />
                                 <MenuItem Header="E_xit" Command="{Binding ExitAppCommand}" />
                             </MenuItem>
                             <MenuItem Header="_Edit">
-                                <MenuItem Header="_Find" InputGesture="Ctrl+F" />
-                                <MenuItem Header="_Replace" InputGesture="Ctrl+H" />
+                                <MenuItem Header="_Find" InputGesture="Ctrl+F" Command="{Binding ShowFindCommand}" />
+                                <MenuItem Header="_Replace" InputGesture="Ctrl+H" Command="{Binding ShowReplaceCommand}" />
+                                <Separator />
+                                <MenuItem Header="Find in _Files" InputGesture="Ctrl+Shift+F" />
                             </MenuItem>
                             <MenuItem Header="_View">
                                 <MenuItem Header="_Command Palette..." InputGesture="Ctrl+Shift+P" Command="{Binding CommandPalette.ShowCommand}" />
-                                <MenuItem Header="_Open File..." InputGesture="Ctrl+P" Command="{Binding CommandPalette.ShowQuickOpenCommand}" />
+                                <MenuItem Header="_Quick Open File..." InputGesture="Ctrl+P" Command="{Binding CommandPalette.ShowQuickOpenCommand}" />
                                 <Separator />
                                 <MenuItem Header="_Explorer" InputGesture="Ctrl+Shift+E" />
                                 <MenuItem Header="_Search" InputGesture="Ctrl+Shift+F" />
-                                <MenuItem Header="_Source Control" InputGesture="Ctrl+Shift+G" />
+                                <MenuItem Header="Source _Control" InputGesture="Ctrl+Shift+G" />
                                 <MenuItem Header="E_xtensions" InputGesture="Ctrl+Shift+X" />
+                                <MenuItem Header="_AI Chat" InputGesture="Ctrl+Shift+C" />
                                 <Separator />
                                 <MenuItem Header="_Terminal" InputGesture="Ctrl+OemTilde" Command="{Binding BottomPanel.ToggleVisibilityCommand}" />
                                 <MenuItem Header="_Plan Mode" Command="{Binding TogglePlanModeCommand}" />
+                                <Separator />
+                                <MenuItem Header="Color Theme">
+                                    <MenuItem Header="Catppuccin Mocha (Dark)" Command="{Binding SwitchThemeCommand}" CommandParameter="catppuccin-mocha" />
+                                    <MenuItem Header="Catppuccin Latte (Light)" Command="{Binding SwitchThemeCommand}" CommandParameter="catppuccin-latte" />
+                                    <MenuItem Header="High Contrast" Command="{Binding SwitchThemeCommand}" CommandParameter="high-contrast" />
+                                </MenuItem>
+                                <Separator />
+                                <MenuItem Header="Toggle _Minimap" Command="{Binding ToggleMinimapCommand}" />
+                                <MenuItem Header="Toggle Code _Folding" Command="{Binding ToggleFoldingCommand}" />
+                                <MenuItem Header="Toggle _Indent Guides" Command="{Binding ToggleIndentGuidesCommand}" />
+                            </MenuItem>
+                            <MenuItem Header="_Go">
+                                <MenuItem Header="Go to _File..." InputGesture="Ctrl+P" Command="{Binding CommandPalette.ShowQuickOpenCommand}" />
+                                <MenuItem Header="Go to _Line..." />
+                            </MenuItem>
+                            <MenuItem Header="_Terminal">
+                                <MenuItem Header="_New Terminal" Command="{Binding BottomPanel.ToggleVisibilityCommand}" />
                             </MenuItem>
                             <MenuItem Header="_Help">
                                 <MenuItem Header="_About" Click="OnAboutClick" />

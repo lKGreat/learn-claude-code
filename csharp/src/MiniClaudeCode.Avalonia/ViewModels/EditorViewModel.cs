@@ -76,11 +76,33 @@ public partial class EditorViewModel : ObservableObject
     private int _ghostTextColumn;
 
     // =========================================================================
+    // Advanced Editor Features
+    // =========================================================================
+
+    /// <summary>Whether to show the minimap at the right edge of the editor.</summary>
+    [ObservableProperty]
+    private bool _isMinimapVisible = true;
+
+    /// <summary>Whether code folding is enabled.</summary>
+    [ObservableProperty]
+    private bool _isFoldingEnabled = true;
+
+    /// <summary>Whether indent guide lines are visible.</summary>
+    [ObservableProperty]
+    private bool _isIndentGuidesVisible = true;
+
+    /// <summary>Breadcrumb navigation ViewModel.</summary>
+    public BreadcrumbViewModel BreadcrumbNav { get; } = new();
+
+    // =========================================================================
     // Inline Edit Support (Ctrl+K)
     // =========================================================================
 
     /// <summary>Inline edit panel ViewModel.</summary>
     public InlineEditViewModel InlineEdit { get; } = new();
+
+    /// <summary>Find and Replace panel ViewModel.</summary>
+    public FindReplaceViewModel FindReplace { get; } = new();
 
     /// <summary>Fired when inline edit is accepted (for applying changes).</summary>
     public event Action<string, string>? InlineEditAccepted; // (filePath, modifiedCode)
@@ -527,6 +549,25 @@ public partial class EditorViewModel : ObservableObject
             ActivateTab(Tabs[0]);
     }
 
+    /// <summary>Show the find panel (Ctrl+F).</summary>
+    public void ShowFind()
+    {
+        FindReplace.IsVisible = true;
+        FindReplace.IsReplaceVisible = false;
+    }
+
+    /// <summary>Show the find and replace panel (Ctrl+H).</summary>
+    public void ShowReplace()
+    {
+        FindReplace.IsVisible = true;
+        FindReplace.IsReplaceVisible = true;
+    }
+
+    private string _workspacePath = string.Empty;
+
+    /// <summary>Set the workspace root path for breadcrumb relative paths.</summary>
+    public void SetWorkspacePath(string path) => _workspacePath = path;
+
     private void UpdateBreadcrumb(EditorTab tab)
     {
         // Build breadcrumb: directory > filename
@@ -534,5 +575,8 @@ public partial class EditorViewModel : ObservableObject
         var segments = dir.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         var last3 = segments.Length > 3 ? segments[^3..] : segments;
         Breadcrumb = string.Join(" > ", last3.Append(tab.FileName));
+
+        // Also update the rich breadcrumb ViewModel
+        BreadcrumbNav.Update(tab.FilePath, _workspacePath);
     }
 }

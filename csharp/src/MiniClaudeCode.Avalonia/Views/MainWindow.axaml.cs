@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using MiniClaudeCode.Avalonia.ViewModels;
 
@@ -22,6 +23,21 @@ public partial class MainWindow : Window
 
         // Sync the maximize/restore button icon with initial state
         UpdateMaxRestoreIcon();
+    }
+
+    // =========================================================================
+    // Keyboard Shortcut Routing
+    // =========================================================================
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm)
+        {
+            if (vm.Keybindings.HandleKeyDown(e))
+                return;
+        }
+
+        base.OnKeyDown(e);
     }
 
     // =========================================================================

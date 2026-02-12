@@ -16,6 +16,12 @@ public partial class FileTreeNode : ObservableObject
     [ObservableProperty]
     private bool _isLoaded;
 
+    [ObservableProperty]
+    private bool _isRenaming;
+
+    [ObservableProperty]
+    private string _editName = string.Empty;
+
     public ObservableCollection<FileTreeNode> Children { get; } = [];
 
     /// <summary>

@@ -4,10 +4,14 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Threading;
 using AvaloniaEdit;
 using AvaloniaEdit.Document;
+using AvaloniaEdit.Folding;
 using AvaloniaEdit.Rendering;
 using AvaloniaEdit.TextMate;
+using MiniClaudeCode.Avalonia.Editor.Folding;
+using MiniClaudeCode.Avalonia.Editor.Rendering;
 using MiniClaudeCode.Avalonia.Models;
 using MiniClaudeCode.Avalonia.ViewModels;
 using TextMateSharp.Grammars;
@@ -20,6 +24,12 @@ public partial class EditorView : UserControl
     private readonly RegistryOptions _registryOptions;
     private EditorViewModel? _viewModel;
     private GhostTextRenderer? _ghostTextRenderer;
+    private SearchResultRenderer? _searchRenderer;
+    private IndentGuideRenderer? _indentGuideRenderer;
+    private FoldingManager? _foldingManager;
+    private IndentFoldingStrategy? _foldingStrategy;
+    private DispatcherTimer? _foldingTimer;
+    private List<(int Offset, int Length)> _searchMatches = [];
 
     public EditorView()
     {
@@ -39,6 +49,12 @@ public partial class EditorView : UserControl
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
             _viewModel.GoToLineRequested -= OnGoToLineRequested;
             _viewModel.InlineEditAccepted -= OnInlineEditAccepted;
+            _viewModel.FindReplace.SearchRequested -= OnSearchRequested;
+            _viewModel.FindReplace.FindNextRequested -= OnFindNext;
+            _viewModel.FindReplace.FindPreviousRequested -= OnFindPrevious;
+            _viewModel.FindReplace.ReplaceCurrentRequested -= OnReplaceCurrent;
+            _viewModel.FindReplace.ReplaceAllRequested -= OnReplaceAll;
+            _viewModel.FindReplace.CloseRequested -= OnFindReplaceClose;
         }
 
         _viewModel = DataContext as EditorViewModel;
@@ -56,6 +72,49 @@ public partial class EditorView : UserControl
             // Install ghost text renderer
             _ghostTextRenderer = new GhostTextRenderer(_viewModel);
             CodeEditor.TextArea.TextView.BackgroundRenderers.Add(_ghostTextRenderer);
+
+            // Install search result renderer
+            _searchRenderer = new SearchResultRenderer();
+            CodeEditor.TextArea.TextView.BackgroundRenderers.Add(_searchRenderer);
+
+            // Install indent guide renderer
+            _indentGuideRenderer = new IndentGuideRenderer();
+            CodeEditor.TextArea.TextView.BackgroundRenderers.Add(_indentGuideRenderer);
+
+            // Set up code folding
+            _foldingStrategy = new IndentFoldingStrategy();
+            _foldingManager = FoldingManager.Install(CodeEditor.TextArea);
+
+            // Timer to update foldings periodically (avoid updating on every keystroke)
+            _foldingTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _foldingTimer.Tick += (_, _) => UpdateFoldings();
+            _foldingTimer.Start();
+
+            // Attach minimap to editor
+            Minimap.AttachEditor(CodeEditor);
+
+            // Wire up breadcrumb navigation
+            _viewModel.BreadcrumbNav.NavigateRequested += path =>
+            {
+                if (File.Exists(path))
+                    _viewModel.OpenFile(path);
+            };
+
+            // Wire up find/replace events
+            _viewModel.FindReplace.SearchRequested += OnSearchRequested;
+            _viewModel.FindReplace.FindNextRequested += OnFindNext;
+            _viewModel.FindReplace.FindPreviousRequested += OnFindPrevious;
+            _viewModel.FindReplace.ReplaceCurrentRequested += OnReplaceCurrent;
+            _viewModel.FindReplace.ReplaceAllRequested += OnReplaceAll;
+            _viewModel.FindReplace.CloseRequested += OnFindReplaceClose;
+
+            // Suppress AvaloniaEdit built-in search panel
+            try
+            {
+                var searchPanel = AvaloniaEdit.Search.SearchPanel.Install(CodeEditor);
+                searchPanel.Close();
+            }
+            catch { /* ignore if not available */ }
         }
 
         // Set up caret position tracking
@@ -93,6 +152,36 @@ public partial class EditorView : UserControl
         {
             LoadContent();
         }
+        else if (e.PropertyName == nameof(EditorViewModel.IsIndentGuidesVisible))
+        {
+            if (_indentGuideRenderer != null)
+            {
+                if (_viewModel!.IsIndentGuidesVisible)
+                {
+                    if (!CodeEditor.TextArea.TextView.BackgroundRenderers.Contains(_indentGuideRenderer))
+                        CodeEditor.TextArea.TextView.BackgroundRenderers.Add(_indentGuideRenderer);
+                }
+                else
+                {
+                    CodeEditor.TextArea.TextView.BackgroundRenderers.Remove(_indentGuideRenderer);
+                }
+                CodeEditor.TextArea.TextView.InvalidateLayer(KnownLayer.Background);
+            }
+        }
+        else if (e.PropertyName == nameof(EditorViewModel.IsFoldingEnabled))
+        {
+            if (_viewModel is { IsFoldingEnabled: true })
+            {
+                if (_foldingManager == null)
+                    _foldingManager = FoldingManager.Install(CodeEditor.TextArea);
+                UpdateFoldings();
+            }
+            else if (_foldingManager != null)
+            {
+                FoldingManager.Uninstall(_foldingManager);
+                _foldingManager = null;
+            }
+        }
     }
 
     private void OnActiveFileChanged(EditorTab? tab)
@@ -101,6 +190,22 @@ public partial class EditorView : UserControl
 
         LoadContent();
         ApplyLanguageGrammar(tab.Language);
+        UpdateFoldings();
+    }
+
+    private void UpdateFoldings()
+    {
+        if (_viewModel is not { IsFoldingEnabled: true }) return;
+        if (_foldingManager == null || _foldingStrategy == null || CodeEditor.Document == null) return;
+
+        try
+        {
+            _foldingStrategy.UpdateFoldings(_foldingManager, CodeEditor.Document);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Folding update error: {ex.Message}");
+        }
     }
 
     private void LoadContent()
@@ -193,6 +298,22 @@ public partial class EditorView : UserControl
     private void OnEditorKeyDown(object? sender, KeyEventArgs e)
     {
         if (_viewModel == null) return;
+
+        // Ctrl+F: Show find
+        if (e.Key == Key.F && e.KeyModifiers == KeyModifiers.Control)
+        {
+            e.Handled = true;
+            _viewModel.ShowFind();
+            return;
+        }
+
+        // Ctrl+H: Show find and replace
+        if (e.Key == Key.H && e.KeyModifiers == KeyModifiers.Control)
+        {
+            e.Handled = true;
+            _viewModel.ShowReplace();
+            return;
+        }
 
         // Ctrl+K: Show inline edit
         if (e.Key == Key.K && e.KeyModifiers.HasFlag(KeyModifiers.Control))
@@ -335,6 +456,125 @@ public partial class EditorView : UserControl
             // Clear selection
             CodeEditor.TextArea.ClearSelection();
         }
+    }
+
+    // =========================================================================
+    // Find & Replace Support
+    // =========================================================================
+
+    private void OnSearchRequested(string searchText, bool caseSensitive, bool wholeWord, bool isRegex)
+    {
+        if (_viewModel == null || _searchRenderer == null || CodeEditor.Document == null) return;
+
+        if (string.IsNullOrEmpty(searchText))
+        {
+            _searchMatches.Clear();
+            _searchRenderer.Clear();
+            _viewModel.FindReplace.MatchCount = 0;
+            _viewModel.FindReplace.CurrentMatchIndex = -1;
+            CodeEditor.TextArea.TextView.InvalidateLayer(AvaloniaEdit.Rendering.KnownLayer.Selection);
+            return;
+        }
+
+        _searchMatches = SearchResultRenderer.FindAll(
+            CodeEditor.Document, searchText, caseSensitive, wholeWord, isRegex);
+
+        _viewModel.FindReplace.MatchCount = _searchMatches.Count;
+
+        if (_searchMatches.Count > 0)
+        {
+            // Find the match closest to the caret
+            var caretOffset = CodeEditor.TextArea.Caret.Offset;
+            var idx = _searchMatches.FindIndex(m => m.Offset >= caretOffset);
+            if (idx < 0) idx = 0;
+            _viewModel.FindReplace.CurrentMatchIndex = idx;
+            _searchRenderer.SetMatches(_searchMatches, idx);
+        }
+        else
+        {
+            _viewModel.FindReplace.CurrentMatchIndex = -1;
+            _searchRenderer.SetMatches(_searchMatches);
+        }
+
+        CodeEditor.TextArea.TextView.InvalidateLayer(AvaloniaEdit.Rendering.KnownLayer.Selection);
+    }
+
+    private void OnFindNext()
+    {
+        if (_viewModel == null || _searchMatches.Count == 0) return;
+
+        var idx = _viewModel.FindReplace.CurrentMatchIndex + 1;
+        if (idx >= _searchMatches.Count) idx = 0;
+
+        _viewModel.FindReplace.CurrentMatchIndex = idx;
+        _searchRenderer?.SetMatches(_searchMatches, idx);
+        NavigateToMatch(idx);
+    }
+
+    private void OnFindPrevious()
+    {
+        if (_viewModel == null || _searchMatches.Count == 0) return;
+
+        var idx = _viewModel.FindReplace.CurrentMatchIndex - 1;
+        if (idx < 0) idx = _searchMatches.Count - 1;
+
+        _viewModel.FindReplace.CurrentMatchIndex = idx;
+        _searchRenderer?.SetMatches(_searchMatches, idx);
+        NavigateToMatch(idx);
+    }
+
+    private void NavigateToMatch(int idx)
+    {
+        if (idx < 0 || idx >= _searchMatches.Count) return;
+
+        var (offset, length) = _searchMatches[idx];
+        CodeEditor.TextArea.Caret.Offset = offset;
+        CodeEditor.TextArea.Caret.BringCaretToView();
+        CodeEditor.Select(offset, length);
+        CodeEditor.TextArea.TextView.InvalidateLayer(AvaloniaEdit.Rendering.KnownLayer.Selection);
+    }
+
+    private void OnReplaceCurrent(string replaceText)
+    {
+        if (_viewModel == null || _searchMatches.Count == 0) return;
+
+        var idx = _viewModel.FindReplace.CurrentMatchIndex;
+        if (idx < 0 || idx >= _searchMatches.Count) return;
+
+        var (offset, length) = _searchMatches[idx];
+        CodeEditor.Document.Replace(offset, length, replaceText);
+
+        // Re-search after replace
+        OnSearchRequested(_viewModel.FindReplace.SearchText,
+            _viewModel.FindReplace.IsCaseSensitive,
+            _viewModel.FindReplace.IsWholeWord,
+            _viewModel.FindReplace.IsRegex);
+    }
+
+    private void OnReplaceAll()
+    {
+        if (_viewModel == null || _searchMatches.Count == 0) return;
+
+        // Replace from bottom to top to preserve offsets
+        for (int i = _searchMatches.Count - 1; i >= 0; i--)
+        {
+            var (offset, length) = _searchMatches[i];
+            CodeEditor.Document.Replace(offset, length, _viewModel.FindReplace.ReplaceText);
+        }
+
+        // Re-search after replace all
+        OnSearchRequested(_viewModel.FindReplace.SearchText,
+            _viewModel.FindReplace.IsCaseSensitive,
+            _viewModel.FindReplace.IsWholeWord,
+            _viewModel.FindReplace.IsRegex);
+    }
+
+    private void OnFindReplaceClose()
+    {
+        _searchMatches.Clear();
+        _searchRenderer?.Clear();
+        CodeEditor.TextArea.TextView.InvalidateLayer(AvaloniaEdit.Rendering.KnownLayer.Selection);
+        CodeEditor.Focus();
     }
 
     private async Task RequestCompletionAsync()

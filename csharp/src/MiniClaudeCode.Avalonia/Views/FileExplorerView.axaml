@@ -7,7 +7,7 @@
 
     <Border Background="#181825" Padding="4">
         <DockPanel>
-            <!-- Header -->
+            <!-- Header + Toolbar -->
             <Border DockPanel.Dock="Top" Padding="8,6" Background="#1E1E2E" CornerRadius="4,4,0,0">
                 <DockPanel>
                     <TextBlock Text="Explorer"
@@ -15,12 +15,81 @@
                                FontSize="12"
                                Foreground="#CDD6F4"
                                VerticalAlignment="Center" />
-                    <TextBlock DockPanel.Dock="Right"
-                               Text="{Binding WorkspaceName}"
-                               FontSize="11"
-                               Opacity="0.6"
-                               HorizontalAlignment="Right"
-                               VerticalAlignment="Center" />
+
+                    <!-- Toolbar buttons -->
+                    <StackPanel DockPanel.Dock="Right"
+                                Orientation="Horizontal"
+                                Spacing="2"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center">
+                        <!-- New File -->
+                        <Button ToolTip.Tip="New File"
+                                Command="{Binding FileOperations.StartNewFileCommand}"
+                                CommandParameter="{Binding SelectedNode}"
+                                Background="Transparent" BorderThickness="0"
+                                Padding="4,2" Cursor="Hand" FontSize="12" Foreground="#6C7086">
+                            <TextBlock Text="&#x1F4C4;" FontSize="12" />
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                    <Setter Property="Background" Value="#313244" />
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+                        <!-- New Folder -->
+                        <Button ToolTip.Tip="New Folder"
+                                Command="{Binding FileOperations.StartNewFolderCommand}"
+                                CommandParameter="{Binding SelectedNode}"
+                                Background="Transparent" BorderThickness="0"
+                                Padding="4,2" Cursor="Hand" FontSize="12" Foreground="#6C7086">
+                            <TextBlock Text="&#x1F4C1;" FontSize="12" />
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                    <Setter Property="Background" Value="#313244" />
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+                        <!-- Refresh -->
+                        <Button ToolTip.Tip="Refresh"
+                                Command="{Binding RefreshCommand}"
+                                Background="Transparent" BorderThickness="0"
+                                Padding="4,2" Cursor="Hand" FontSize="12" Foreground="#6C7086">
+                            <TextBlock Text="&#x21BB;" FontSize="12" />
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                    <Setter Property="Background" Value="#313244" />
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+                        <!-- Collapse All -->
+                        <Button ToolTip.Tip="Collapse All"
+                                Command="{Binding CollapseAllCommand}"
+                                Background="Transparent" BorderThickness="0"
+                                Padding="4,2" Cursor="Hand" FontSize="12" Foreground="#6C7086">
+                            <TextBlock Text="&#x2B73;" FontSize="12" />
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                    <Setter Property="Background" Value="#313244" />
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Inline create box (when creating new file/folder) -->
+            <Border DockPanel.Dock="Top"
+                    IsVisible="{Binding FileOperations.IsCreating}"
+                    Padding="8,4" Background="#1E1E2E">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="&#x2715;"
+                            Command="{Binding FileOperations.CancelCreateCommand}"
+                            Background="Transparent" BorderThickness="0"
+                            FontSize="10" Padding="4,2" Foreground="#6C7086" Cursor="Hand" />
+                    <TextBox Text="{Binding FileOperations.NewItemName, Mode=TwoWay}"
+                             Watermark="Enter name"
+                             FontSize="12" Background="#11111B" Foreground="#CDD6F4"
+                             BorderBrush="#45475A" BorderThickness="1" Padding="4,2"
+                             KeyDown="OnCreateBoxKeyDown" />
                 </DockPanel>
             </Border>
 
@@ -33,15 +102,58 @@
                       SelectionChanged="OnTreeSelectionChanged">
                 <TreeView.ItemTemplate>
                     <TreeDataTemplate ItemsSource="{Binding Children}" x:DataType="models:FileTreeNode">
-                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="2">
-                            <TextBlock Text="{Binding Icon}" FontSize="14" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding Name}"
-                                       FontSize="12"
-                                       Foreground="#CDD6F4"
-                                       VerticalAlignment="Center" />
-                        </StackPanel>
+                        <Panel>
+                            <!-- Normal display -->
+                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="2"
+                                        IsVisible="{Binding !IsRenaming}">
+                                <TextBlock Text="{Binding Icon}" FontSize="14" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Name}"
+                                           FontSize="12"
+                                           Foreground="#CDD6F4"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                            <!-- Rename mode -->
+                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="2"
+                                        IsVisible="{Binding IsRenaming}">
+                                <TextBlock Text="{Binding Icon}" FontSize="14" VerticalAlignment="Center" />
+                                <TextBox Text="{Binding EditName, Mode=TwoWay}"
+                                         FontSize="12" Background="#11111B" Foreground="#CDD6F4"
+                                         BorderBrush="#89B4FA" BorderThickness="1" Padding="2,0"
+                                         MinWidth="120" />
+                            </StackPanel>
+                        </Panel>
+
                     </TreeDataTemplate>
                 </TreeView.ItemTemplate>
+
+                <!-- Context Menu on TreeView itself -->
+                <TreeView.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="New _File"
+                                  Command="{Binding FileOperations.StartNewFileCommand}"
+                                  CommandParameter="{Binding SelectedNode}" />
+                        <MenuItem Header="New F_older"
+                                  Command="{Binding FileOperations.StartNewFolderCommand}"
+                                  CommandParameter="{Binding SelectedNode}" />
+                        <Separator />
+                        <MenuItem Header="_Rename" InputGesture="F2"
+                                  Command="{Binding FileOperations.StartRenameCommand}"
+                                  CommandParameter="{Binding SelectedNode}" />
+                        <MenuItem Header="_Delete"
+                                  Command="{Binding FileOperations.DeleteNodeCommand}"
+                                  CommandParameter="{Binding SelectedNode}" />
+                        <Separator />
+                        <MenuItem Header="Copy _Path"
+                                  Command="{Binding FileOperations.CopyPathCommand}"
+                                  CommandParameter="{Binding SelectedNode}" />
+                        <MenuItem Header="Copy _Relative Path"
+                                  Command="{Binding FileOperations.CopyRelativePathCommand}"
+                                  CommandParameter="{Binding SelectedNode}" />
+                        <MenuItem Header="Re_veal in Explorer"
+                                  Command="{Binding FileOperations.RevealInExplorerCommand}"
+                                  CommandParameter="{Binding SelectedNode}" />
+                    </ContextMenu>
+                </TreeView.ContextMenu>
             </TreeView>
         </DockPanel>
     </Border>

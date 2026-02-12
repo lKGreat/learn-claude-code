@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             x:Class="MiniClaudeCode.Avalonia.Views.BreadcrumbView"
+             x:DataType="vm:BreadcrumbViewModel"
+             IsVisible="{Binding IsVisible}">
+
+    <ItemsControl ItemsSource="{Binding Segments}">
+        <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="0" />
+            </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:BreadcrumbSegment">
+                <StackPanel Orientation="Horizontal" Spacing="0">
+                    <!-- Segment button with dropdown -->
+                    <Button Content="{Binding Name}"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Padding="3,1"
+                            FontSize="11"
+                            Foreground="#9CA3AF"
+                            Cursor="Hand"
+                            VerticalAlignment="Center">
+                        <Button.Styles>
+                            <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="Foreground" Value="#CDD6F4" />
+                            </Style>
+                        </Button.Styles>
+                        <Button.Flyout>
+                            <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                <MenuFlyout.ItemContainerTheme>
+                                    <ControlTheme x:DataType="vm:BreadcrumbSibling" TargetType="MenuItem">
+                                        <!-- Default MenuItem theme works fine -->
+                                    </ControlTheme>
+                                </MenuFlyout.ItemContainerTheme>
+                            </MenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+
+                    <!-- Separator (not shown after last segment) -->
+                    <TextBlock Text=" &#x276F; "
+                               FontSize="9"
+                               Foreground="#585B70"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding !IsLast}" />
+                </StackPanel>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</UserControl>

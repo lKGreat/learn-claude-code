@@ -227,4 +227,26 @@
         <Setter Property="Background" Value="#313244" />
     </Style>
 
+    <!-- ============================================================ -->
+    <!--  Find/Replace Toggle Buttons                                 -->
+    <!-- ============================================================ -->
+
+    <Style Selector="Button.findToggle">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Padding" Value="4,2" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="Foreground" Value="#9CA3AF" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="CornerRadius" Value="2" />
+    </Style>
+    <Style Selector="Button.findToggle:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#313244" />
+    </Style>
+    <Style Selector="Button.findToggleActive">
+        <Setter Property="Background" Value="#45475A" />
+        <Setter Property="BorderBrush" Value="#585B70" />
+    </Style>
+
 </Styles>

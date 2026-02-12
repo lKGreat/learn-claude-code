@@ -93,10 +93,7 @@
                     BorderBrush="#313244"
                     BorderThickness="0,0,0,1"
                     IsVisible="{Binding HasOpenFiles}">
-                <TextBlock Text="{Binding Breadcrumb}"
-                           FontSize="11"
-                           Foreground="#9CA3AF"
-                           Opacity="0.7" />
+                <local:BreadcrumbView DataContext="{Binding BreadcrumbNav}" />
             </Border>
 
             <!-- Editor content area -->
@@ -134,17 +131,27 @@
                     </StackPanel>
                 </StackPanel>
 
-                <!-- AvaloniaEdit Text Editor -->
-                <ae:TextEditor x:Name="CodeEditor"
-                               IsVisible="{Binding HasOpenFiles}"
-                               FontFamily="Cascadia Code, Consolas, Menlo, monospace"
-                               FontSize="13"
-                               Foreground="#CDD6F4"
-                               Background="#1E1E2E"
-                               ShowLineNumbers="True"
-                               WordWrap="False"
-                               HorizontalScrollBarVisibility="Auto"
-                               VerticalScrollBarVisibility="Auto" />
+                <!-- Editor + Minimap -->
+                <DockPanel IsVisible="{Binding HasOpenFiles}">
+                    <!-- Minimap at right edge -->
+                    <local:MinimapView x:Name="Minimap"
+                                       DockPanel.Dock="Right"
+                                       IsVisible="{Binding IsMinimapVisible}" />
+
+                    <!-- AvaloniaEdit Text Editor -->
+                    <ae:TextEditor x:Name="CodeEditor"
+                                   FontFamily="Cascadia Code, Consolas, Menlo, monospace"
+                                   FontSize="13"
+                                   Foreground="#CDD6F4"
+                                   Background="#1E1E2E"
+                                   ShowLineNumbers="True"
+                                   WordWrap="False"
+                                   HorizontalScrollBarVisibility="Auto"
+                                   VerticalScrollBarVisibility="Auto" />
+                </DockPanel>
+
+                <!-- Find/Replace Overlay -->
+                <local:FindReplaceOverlay DataContext="{Binding FindReplace}" />
 
                 <!-- Inline Edit Panel (overlay) -->
                 <local:InlineEditView DataContext="{Binding InlineEdit}" />

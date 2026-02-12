@@ -1,0 +1,152 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             x:Class="MiniClaudeCode.Avalonia.Views.FindReplaceOverlay"
+             x:DataType="vm:FindReplaceViewModel"
+             IsVisible="{Binding IsVisible}"
+             HorizontalAlignment="Right"
+             VerticalAlignment="Top"
+             Margin="0,4,20,0">
+
+    <Border Background="#252536"
+            BorderBrush="#45475A"
+            BorderThickness="1"
+            CornerRadius="4"
+            Padding="8,6"
+            MinWidth="340"
+            BoxShadow="0 2 8 0 #40000000">
+        <StackPanel Spacing="4">
+            <!-- Search Row -->
+            <DockPanel>
+                <!-- Toggle Replace Expand -->
+                <Button DockPanel.Dock="Left"
+                        Content="▶"
+                        Command="{Binding ToggleReplaceCommand}"
+                        Background="Transparent" BorderThickness="0"
+                        FontSize="10" Padding="4,2" Foreground="#6C7086"
+                        VerticalAlignment="Center" Cursor="Hand" Width="20">
+                    <Button.Styles>
+                        <Style Selector="Button:pointerover /template/ ContentPresenter">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="Foreground" Value="#CDD6F4" />
+                        </Style>
+                    </Button.Styles>
+                </Button>
+
+                <!-- Navigation + Close buttons -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                    <Button Content="&#x2191;" Command="{Binding FindPreviousCommand}"
+                            ToolTip.Tip="Previous Match"
+                            Background="Transparent" BorderThickness="0"
+                            FontSize="12" Padding="4,2" Foreground="#9CA3AF" Cursor="Hand">
+                        <Button.Styles>
+                            <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                <Setter Property="Background" Value="#313244" />
+                            </Style>
+                        </Button.Styles>
+                    </Button>
+                    <Button Content="&#x2193;" Command="{Binding FindNextCommand}"
+                            ToolTip.Tip="Next Match"
+                            Background="Transparent" BorderThickness="0"
+                            FontSize="12" Padding="4,2" Foreground="#9CA3AF" Cursor="Hand">
+                        <Button.Styles>
+                            <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                <Setter Property="Background" Value="#313244" />
+                            </Style>
+                        </Button.Styles>
+                    </Button>
+                    <Button Content="&#x2715;" Command="{Binding CloseCommand}"
+                            ToolTip.Tip="Close (Escape)"
+                            Background="Transparent" BorderThickness="0"
+                            FontSize="10" Padding="4,2" Foreground="#6C7086" Cursor="Hand">
+                        <Button.Styles>
+                            <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                <Setter Property="Background" Value="#313244" />
+                                <Setter Property="Foreground" Value="#CDD6F4" />
+                            </Style>
+                        </Button.Styles>
+                    </Button>
+                </StackPanel>
+
+                <!-- Search input + option toggles -->
+                <DockPanel>
+                    <!-- Option toggle buttons -->
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2" Margin="4,0,0,0"
+                                VerticalAlignment="Center">
+                        <Button Content="Aa" Command="{Binding ToggleCaseCommand}"
+                                ToolTip.Tip="Match Case"
+                                Background="Transparent"
+                                BorderThickness="0" FontSize="10" Padding="4,2"
+                                Foreground="#9CA3AF" Cursor="Hand" />
+                        <Button Content="Ab" Command="{Binding ToggleWholeWordCommand}"
+                                ToolTip.Tip="Whole Word"
+                                Background="Transparent"
+                                BorderThickness="0" FontSize="10" Padding="4,2"
+                                Foreground="#9CA3AF" Cursor="Hand" />
+                        <Button Content=".*" Command="{Binding ToggleRegexCommand}"
+                                ToolTip.Tip="Use Regular Expression"
+                                Background="Transparent"
+                                BorderThickness="0" FontSize="10" Padding="4,2"
+                                Foreground="#9CA3AF" Cursor="Hand" />
+                    </StackPanel>
+
+                    <!-- Search text box -->
+                    <TextBox Text="{Binding SearchText, Mode=TwoWay}"
+                             Watermark="Find"
+                             FontSize="12"
+                             Background="#1E1E2E"
+                             Foreground="#CDD6F4"
+                             BorderBrush="#45475A"
+                             BorderThickness="1"
+                             CornerRadius="2"
+                             Padding="6,3"
+                             FontFamily="Cascadia Code, Consolas, monospace" />
+                </DockPanel>
+            </DockPanel>
+
+            <!-- Result count -->
+            <TextBlock Text="{Binding ResultSummary}"
+                       FontSize="10" Foreground="#6C7086"
+                       Margin="24,0,0,0" />
+
+            <!-- Replace Row (collapsible) -->
+            <DockPanel IsVisible="{Binding IsReplaceVisible}" Margin="20,0,0,0">
+                <!-- Replace action buttons -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                    <Button Content="&#x21C4;" Command="{Binding ReplaceCurrentCommand}"
+                            ToolTip.Tip="Replace"
+                            Background="Transparent" BorderThickness="0"
+                            FontSize="12" Padding="4,2" Foreground="#9CA3AF" Cursor="Hand">
+                        <Button.Styles>
+                            <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                <Setter Property="Background" Value="#313244" />
+                            </Style>
+                        </Button.Styles>
+                    </Button>
+                    <Button Content="&#x21CB;" Command="{Binding ReplaceAllCommand}"
+                            ToolTip.Tip="Replace All"
+                            Background="Transparent" BorderThickness="0"
+                            FontSize="12" Padding="4,2" Foreground="#9CA3AF" Cursor="Hand">
+                        <Button.Styles>
+                            <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                <Setter Property="Background" Value="#313244" />
+                            </Style>
+                        </Button.Styles>
+                    </Button>
+                </StackPanel>
+
+                <!-- Replace text box -->
+                <TextBox Text="{Binding ReplaceText, Mode=TwoWay}"
+                         Watermark="Replace"
+                         FontSize="12"
+                         Background="#1E1E2E"
+                         Foreground="#CDD6F4"
+                         BorderBrush="#45475A"
+                         BorderThickness="1"
+                         CornerRadius="2"
+                         Padding="6,3"
+                         FontFamily="Cascadia Code, Consolas, monospace" />
+            </DockPanel>
+        </StackPanel>
+    </Border>
+</UserControl>

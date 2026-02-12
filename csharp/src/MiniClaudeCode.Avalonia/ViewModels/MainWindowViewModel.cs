@@ -118,6 +118,9 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly FileWatcherService _fileWatcher = new();
     private Window? _mainWindow;
 
+    /// <summary>Central keybinding registry.</summary>
+    public KeybindingService Keybindings { get; } = new();
+
     public MainWindowViewModel()
     {
         Chat.MessageSubmitted += OnMessageSubmitted;
@@ -170,8 +173,20 @@ public partial class MainWindowViewModel : ObservableObject
         StatusBar.ProblemsClicked += () => BottomPanel.SwitchTabCommand.Execute("problems");
         StatusBar.NotificationsClicked += () => Notification.ToggleCenterCommand.Execute(null);
         
+        // Wire file operations events
+        FileExplorer.FileOperations.FileCreated += (path) => Editor.OpenFile(path);
+        FileExplorer.FileOperations.RefreshRequested += () =>
+        {
+            if (!string.IsNullOrEmpty(FileExplorer.WorkspacePath))
+                FileExplorer.LoadWorkspace(FileExplorer.WorkspacePath);
+        };
+        FileExplorer.FileOperations.ErrorOccurred += (msg) => Notification.ShowError(msg);
+
         // Set initial active panel
         Sidebar.SetActivePanel("explorer");
+
+        // Register all keybindings
+        RegisterKeybindings();
     }
 
     partial void OnIsPlanModeChanged(bool value)
@@ -190,7 +205,11 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>
     /// Set the main window reference for dialogs.
     /// </summary>
-    public void SetMainWindow(Window window) => _mainWindow = window;
+    public void SetMainWindow(Window window)
+    {
+        _mainWindow = window;
+        FileExplorer.FileOperations.SetMainWindow(window);
+    }
 
     /// <summary>
     /// Initialize the engine asynchronously after the window is shown.
@@ -330,6 +349,7 @@ public partial class MainWindowViewModel : ObservableObject
             Search.SetWorkspace(workDir);
             Scm.SetWorkspace(workDir);
             GitHistory.SetWorkspace(workDir);
+            Editor.SetWorkspacePath(workDir);
             StatusBar.WorkspaceName = Path.GetFileName(workDir);
 
             // Start terminal in workspace
@@ -1180,6 +1200,17 @@ public partial class MainWindowViewModel : ObservableObject
             new() { Id = "toggle_auxiliary", Label = "Toggle Auxiliary Bar", Category = "View", Shortcut = "Ctrl+Alt+B", Execute = () => AuxiliaryBar.ToggleCommand.Execute(null) },
             new() { Id = "workspace_trust", Label = "Workspace Trust: Manage", Category = "Security", Execute = () => WorkspaceTrust.ShowDialogCommand.Execute(null) },
             new() { Id = "exit_app", Label = "Exit", Category = "Application", Execute = () => HandleSlashCommand("/exit") },
+            new() { Id = "find_in_editor", Label = "Find", Category = "Edit", Shortcut = "Ctrl+F", Execute = () => Editor.ShowFind() },
+            new() { Id = "replace_in_editor", Label = "Find and Replace", Category = "Edit", Shortcut = "Ctrl+H", Execute = () => Editor.ShowReplace() },
+            new() { Id = "open_file", Label = "Open File...", Category = "File", Shortcut = "Ctrl+Shift+O", Execute = () => _ = OpenFileDialog() },
+            new() { Id = "save_as", Label = "Save As...", Category = "File", Shortcut = "Ctrl+Shift+S", Execute = () => _ = SaveFileAs() },
+            new() { Id = "close_active_editor", Label = "Close Active Editor", Category = "Editor", Shortcut = "Ctrl+W", Execute = () => CloseActiveEditor() },
+            new() { Id = "theme_mocha", Label = "Color Theme: Catppuccin Mocha", Category = "Preferences", Execute = () => SwitchTheme("catppuccin-mocha") },
+            new() { Id = "theme_latte", Label = "Color Theme: Catppuccin Latte", Category = "Preferences", Execute = () => SwitchTheme("catppuccin-latte") },
+            new() { Id = "theme_hc", Label = "Color Theme: High Contrast", Category = "Preferences", Execute = () => SwitchTheme("high-contrast") },
+            new() { Id = "toggle_minimap", Label = "Toggle Minimap", Category = "View", Execute = () => Editor.IsMinimapVisible = !Editor.IsMinimapVisible },
+            new() { Id = "toggle_folding", Label = "Toggle Code Folding", Category = "View", Execute = () => Editor.IsFoldingEnabled = !Editor.IsFoldingEnabled },
+            new() { Id = "toggle_indent_guides", Label = "Toggle Indent Guides", Category = "View", Execute = () => Editor.IsIndentGuidesVisible = !Editor.IsIndentGuidesVisible },
         ]);
     }
 
@@ -1243,6 +1274,106 @@ public partial class MainWindowViewModel : ObservableObject
 
     [RelayCommand]
     private void OpenComposer() => ComposerPanel.Show();
+
+    [RelayCommand]
+    private async Task OpenFileDialog()
+    {
+        if (_mainWindow == null) return;
+
+        var files = await _mainWindow.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Open File",
+            AllowMultiple = false
+        });
+
+        if (files.Count > 0)
+            Editor.OpenFile(files[0].Path.LocalPath);
+    }
+
+    [RelayCommand]
+    private async Task SaveFileAs()
+    {
+        if (_mainWindow == null || Editor.ActiveTab == null) return;
+
+        var file = await _mainWindow.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save File As",
+            SuggestedFileName = Editor.ActiveTab.FileName
+        });
+
+        if (file != null)
+        {
+            try
+            {
+                File.WriteAllText(file.Path.LocalPath, Editor.CurrentContent);
+                Notification.ShowInfo($"Saved as {file.Name}");
+            }
+            catch (Exception ex)
+            {
+                Notification.ShowError($"Save failed: {ex.Message}");
+            }
+        }
+    }
+
+    [RelayCommand]
+    private void CloseActiveEditor()
+    {
+        if (Editor.ActiveTab != null)
+            Editor.CloseTabCommand.Execute(Editor.ActiveTab);
+    }
+
+    [RelayCommand]
+    private void ShowFind() => Editor.ShowFind();
+
+    [RelayCommand]
+    private void ShowReplace() => Editor.ShowReplace();
+
+    [RelayCommand]
+    private void SwitchTheme(string themeName)
+    {
+        ThemeService.Instance.ApplyTheme(themeName);
+        Notification.ShowInfo($"Theme: {ThemeService.Instance.CurrentTheme}");
+    }
+
+    [RelayCommand]
+    private void ToggleMinimap() => Editor.IsMinimapVisible = !Editor.IsMinimapVisible;
+
+    [RelayCommand]
+    private void ToggleFolding() => Editor.IsFoldingEnabled = !Editor.IsFoldingEnabled;
+
+    [RelayCommand]
+    private void ToggleIndentGuides() => Editor.IsIndentGuidesVisible = !Editor.IsIndentGuidesVisible;
+
+    private void RegisterKeybindings()
+    {
+        // File
+        Keybindings.Register("file.newConversation", "Ctrl+N", "New Conversation", "File", () => HandleSlashCommand("/new"));
+        Keybindings.Register("file.openFolder", "Ctrl+O", "Open Folder...", "File", () => _ = OpenWorkspace());
+        Keybindings.Register("file.openFile", "Ctrl+Shift+O", "Open File...", "File", () => _ = OpenFileDialog());
+        Keybindings.Register("file.save", "Ctrl+S", "Save File", "File", () => Editor.SaveFileCommand.Execute(null));
+        Keybindings.Register("file.saveAs", "Ctrl+Shift+S", "Save File As...", "File", () => _ = SaveFileAs());
+        Keybindings.Register("file.closeEditor", "Ctrl+W", "Close Editor", "File", () => CloseActiveEditor());
+
+        // Edit
+        Keybindings.Register("edit.find", "Ctrl+F", "Find", "Edit", () => Editor.ShowFind());
+        Keybindings.Register("edit.replace", "Ctrl+H", "Find and Replace", "Edit", () => Editor.ShowReplace());
+
+        // View
+        Keybindings.Register("view.commandPalette", "Ctrl+Shift+P", "Command Palette", "View", () => CommandPalette.ShowCommand.Execute(null));
+        Keybindings.Register("view.quickOpen", "Ctrl+P", "Quick Open File", "View", () => CommandPalette.ShowQuickOpenCommand.Execute(null));
+        Keybindings.Register("view.explorer", "Ctrl+Shift+E", "Show Explorer", "View", () => { ActivityBar.ActivatePanel("explorer"); Sidebar.SetActivePanel("explorer"); });
+        Keybindings.Register("view.search", "Ctrl+Shift+F", "Show Search", "View", () => { ActivityBar.ActivatePanel("search"); Sidebar.SetActivePanel("search"); });
+        Keybindings.Register("view.scm", "Ctrl+Shift+G", "Show Source Control", "View", () => { ActivityBar.ActivatePanel("scm"); Sidebar.SetActivePanel("scm"); });
+        Keybindings.Register("view.extensions", "Ctrl+Shift+X", "Show Extensions", "View", () => { ActivityBar.ActivatePanel("extensions"); Sidebar.SetActivePanel("extensions"); });
+        Keybindings.Register("view.chat", "Ctrl+Shift+C", "Show AI Chat", "View", () => { ActivityBar.ActivatePanel("chat"); Sidebar.SetActivePanel("chat"); });
+        Keybindings.Register("view.terminal", "Ctrl+`", "Toggle Terminal", "View", () => BottomPanel.ToggleVisibilityCommand.Execute(null));
+
+        // AI
+        Keybindings.Register("ai.composer", "Ctrl+Shift+I", "Open Composer", "AI", () => ComposerPanel.Show());
+
+        // Other
+        Keybindings.Register("cancel", "Escape", "Cancel Operation", "General", () => CancelOperation());
+    }
 
     private static void LoadEnvFiles()
     {

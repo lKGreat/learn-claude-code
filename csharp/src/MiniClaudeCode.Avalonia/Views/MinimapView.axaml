@@ -1,0 +1,9 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MiniClaudeCode.Avalonia.Views.MinimapView"
+             Width="60"
+             VerticalAlignment="Stretch"
+             Background="#181825"
+             Cursor="Hand">
+    <Canvas x:Name="MinimapCanvas" />
+</UserControl>

@@ -4,6 +4,14 @@
              x:Class="MiniClaudeCode.Avalonia.App"
              RequestedThemeVariant="Dark">
 
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="/Themes/ThemeResources.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
     <Application.Styles>
         <semi:SemiTheme />
         <StyleInclude Source="avares://MiniClaudeCode.Avalonia/Themes/AppTheme.axaml" />

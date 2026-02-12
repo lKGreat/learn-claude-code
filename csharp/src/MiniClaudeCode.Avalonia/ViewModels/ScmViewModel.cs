@@ -151,9 +151,9 @@ public partial class ScmViewModel : ObservableObject
                 OnPropertyChanged(nameof(HasWorktrees));
             });
         }
-        catch
+        catch (Exception ex)
         {
-            // Git not available or not a git repo
+            System.Diagnostics.Debug.WriteLine($"SCM refresh failed: {ex.Message}");
         }
         finally
         {
@@ -241,9 +241,9 @@ public partial class ScmViewModel : ObservableObject
                 OnPropertyChanged(nameof(TotalChanges));
             });
         }
-        catch
+        catch (Exception ex)
         {
-            // Not a git repo or git not installed
+            System.Diagnostics.Debug.WriteLine($"Git status failed: {ex.Message}");
         }
     }
 
@@ -341,6 +341,33 @@ public partial class ScmViewModel : ObservableObject
     {
         if (item == null) return;
         DiffRequested?.Invoke(item.RelativePath);
+    }
+
+    /// <summary>Get list of branches (for branch picker).</summary>
+    public async Task<List<string>> GetBranchListAsync()
+    {
+        return await _gitService.GetBranchesAsync();
+    }
+
+    /// <summary>Checkout a branch.</summary>
+    public async Task<bool> CheckoutBranchAsync(string branchName)
+    {
+        try
+        {
+            await _gitService.CheckoutAsync(branchName);
+            await RefreshAsync();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Get diff for a specific file.</summary>
+    public async Task<string> GetFileDiffAsync(string relativePath)
+    {
+        return await _gitService.GetDiffAsync(relativePath);
     }
 
     private static ScmFileStatus ParseStatus(char c) => c switch

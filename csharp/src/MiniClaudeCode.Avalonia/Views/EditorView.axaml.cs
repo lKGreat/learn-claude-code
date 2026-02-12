@@ -30,6 +30,7 @@ public partial class EditorView : UserControl
         {
             _viewModel.ActiveFileChanged -= OnActiveFileChanged;
             _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel.GoToLineRequested -= OnGoToLineRequested;
         }
 
         _viewModel = DataContext as EditorViewModel;
@@ -38,6 +39,7 @@ public partial class EditorView : UserControl
         {
             _viewModel.ActiveFileChanged += OnActiveFileChanged;
             _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+            _viewModel.GoToLineRequested += OnGoToLineRequested;
 
             // Install TextMate on the editor
             _textMateInstallation = CodeEditor.InstallTextMate(_registryOptions);
@@ -132,9 +134,28 @@ public partial class EditorView : UserControl
                 _textMateInstallation.SetGrammar(scopeName);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Grammar not found, fallback to no highlighting
+            System.Diagnostics.Debug.WriteLine($"Failed to set grammar for {language}: {ex.Message}");
+        }
+    }
+
+    private void OnGoToLineRequested(int line)
+    {
+        if (line < 1) return;
+
+        // Clamp line to document range
+        var maxLine = CodeEditor.Document?.LineCount ?? 1;
+        line = Math.Min(line, maxLine);
+
+        // Set caret position and scroll into view
+        var docLine = CodeEditor.Document?.GetLineByNumber(line);
+        if (docLine != null)
+        {
+            CodeEditor.TextArea.Caret.Line = line;
+            CodeEditor.TextArea.Caret.Column = 1;
+            CodeEditor.TextArea.Caret.BringCaretToView();
+            CodeEditor.ScrollToLine(line);
         }
     }
 

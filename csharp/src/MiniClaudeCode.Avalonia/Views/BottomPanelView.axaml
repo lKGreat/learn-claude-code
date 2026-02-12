@@ -122,22 +122,99 @@
                 <views:TodoPanelView DataContext="{Binding TodoPanel}"
                                       IsVisible="{Binding $parent[views:BottomPanelView].((vm:MainWindowViewModel)DataContext).BottomPanel.IsTodosTab}" />
 
-                <!-- Problems (placeholder) -->
+                <!-- Problems panel -->
                 <Border Background="#181825"
                         IsVisible="{Binding $parent[views:BottomPanelView].((vm:MainWindowViewModel)DataContext).BottomPanel.IsProblemsTab}">
-                    <TextBlock Text="No problems detected."
-                               FontSize="12"
-                               Foreground="#6C7086"
-                               Margin="12,8" />
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Padding="8,4" Background="#1E1E2E">
+                            <DockPanel>
+                                <TextBlock Text="{Binding BottomPanel.ProblemsHeader}"
+                                           FontSize="11" Foreground="#CDD6F4" />
+                                <Button DockPanel.Dock="Right"
+                                        Content="Clear"
+                                        Command="{Binding BottomPanel.ClearProblemsCommand}"
+                                        FontSize="10" Padding="6,2"
+                                        Background="Transparent" Foreground="#6C7086"
+                                        HorizontalAlignment="Right" />
+                            </DockPanel>
+                        </Border>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <Panel>
+                                <ItemsControl ItemsSource="{Binding BottomPanel.Problems}"
+                                              IsVisible="{Binding BottomPanel.HasProblems}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ProblemItem">
+                                            <Border Padding="8,3" Cursor="Hand">
+                                                <DockPanel>
+                                                    <TextBlock Text="{Binding SeverityIcon}"
+                                                               Foreground="{Binding SeverityColor}"
+                                                               FontSize="11" Width="16"
+                                                               DockPanel.Dock="Left" />
+                                                    <TextBlock Text="{Binding LocationDisplay}"
+                                                               FontSize="10" Foreground="#6C7086"
+                                                               DockPanel.Dock="Right"
+                                                               Margin="8,0,0,0" />
+                                                    <StackPanel Spacing="1">
+                                                        <TextBlock Text="{Binding Message}"
+                                                                   FontSize="11" Foreground="#CDD6F4"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Text="{Binding File}"
+                                                                   FontSize="10" Foreground="#6C7086"
+                                                                   Opacity="0.6"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="No problems detected."
+                                           FontSize="12" Foreground="#6C7086"
+                                           Margin="12,8"
+                                           IsVisible="{Binding !BottomPanel.HasProblems}" />
+                            </Panel>
+                        </ScrollViewer>
+                    </DockPanel>
                 </Border>
 
-                <!-- Output (placeholder) -->
+                <!-- Output panel -->
                 <Border Background="#181825"
                         IsVisible="{Binding $parent[views:BottomPanelView].((vm:MainWindowViewModel)DataContext).BottomPanel.IsOutputTab}">
-                    <TextBlock Text="No output channels."
-                               FontSize="12"
-                               Foreground="#6C7086"
-                               Margin="12,8" />
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" Padding="8,4" Background="#1E1E2E">
+                            <DockPanel>
+                                <ComboBox ItemsSource="{Binding BottomPanel.OutputChannels}"
+                                          SelectedItem="{Binding BottomPanel.ActiveOutputChannel}"
+                                          FontSize="11" MinWidth="120"
+                                          Background="#11111B" />
+                                <Button DockPanel.Dock="Right"
+                                        Content="Clear"
+                                        Command="{Binding BottomPanel.ClearOutputCommand}"
+                                        FontSize="10" Padding="6,2"
+                                        Background="Transparent" Foreground="#6C7086"
+                                        HorizontalAlignment="Right" />
+                            </DockPanel>
+                        </Border>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding BottomPanel.OutputEntries}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:OutputEntry">
+                                        <DockPanel Margin="8,1">
+                                            <TextBlock Text="{Binding TimestampDisplay}"
+                                                       FontSize="10" Foreground="#6C7086"
+                                                       FontFamily="Cascadia Code, Consolas, monospace"
+                                                       DockPanel.Dock="Left"
+                                                       Width="60" Opacity="0.5" />
+                                            <TextBlock Text="{Binding Message}"
+                                                       FontSize="11" Foreground="#CDD6F4"
+                                                       FontFamily="Cascadia Code, Consolas, monospace"
+                                                       TextWrapping="Wrap" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </DockPanel>
                 </Border>
             </Panel>
         </DockPanel>

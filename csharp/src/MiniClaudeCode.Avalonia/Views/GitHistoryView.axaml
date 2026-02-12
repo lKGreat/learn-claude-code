@@ -1,0 +1,120 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             x:Class="MiniClaudeCode.Avalonia.Views.GitHistoryView"
+             x:DataType="vm:GitHistoryViewModel">
+
+    <Border Background="#181825" IsVisible="{Binding IsVisible}">
+        <DockPanel>
+            <!-- Header -->
+            <Border DockPanel.Dock="Top" Padding="8,6" Background="#1E1E2E"
+                    BorderBrush="#313244" BorderThickness="0,0,0,1">
+                <DockPanel>
+                    <TextBlock Text="Git History"
+                               FontWeight="Bold" FontSize="12"
+                               Foreground="#CDD6F4" VerticalAlignment="Center" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
+                        <Button Content="&#x21BB;"
+                                Command="{Binding LoadHistoryCommand}"
+                                FontSize="12" Padding="4,2"
+                                Background="Transparent" Foreground="#CDD6F4" />
+                        <Button Content="&#x2715;"
+                                Command="{Binding HideCommand}"
+                                FontSize="12" Padding="4,2"
+                                Background="Transparent" Foreground="#6C7086" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Commit detail panel (bottom) -->
+            <Border DockPanel.Dock="Bottom" Padding="8,6"
+                    Background="#11111B" MinHeight="80"
+                    BorderBrush="#313244" BorderThickness="0,1,0,0"
+                    IsVisible="{Binding SelectedCommit, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="{Binding CommitDetail}"
+                               FontSize="11" Foreground="#9CA3AF"
+                               FontFamily="Cascadia Code, Consolas, monospace"
+                               TextWrapping="Wrap" Margin="0,0,0,4" />
+
+                    <!-- Changed files -->
+                    <ItemsControl ItemsSource="{Binding SelectedCommitFiles}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Background="Transparent"
+                                        BorderThickness="0"
+                                        Padding="4,1"
+                                        HorizontalContentAlignment="Left"
+                                        Command="{Binding $parent[ItemsControl].((vm:GitHistoryViewModel)DataContext).ViewCommitFileDiffCommand}"
+                                        CommandParameter="{Binding}"
+                                        Cursor="Hand">
+                                    <TextBlock Text="{Binding}"
+                                               FontSize="11"
+                                               FontFamily="Cascadia Code, Consolas, monospace"
+                                               Foreground="#CDD6F4" />
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+
+            <!-- Commit list -->
+            <ListBox ItemsSource="{Binding Commits}"
+                     SelectedItem="{Binding SelectedCommit}"
+                     Background="Transparent"
+                     BorderThickness="0">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:GitCommitItem">
+                        <Border Padding="8,4" Background="Transparent">
+                            <DockPanel>
+                                <!-- Hash -->
+                                <TextBlock DockPanel.Dock="Left"
+                                           Text="{Binding ShortHash}"
+                                           FontFamily="Cascadia Code, Consolas, monospace"
+                                           FontSize="11"
+                                           Foreground="#F9E2AF"
+                                           Width="60"
+                                           Opacity="0.7" />
+
+                                <!-- Date -->
+                                <TextBlock DockPanel.Dock="Right"
+                                           Text="{Binding Date}"
+                                           FontSize="10"
+                                           Foreground="#6C7086"
+                                           VerticalAlignment="Center"
+                                           Margin="8,0,0,0" />
+
+                                <!-- Refs/branches (if any) -->
+                                <Border DockPanel.Dock="Right"
+                                        Background="#313244"
+                                        CornerRadius="3"
+                                        Padding="4,1"
+                                        Margin="4,0"
+                                        IsVisible="{Binding HasRefs}">
+                                    <TextBlock Text="{Binding Refs}"
+                                               FontSize="9"
+                                               Foreground="#89B4FA" />
+                                </Border>
+
+                                <!-- Message + Author -->
+                                <StackPanel Spacing="1">
+                                    <TextBlock Text="{Binding Message}"
+                                               FontSize="12"
+                                               Foreground="#CDD6F4"
+                                               TextTrimming="CharacterEllipsis"
+                                               MaxLines="1" />
+                                    <TextBlock Text="{Binding Author}"
+                                               FontSize="10"
+                                               Foreground="#6C7086"
+                                               Opacity="0.6" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+    </Border>
+</UserControl>

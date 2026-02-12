@@ -107,6 +107,16 @@ public class ExtensionHost
             ext.Instance = (IExtension?)Activator.CreateInstance(extensionType);
             if (ext.Instance == null) return;
 
+            // Pre-register contributed commands as placeholders BEFORE activation
+            // so that extensions can override them during ActivateAsync
+            foreach (var cmd in ext.Manifest.Contributes.Commands)
+            {
+                if (!_commandRegistry.ContainsKey(cmd.Command))
+                {
+                    _commandRegistry[cmd.Command] = _ => Task.CompletedTask;
+                }
+            }
+
             // Create context
             var context = new ExtensionContextImpl(
                 ext.ExtensionPath,
@@ -117,18 +127,12 @@ public class ExtensionHost
 
             ext.Context = context;
 
-            // Activate
+            // Activate - the extension may override command handlers via context.RegisterCommand
             await ext.Instance.ActivateAsync(context);
             ext.State = ExtensionState.Active;
 
-            // Register contributed commands
-            foreach (var cmd in ext.Manifest.Contributes.Commands)
-            {
-                if (!_commandRegistry.ContainsKey(cmd.Command))
-                {
-                    _commandRegistry[cmd.Command] = _ => Task.CompletedTask;
-                }
-            }
+            // Process contribution points
+            ProcessContributions(ext);
 
             ExtensionActivated?.Invoke(ext);
         }
@@ -138,6 +142,62 @@ public class ExtensionHost
             ext.ErrorMessage = ex.Message;
         }
     }
+
+    /// <summary>
+    /// Try to activate extensions based on an activation event.
+    /// Extensions with matching activation events will be activated lazily.
+    /// </summary>
+    public async Task FireActivationEventAsync(string eventType, string? eventArg = null)
+    {
+        var eventStr = eventArg != null ? $"{eventType}:{eventArg}" : eventType;
+
+        foreach (var ext in _loadedExtensions.Where(e => e.State == ExtensionState.Loaded))
+        {
+            var events = ext.Manifest.ActivationEvents;
+            if (events.Contains("*") || events.Contains(eventStr) || events.Contains(eventType))
+            {
+                await ActivateExtensionAsync(ext.Manifest.Id);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Process contribution points from an activated extension.
+    /// </summary>
+    private void ProcessContributions(LoadedExtension ext)
+    {
+        var contributes = ext.Manifest.Contributes;
+
+        // Process keybinding contributions
+        foreach (var kb in contributes.Keybindings)
+        {
+            _keybindings[kb.Key] = kb.Command;
+        }
+
+        // Process language contributions
+        foreach (var lang in contributes.Languages)
+        {
+            _registeredLanguages[lang.Id] = lang;
+        }
+
+        // Notify listeners of new contributions
+        ContributionsChanged?.Invoke(ext.Manifest.Id);
+    }
+
+    /// <summary>Keybinding registry: key combo -> command id.</summary>
+    private readonly Dictionary<string, string> _keybindings = [];
+
+    /// <summary>Registered languages from extensions.</summary>
+    private readonly Dictionary<string, LanguageContribution> _registeredLanguages = [];
+
+    /// <summary>Fired when an extension registers new contributions.</summary>
+    public event Action<string>? ContributionsChanged;
+
+    /// <summary>Get all registered keybindings.</summary>
+    public IReadOnlyDictionary<string, string> Keybindings => _keybindings;
+
+    /// <summary>Get all registered languages.</summary>
+    public IReadOnlyDictionary<string, LanguageContribution> RegisteredLanguages => _registeredLanguages;
 
     /// <summary>
     /// Deactivate a specific extension.

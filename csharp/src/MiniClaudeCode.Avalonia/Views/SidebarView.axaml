@@ -20,7 +20,8 @@
                                  IsVisible="{Binding $parent[views:SidebarView].((vm:MainWindowViewModel)DataContext).Sidebar.IsScmVisible}" />
 
             <!-- Extensions panel -->
-            <views:ExtensionsPanelView IsVisible="{Binding $parent[views:SidebarView].((vm:MainWindowViewModel)DataContext).Sidebar.IsExtensionsVisible}" />
+            <views:ExtensionsPanelView DataContext="{Binding Extensions}"
+                                        IsVisible="{Binding $parent[views:SidebarView].((vm:MainWindowViewModel)DataContext).Sidebar.IsExtensionsVisible}" />
 
             <!-- AI Chat panel (sidebar mode) -->
             <views:ChatView DataContext="{Binding Chat}"

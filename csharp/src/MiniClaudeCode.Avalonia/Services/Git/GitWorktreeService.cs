@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace MiniClaudeCode.Avalonia.Services.Git;
 
 /// <summary>
@@ -268,37 +266,11 @@ public class GitWorktreeService
         return worktrees;
     }
 
-    private async Task<GitResult> RunGitAsync(string arguments)
+    /// <summary>
+    /// Delegate git command execution to the shared GitService.
+    /// </summary>
+    private Task<GitResult> RunGitAsync(string arguments)
     {
-        if (string.IsNullOrEmpty(_workDir))
-            return new GitResult(1, "", "No working directory set");
-
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = arguments,
-                WorkingDirectory = _workDir,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = Process.Start(psi);
-            if (process == null)
-                return new GitResult(1, "", "Failed to start git process");
-
-            var output = await process.StandardOutput.ReadToEndAsync();
-            var error = await process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromMilliseconds(10000));
-
-            return new GitResult(process.ExitCode, output, error);
-        }
-        catch (Exception ex)
-        {
-            return new GitResult(1, "", ex.Message);
-        }
+        return _gitService.RunGitAsync(arguments);
     }
 }

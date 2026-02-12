@@ -139,7 +139,8 @@ public class GitService
         return result.ExitCode == 0 ? result.Output : "";
     }
 
-    private async Task<GitResult> RunGitAsync(string arguments, int timeoutMs = 30000)
+    /// <summary>Run a git command and return the result. Exposed for services that need to compose git commands.</summary>
+    public async Task<GitResult> RunGitAsync(string arguments, int timeoutMs = 30000)
     {
         if (string.IsNullOrEmpty(_workDir))
             return new GitResult(1, "", "No working directory set");

@@ -19,7 +19,69 @@ public partial class MainWindow : Window
         {
             vm.SetMainWindow(this);
         }
+
+        // Sync the maximize/restore button icon with initial state
+        UpdateMaxRestoreIcon();
     }
+
+    // =========================================================================
+    // Window Control Buttons
+    // =========================================================================
+
+    private void OnMinimizeClick(object? sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void OnMaximizeRestoreClick(object? sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState == WindowState.Maximized
+            ? WindowState.Normal
+            : WindowState.Maximized;
+        UpdateMaxRestoreIcon();
+    }
+
+    private void OnCloseClick(object? sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    /// <summary>
+    /// Updates the maximize/restore button icon based on current window state.
+    /// </summary>
+    private void UpdateMaxRestoreIcon()
+    {
+        if (MaxRestoreIcon != null)
+        {
+            if (WindowState == WindowState.Maximized)
+            {
+                MaxRestoreIcon.Text = "\u29C9"; // ⧉ Two overlapping squares (restore icon)
+                if (MaxRestoreButton != null)
+                    ToolTip.SetTip(MaxRestoreButton, "Restore Down");
+            }
+            else
+            {
+                MaxRestoreIcon.Text = "\u25A1"; // □ Single square (maximize icon)
+                if (MaxRestoreButton != null)
+                    ToolTip.SetTip(MaxRestoreButton, "Maximize");
+            }
+        }
+    }
+
+    protected override void OnPropertyChanged(global::Avalonia.AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        // Update icon when window state changes (e.g., from double-click on title bar or Win+Up)
+        if (change.Property == WindowStateProperty)
+        {
+            UpdateMaxRestoreIcon();
+        }
+    }
+
+    // =========================================================================
+    // About Dialog
+    // =========================================================================
 
     private void OnAboutClick(object? sender, RoutedEventArgs e)
     {

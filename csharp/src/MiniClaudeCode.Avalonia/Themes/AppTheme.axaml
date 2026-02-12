@@ -165,4 +165,66 @@
         <Setter Property="Padding" Value="6,3" />
     </Style>
 
+    <!-- ============================================================ -->
+    <!--  Window Control Buttons (Custom Title Bar)                   -->
+    <!-- ============================================================ -->
+
+    <!-- Base window control button -->
+    <Style Selector="Button.windowControl">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Width" Value="46" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="#9CA3AF" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="Button.windowControl:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#313244" />
+        <Setter Property="Foreground" Value="#CDD6F4" />
+    </Style>
+    <Style Selector="Button.windowControl:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="#45475A" />
+    </Style>
+
+    <!-- Close button (red hover) -->
+    <Style Selector="Button.windowControlClose">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Width" Value="46" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="#9CA3AF" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="Button.windowControlClose:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#E81123" />
+        <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.windowControlClose:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="#C50F1F" />
+        <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <!-- ============================================================ -->
+    <!--  AI Chat Panel Header                                        -->
+    <!-- ============================================================ -->
+
+    <Style Selector="Button.chatHeaderAction">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="6,4" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style Selector="Button.chatHeaderAction:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#313244" />
+    </Style>
+
 </Styles>

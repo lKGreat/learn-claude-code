@@ -8,11 +8,12 @@ using MiniClaudeCode.Avalonia.Models;
 namespace MiniClaudeCode.Avalonia.ViewModels;
 
 /// <summary>
-/// ViewModel for the editor area - manages open tabs and editor groups.
+/// ViewModel for the editor area - manages open tabs, editor groups, and split view.
 /// </summary>
 public partial class EditorViewModel : ObservableObject
 {
     public ObservableCollection<EditorTab> Tabs { get; } = [];
+    public ObservableCollection<EditorGroup> Groups { get; } = [];
 
     [ObservableProperty]
     private EditorTab? _activeTab;
@@ -28,6 +29,14 @@ public partial class EditorViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isLargeFile;
+
+    [ObservableProperty]
+    private bool _isSplit;
+
+    [ObservableProperty]
+    private EditorGroup? _activeGroup;
+
+    private int _nextGroupId = 1;
 
     [ObservableProperty]
     private string _largeFileWarning = "";
@@ -57,6 +66,7 @@ public partial class EditorViewModel : ObservableObject
 
         // Load file content using chunked reading for large file support
         string content;
+        PieceTreeTextBuffer? textBuffer = null;
         bool isLarge = false;
         try
         {
@@ -64,10 +74,19 @@ public partial class EditorViewModel : ObservableObject
             
             if (fileInfo.Length > LargeFileConstants.LargeFileSizeThreshold)
             {
-                // Load via PieceTreeTextBuffer for large files
+                // Load via PieceTreeTextBuffer for large files - keep the buffer reference
                 isLarge = true;
-                var buffer = PieceTreeTextBufferBuilder.LoadFileAsync(filePath).GetAwaiter().GetResult();
-                content = buffer.GetAllText();
+                textBuffer = PieceTreeTextBufferBuilder.LoadFileAsync(filePath).GetAwaiter().GetResult();
+                
+                // Only load first viewport worth of content (avoid materializing entire file)
+                var viewportLines = 200;
+                var sb = new System.Text.StringBuilder();
+                for (int line = 1; line <= Math.Min(viewportLines, textBuffer.LineCount); line++)
+                {
+                    if (line > 1) sb.Append('\n');
+                    sb.Append(textBuffer.GetLineContent(line));
+                }
+                content = sb.ToString();
             }
             else
             {
@@ -83,6 +102,7 @@ public partial class EditorViewModel : ObservableObject
         {
             FilePath = filePath,
             Content = content,
+            TextBuffer = textBuffer,
         };
 
         Tabs.Add(tab);
@@ -91,7 +111,7 @@ public partial class EditorViewModel : ObservableObject
         if (isLarge)
         {
             IsLargeFile = true;
-            LargeFileWarning = $"Large file ({new FileInfo(filePath).Length / (1024 * 1024):F1} MB) - Some features disabled for performance.";
+            LargeFileWarning = $"Large file ({new FileInfo(filePath).Length / (1024 * 1024):F1} MB, {textBuffer!.LineCount:N0} lines) - Some features disabled for performance.";
         }
         else
         {
@@ -161,6 +181,9 @@ public partial class EditorViewModel : ObservableObject
         if (tab != null) tab.IsPinned = !tab.IsPinned;
     }
 
+    /// <summary>Fired when a save error occurs (for notification).</summary>
+    public event Action<string>? SaveError;
+
     [RelayCommand]
     private void SaveFile()
     {
@@ -168,12 +191,24 @@ public partial class EditorViewModel : ObservableObject
 
         try
         {
-            File.WriteAllText(ActiveTab.FilePath, ActiveTab.Content);
+            if (ActiveTab.TextBuffer != null)
+            {
+                // Large file: save from PieceTree buffer
+                using var writer = new StreamWriter(ActiveTab.FilePath);
+                foreach (var chunk in ActiveTab.TextBuffer.CreateSnapshot())
+                {
+                    writer.Write(chunk);
+                }
+            }
+            else
+            {
+                File.WriteAllText(ActiveTab.FilePath, ActiveTab.Content);
+            }
             ActiveTab.IsDirty = false;
         }
-        catch
+        catch (Exception ex)
         {
-            // Handle save errors
+            SaveError?.Invoke($"Failed to save {ActiveTab.FileName}: {ex.Message}");
         }
     }
 
@@ -190,6 +225,129 @@ public partial class EditorViewModel : ObservableObject
         CursorLine = line;
         CursorColumn = column;
         CursorPositionChanged?.Invoke(line, column);
+    }
+
+    /// <summary>
+    /// Request to scroll the editor to a specific line.
+    /// The view should subscribe to GoToLineRequested to perform the actual scroll.
+    /// </summary>
+    public event Action<int>? GoToLineRequested;
+
+    /// <summary>Navigate to a specific line in the active editor.</summary>
+    public void GoToLine(int line)
+    {
+        if (line < 1 || ActiveTab == null) return;
+        GoToLineRequested?.Invoke(line);
+    }
+
+    /// <summary>
+    /// Open a file in diff mode (showing git changes).
+    /// Fires DiffOpenRequested for the view to render.
+    /// </summary>
+    public event Action<string, string, string>? DiffOpenRequested;
+
+    /// <summary>Open a file showing its git diff.</summary>
+    public void OpenDiff(string fullPath, string relativePath)
+    {
+        // Open the file in a tab first
+        OpenFile(fullPath);
+
+        // Then request the diff view
+        _ = LoadAndShowDiffAsync(fullPath, relativePath);
+    }
+
+    private async Task LoadAndShowDiffAsync(string fullPath, string relativePath)
+    {
+        try
+        {
+            // Get diff from git
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "git",
+                Arguments = $"diff \"{relativePath}\"",
+                WorkingDirectory = Path.GetDirectoryName(fullPath) ?? "",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = System.Diagnostics.Process.Start(psi);
+            if (process == null) return;
+
+            var diff = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (!string.IsNullOrEmpty(diff))
+            {
+                DiffOpenRequested?.Invoke(fullPath, relativePath, diff);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load diff for {relativePath}: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Split the editor into two groups. Moves the active tab to the new group.
+    /// </summary>
+    [RelayCommand]
+    private void SplitEditor()
+    {
+        if (ActiveTab == null) return;
+
+        if (!IsSplit)
+        {
+            // Create group 1 from existing tabs
+            var group1 = new EditorGroup { GroupId = _nextGroupId++, IsActive = false };
+            foreach (var tab in Tabs) group1.Tabs.Add(tab);
+            if (ActiveTab != null) group1.ActivateTab(ActiveTab);
+
+            // Create group 2 (empty for now - will open same file)
+            var group2 = new EditorGroup { GroupId = _nextGroupId++, IsActive = true };
+
+            Groups.Clear();
+            Groups.Add(group1);
+            Groups.Add(group2);
+            ActiveGroup = group2;
+            IsSplit = true;
+        }
+        else
+        {
+            // Already split - add another group
+            var newGroup = new EditorGroup { GroupId = _nextGroupId++, IsActive = true };
+
+            // Deactivate current active group
+            if (ActiveGroup != null) ActiveGroup.IsActive = false;
+
+            Groups.Add(newGroup);
+            ActiveGroup = newGroup;
+        }
+    }
+
+    /// <summary>
+    /// Close all split groups and merge back to single editor.
+    /// </summary>
+    [RelayCommand]
+    private void UnsplitEditor()
+    {
+        if (!IsSplit) return;
+
+        // Collect all unique tabs from all groups
+        var allTabs = Groups.SelectMany(g => g.Tabs)
+            .GroupBy(t => t.FilePath)
+            .Select(g => g.First())
+            .ToList();
+
+        Groups.Clear();
+        IsSplit = false;
+        ActiveGroup = null;
+
+        Tabs.Clear();
+        foreach (var tab in allTabs) Tabs.Add(tab);
+
+        if (Tabs.Count > 0)
+            ActivateTab(Tabs[0]);
     }
 
     private void UpdateBreadcrumb(EditorTab tab)

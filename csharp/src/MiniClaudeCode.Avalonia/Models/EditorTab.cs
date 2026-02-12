@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using MiniClaudeCode.Avalonia.Editor.TextBuffer;
 
 namespace MiniClaudeCode.Avalonia.Models;
 
@@ -27,6 +28,15 @@ public partial class EditorTab : ObservableObject
 
     [ObservableProperty]
     private string _content = "";
+
+    /// <summary>
+    /// For large files: holds the PieceTree buffer to avoid materializing full content.
+    /// When set, Content should only hold the viewport portion.
+    /// </summary>
+    public PieceTreeTextBuffer? TextBuffer { get; set; }
+
+    /// <summary>Whether this tab uses a PieceTree buffer for large file handling.</summary>
+    public bool IsLargeFile => TextBuffer != null;
 
     /// <summary>Language identifier for syntax highlighting.</summary>
     public string Language => Extension switch

@@ -55,6 +55,11 @@ public partial class MainWindowViewModel : ObservableObject
     public TerminalViewModel Terminal { get; } = new();
     public SearchPanelViewModel Search { get; } = new();
     public ScmViewModel Scm { get; } = new();
+    public ExtensionsViewModel Extensions { get; } = new();
+    public DiffEditorViewModel DiffEditor { get; } = new();
+    public GitHistoryViewModel GitHistory { get; } = new();
+    public AuxiliaryBarViewModel AuxiliaryBar { get; } = new();
+    public WorkspaceTrustViewModel WorkspaceTrust { get; } = new();
 
     // =========================================================================
     // Observable Properties
@@ -109,6 +114,7 @@ public partial class MainWindowViewModel : ObservableObject
     private bool _initialized;
     private CancellationTokenSource? _currentCts;
     private readonly WorkspaceService _workspaceService = new();
+    private readonly FileWatcherService _fileWatcher = new();
     private Window? _mainWindow;
 
     public MainWindowViewModel()
@@ -130,18 +136,36 @@ public partial class MainWindowViewModel : ObservableObject
         {
             StatusBar.LanguageMode = tab?.Language ?? "Plain Text";
         };
+        Editor.SaveError += (msg) => Notification.ShowError(msg);
         FileExplorer.FileViewRequested += (path) => Editor.OpenFile(path);
         Search.FileOpenRequested += (path, line) =>
         {
             Editor.OpenFile(path);
-            // TODO: Navigate to line
+            Editor.GoToLine(line);
         };
         CommandPalette.FileOpenRequested += (path) => Editor.OpenFile(path);
         CommandPalette.GoToLineRequested += (line) =>
         {
-            // TODO: Go to line in active editor
+            Editor.GoToLine(line);
         };
-        StatusBar.BranchClicked += () => Notification.ShowInfo("Branch picker - coming soon!");
+        Scm.DiffRequested += (relativePath) =>
+        {
+            var workDir = _engine?.WorkDir;
+            if (!string.IsNullOrEmpty(workDir))
+            {
+                var fullPath = Path.Combine(workDir, relativePath.Replace('/', Path.DirectorySeparatorChar));
+                Editor.OpenDiff(fullPath, relativePath);
+            }
+        };
+        Editor.DiffOpenRequested += (fullPath, relativePath, diff) =>
+        {
+            DiffEditor.LoadDiff(fullPath, relativePath, diff);
+        };
+        DiffEditor.CloseRequested += () =>
+        {
+            DiffEditor.IsVisible = false;
+        };
+        StatusBar.BranchClicked += OnBranchClicked;
         StatusBar.ProblemsClicked += () => BottomPanel.SwitchTabCommand.Execute("problems");
         StatusBar.NotificationsClicked += () => Notification.ToggleCenterCommand.Execute(null);
         
@@ -291,10 +315,27 @@ public partial class MainWindowViewModel : ObservableObject
             // Set workspace for other panels
             Search.SetWorkspace(workDir);
             Scm.SetWorkspace(workDir);
+            GitHistory.SetWorkspace(workDir);
             StatusBar.WorkspaceName = Path.GetFileName(workDir);
 
             // Start terminal in workspace
             Terminal.WorkingDirectory = workDir;
+
+            // Start file watcher for auto-refresh
+            _fileWatcher.Watch(workDir);
+            _fileWatcher.FilesChanged += (changes) =>
+            {
+                // Auto-refresh file explorer and SCM on external changes
+                FileExplorer.LoadWorkspace(workDir);
+                _ = Scm.RefreshCommand.ExecuteAsync(null);
+            };
+
+            // Register command palette commands and populate file list
+            RegisterPaletteCommands();
+            PopulateFileList(workDir);
+
+            // Initialize extensions
+            _ = Extensions.DiscoverExtensionsCommand.ExecuteAsync(null);
 
             Chat.AddSystemMessage(
                 $"MiniClaudeCode v0.3.0 | {activeConfig.DisplayName}\n" +
@@ -1007,6 +1048,152 @@ public partial class MainWindowViewModel : ObservableObject
         WindowTitle = _engine != null
             ? $"MiniClaudeCode - {_engine.ActiveConfig.DisplayName} | Turn:{TurnCount} Tools:{ToolCallCount}{planIndicator}"
             : "MiniClaudeCode v0.3.0 - Avalonia";
+    }
+
+    // =========================================================================
+    // Branch Picker
+    // =========================================================================
+
+    private async void OnBranchClicked()
+    {
+        if (_engine == null) return;
+
+        try
+        {
+            var branches = await Scm.GetBranchListAsync();
+            if (branches.Count == 0)
+            {
+                Notification.ShowInfo("No branches found.");
+                return;
+            }
+
+            // Populate command palette with branches for quick selection
+            CommandPalette.FilteredItems.Clear();
+            foreach (var branch in branches)
+            {
+                var branchName = branch;
+                CommandPalette.FilteredItems.Add(new CommandItem
+                {
+                    Id = $"branch_{branchName}",
+                    Label = branchName,
+                    Category = "Switch Branch",
+                    Execute = () => _ = SwitchBranchAsync(branchName)
+                });
+            }
+
+            CommandPalette.IsVisible = true;
+            CommandPalette.QueryText = "";
+            CommandPalette.Placeholder = "Select branch to switch to...";
+            CommandPalette.ModeIndicator = "\u2387"; // branch icon
+        }
+        catch (Exception ex)
+        {
+            Notification.ShowError($"Failed to load branches: {ex.Message}");
+        }
+    }
+
+    private async Task SwitchBranchAsync(string branchName)
+    {
+        try
+        {
+            var success = await Scm.CheckoutBranchAsync(branchName);
+            if (success)
+            {
+                Notification.ShowInfo($"Switched to branch: {branchName}");
+                StatusBar.BranchName = branchName;
+            }
+            else
+            {
+                Notification.ShowError($"Failed to switch to branch: {branchName}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Notification.ShowError($"Branch switch failed: {ex.Message}");
+        }
+    }
+
+    // =========================================================================
+    // Command Palette Registration
+    // =========================================================================
+
+    private void RegisterPaletteCommands()
+    {
+        CommandPalette.RegisterCommands(
+        [
+            new() { Id = "new_conversation", Label = "New Conversation", Category = "Chat", Shortcut = "Ctrl+N", Execute = () => HandleSlashCommand("/new") },
+            new() { Id = "clear_chat", Label = "Clear Chat", Category = "Chat", Shortcut = "Ctrl+L", Execute = () => HandleSlashCommand("/clear") },
+            new() { Id = "show_status", Label = "Show Status", Category = "Info", Execute = () => HandleSlashCommand("/status") },
+            new() { Id = "toggle_plan", Label = "Toggle Plan Mode", Category = "Mode", Shortcut = "Ctrl+Shift+P", Execute = () => HandleSlashCommand("/plan") },
+            new() { Id = "analyze_project", Label = "Analyze Project", Category = "Agent", Execute = () => HandleSlashCommand("/analyze") },
+            new() { Id = "compact", Label = "Compact Conversation", Category = "Chat", Execute = () => HandleSlashCommand("/compact") },
+            new() { Id = "open_workspace", Label = "Open Folder...", Category = "File", Shortcut = "Ctrl+O", Execute = () => _ = OpenWorkspace() },
+            new() { Id = "toggle_terminal", Label = "Toggle Terminal", Category = "View", Shortcut = "Ctrl+`", Execute = () => ToggleTerminal() },
+            new() { Id = "toggle_sidebar", Label = "Toggle Sidebar", Category = "View", Execute = () => Sidebar.IsVisible = !Sidebar.IsVisible },
+            new() { Id = "show_explorer", Label = "Show Explorer", Category = "View", Shortcut = "Ctrl+Shift+E", Execute = () => { ActivityBar.ActivatePanel("explorer"); Sidebar.SetActivePanel("explorer"); } },
+            new() { Id = "show_search", Label = "Show Search", Category = "View", Shortcut = "Ctrl+Shift+F", Execute = () => { ActivityBar.ActivatePanel("search"); Sidebar.SetActivePanel("search"); } },
+            new() { Id = "show_scm", Label = "Show Source Control", Category = "View", Shortcut = "Ctrl+Shift+G", Execute = () => { ActivityBar.ActivatePanel("scm"); Sidebar.SetActivePanel("scm"); } },
+            new() { Id = "show_extensions", Label = "Show Extensions", Category = "View", Shortcut = "Ctrl+Shift+X", Execute = () => { ActivityBar.ActivatePanel("extensions"); Sidebar.SetActivePanel("extensions"); } },
+            new() { Id = "show_chat", Label = "Show AI Chat", Category = "View", Shortcut = "Ctrl+Shift+C", Execute = () => { ActivityBar.ActivatePanel("chat"); Sidebar.SetActivePanel("chat"); } },
+            new() { Id = "close_editor", Label = "Close Editor", Category = "Editor", Shortcut = "Ctrl+W", Execute = () => Editor.CloseAllTabsCommand.Execute(null) },
+            new() { Id = "split_editor", Label = "Split Editor Right", Category = "Editor", Shortcut = @"Ctrl+\", Execute = () => Editor.SplitEditorCommand.Execute(null) },
+            new() { Id = "unsplit_editor", Label = "Close Split Editor", Category = "Editor", Execute = () => Editor.UnsplitEditorCommand.Execute(null) },
+            new() { Id = "save_file", Label = "Save File", Category = "File", Shortcut = "Ctrl+S", Execute = () => Editor.SaveFileCommand.Execute(null) },
+            new() { Id = "git_commit", Label = "Git: Commit", Category = "Git", Execute = () => _ = Scm.CommitCommand.ExecuteAsync(null) },
+            new() { Id = "git_pull", Label = "Git: Pull", Category = "Git", Execute = () => _ = Scm.PullCommand.ExecuteAsync(null) },
+            new() { Id = "git_push", Label = "Git: Push", Category = "Git", Execute = () => _ = Scm.PushCommand.ExecuteAsync(null) },
+            new() { Id = "git_fetch", Label = "Git: Fetch", Category = "Git", Execute = () => _ = Scm.FetchCommand.ExecuteAsync(null) },
+            new() { Id = "git_history", Label = "Git: Show History", Category = "Git", Execute = () => GitHistory.ShowCommand.Execute(null) },
+            new() { Id = "toggle_auxiliary", Label = "Toggle Auxiliary Bar", Category = "View", Shortcut = "Ctrl+Alt+B", Execute = () => AuxiliaryBar.ToggleCommand.Execute(null) },
+            new() { Id = "workspace_trust", Label = "Workspace Trust: Manage", Category = "Security", Execute = () => WorkspaceTrust.ShowDialogCommand.Execute(null) },
+            new() { Id = "exit_app", Label = "Exit", Category = "Application", Execute = () => HandleSlashCommand("/exit") },
+        ]);
+    }
+
+    private void PopulateFileList(string workspacePath)
+    {
+        try
+        {
+            var files = new List<string>();
+            CollectFiles(workspacePath, files, 0, maxDepth: 8, maxFiles: 5000);
+            CommandPalette.SetFileList(files.Select(f =>
+                Path.GetRelativePath(workspacePath, f)));
+        }
+        catch
+        {
+            // Silently ignore file collection errors
+        }
+    }
+
+    private static readonly HashSet<string> SkipDirs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "node_modules", ".git", "bin", "obj", ".vs", ".idea", "__pycache__",
+        ".next", "dist", "build", ".cache", "packages", ".nuget"
+    };
+
+    private static void CollectFiles(string dir, List<string> files, int depth, int maxDepth, int maxFiles)
+    {
+        if (depth > maxDepth || files.Count >= maxFiles) return;
+
+        try
+        {
+            foreach (var file in Directory.GetFiles(dir))
+            {
+                if (files.Count >= maxFiles) return;
+                files.Add(file);
+            }
+
+            foreach (var subDir in Directory.GetDirectories(dir))
+            {
+                var name = Path.GetFileName(subDir);
+                if (SkipDirs.Contains(name)) continue;
+                CollectFiles(subDir, files, depth + 1, maxDepth, maxFiles);
+            }
+        }
+        catch
+        {
+            // Permission denied, etc.
+        }
     }
 
     [RelayCommand]

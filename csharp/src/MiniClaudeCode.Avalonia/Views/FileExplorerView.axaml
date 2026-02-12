@@ -25,9 +25,12 @@
             </Border>
 
             <!-- Tree View -->
-            <TreeView ItemsSource="{Binding RootNodes}"
+            <TreeView x:Name="FileTree"
+                      ItemsSource="{Binding RootNodes}"
                       SelectedItem="{Binding SelectedNode}"
-                      Background="Transparent">
+                      Background="Transparent"
+                      DoubleTapped="OnTreeDoubleTapped"
+                      SelectionChanged="OnTreeSelectionChanged">
                 <TreeView.ItemTemplate>
                     <TreeDataTemplate ItemsSource="{Binding Children}" x:DataType="models:FileTreeNode">
                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="2">

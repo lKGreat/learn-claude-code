@@ -30,7 +30,7 @@ public class SubAgentRunner
 
     /// <summary>
     /// Agent type configurations.
-    /// Now includes generalPurpose type aligned with Claude Code.
+    /// Now includes generalPurpose type aligned with Claude Code, plus completion agent for fast inline completions.
     /// </summary>
     private static readonly Dictionary<string, AgentTypeConfig> AgentTypes = new()
     {
@@ -56,6 +56,12 @@ public class SubAgentRunner
             Description: "Planning agent for designing implementation strategies",
             Tools: ["bash", "read_file", "grep", "glob", "list_directory"],
             Prompt: "You are a planning agent. Analyze the codebase and output a numbered implementation plan. Do NOT make changes.",
+            IsReadOnly: true
+        ),
+        ["completion"] = new(
+            Description: "Lightweight fast agent for inline code completions (no tools, low latency)",
+            Tools: [],
+            Prompt: "You are a code completion engine. Generate completions quickly and accurately. Return ONLY the completion text, no explanations.",
             IsReadOnly: true
         ),
     };
@@ -244,33 +250,41 @@ public class SubAgentRunner
             var isReadOnly = task.ReadOnly || config.IsReadOnly;
 
             // Filter tools based on agent type and read-only mode
-            if (config.Tools.Contains("*") && !isReadOnly)
+            // Special case: "completion" agent has NO tools for maximum speed
+            if (task.AgentType != "completion")
             {
-                builder.Plugins.Add(codingKernelPlugin);
-                builder.Plugins.Add(fileSearchKernelPlugin);
-            }
-            else
-            {
-                var allFunctions = codingKernelPlugin.Concat(fileSearchKernelPlugin).ToList();
-
-                string[] allowedTools;
-                if (isReadOnly)
+                if (config.Tools.Contains("*") && !isReadOnly)
                 {
-                    // Read-only: only allow read tools
-                    allowedTools = ["bash", "read_file", "grep", "glob", "list_directory"];
+                    builder.Plugins.Add(codingKernelPlugin);
+                    builder.Plugins.Add(fileSearchKernelPlugin);
                 }
-                else
+                else if (config.Tools.Length > 0)
                 {
-                    allowedTools = config.Tools;
+                    var allFunctions = codingKernelPlugin.Concat(fileSearchKernelPlugin).ToList();
+
+                    string[] allowedTools;
+                    if (isReadOnly)
+                    {
+                        // Read-only: only allow read tools
+                        allowedTools = ["bash", "read_file", "grep", "glob", "list_directory"];
+                    }
+                    else
+                    {
+                        allowedTools = config.Tools;
+                    }
+
+                    var filteredFunctions = allFunctions
+                        .Where(f => allowedTools.Contains(f.Name))
+                        .ToList();
+
+                    if (filteredFunctions.Count > 0)
+                    {
+                        var filteredPlugin = KernelPluginFactory.CreateFromFunctions("Tools", filteredFunctions);
+                        builder.Plugins.Add(filteredPlugin);
+                    }
                 }
-
-                var filteredFunctions = allFunctions
-                    .Where(f => allowedTools.Contains(f.Name))
-                    .ToList();
-
-                var filteredPlugin = KernelPluginFactory.CreateFromFunctions("Tools", filteredFunctions);
-                builder.Plugins.Add(filteredPlugin);
             }
+            // else: completion agent gets no plugins
 
             var kernel = builder.Build();
 
@@ -307,15 +321,25 @@ public class SubAgentRunner
             }
 
             // Create isolated agent
+            // Optimize settings for completion agent: no tools, low temp, low max tokens
+            var executionSettings = task.AgentType == "completion"
+                ? new OpenAIPromptExecutionSettings
+                {
+                    Temperature = 0.0,
+                    MaxTokens = 200,
+                    TopP = 0.95
+                }
+                : new OpenAIPromptExecutionSettings
+                {
+                    FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
+                };
+
             var agent = new ChatCompletionAgent
             {
                 Name = $"SubAgent_{task.AgentType}_{agentId}",
                 Instructions = promptBuilder.ToString(),
                 Kernel = kernel,
-                Arguments = new KernelArguments(new OpenAIPromptExecutionSettings
-                {
-                    FunctionChoiceBehavior = FunctionChoiceBehavior.Auto()
-                })
+                Arguments = new KernelArguments(executionSettings)
             };
 
             var thread = new ChatHistoryAgentThread();

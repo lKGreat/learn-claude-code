@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using AvaloniaEdit.Document;
 using MiniClaudeCode.Avalonia.Editor.TextBuffer;
 
 namespace MiniClaudeCode.Avalonia.Models;
@@ -48,6 +49,17 @@ public partial class EditorTab : ObservableObject
 
     [ObservableProperty]
     private string _content = "";
+
+    // =========================================================================
+    // Per-Tab TextDocument (UI Source of Truth)
+    // =========================================================================
+
+    /// <summary>
+    /// AvaloniaEdit document instance for this tab.
+    /// Switching tabs should swap the editor's Document instead of re-assigning Text,
+    /// which is more reliable and avoids event/timing issues.
+    /// </summary>
+    public TextDocument? Document { get; set; }
 
     // =========================================================================
     // Version-Based Dirty Detection (Doc Section 5.3)

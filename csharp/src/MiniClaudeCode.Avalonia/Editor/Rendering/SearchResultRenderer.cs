@@ -38,20 +38,36 @@ public class SearchResultRenderer : IBackgroundRenderer
     public void Draw(TextView textView, DrawingContext drawingContext)
     {
         if (_matches.Count == 0) return;
+        if (textView.Document == null) return;
+
+        // 切换 Document 的瞬间，旧 offset/segment 可能越界，导致 AvaloniaEdit 内部抛 ArgumentException（first-chance）。
+        // 这里做硬校验 + 保护性 try/catch，避免异常被抛出（从源头消除 VS 输出的 first-chance）。
+        var docLen = textView.Document.TextLength;
+        if (docLen <= 0) return;
 
         var matchBrush = new SolidColorBrush(Color.Parse("#3389B4FA")); // semi-transparent blue
         var currentBrush = new SolidColorBrush(Color.Parse("#6689B4FA")); // brighter for current
 
-        for (int i = 0; i < _matches.Count; i++)
+        try
         {
-            var (offset, length) = _matches[i];
-            var brush = i == _currentMatchIndex ? currentBrush : matchBrush;
-
-            var segment = new TextSegment { StartOffset = offset, Length = length };
-            foreach (var rect in BackgroundGeometryBuilder.GetRectsForSegment(textView, segment))
+            for (int i = 0; i < _matches.Count; i++)
             {
-                drawingContext.FillRectangle(brush, rect);
+                var (offset, length) = _matches[i];
+                if (length <= 0) continue;
+                if (offset < 0) continue;
+                if (offset >= docLen) continue;
+                if (offset + length > docLen) continue;
+
+                var brush = i == _currentMatchIndex ? currentBrush : matchBrush;
+
+                var segment = new TextSegment { StartOffset = offset, Length = length };
+                foreach (var rect in BackgroundGeometryBuilder.GetRectsForSegment(textView, segment))
+                    drawingContext.FillRectangle(brush, rect);
             }
+        }
+        catch
+        {
+            // ignore: best-effort rendering
         }
     }
 

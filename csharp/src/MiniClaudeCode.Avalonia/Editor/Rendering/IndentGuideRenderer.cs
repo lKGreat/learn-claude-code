@@ -31,41 +31,49 @@ internal sealed class IndentGuideRenderer : IBackgroundRenderer
     {
         if (textView.Document == null) return;
 
-        var charWidth = textView.WideSpaceWidth;
-        if (charWidth <= 0) return;
-
-        foreach (var visualLine in textView.VisualLines)
+        // 文档切换/布局过渡期 VisualLines 可能短暂不一致，避免抛异常（first-chance）
+        try
         {
-            var lineNumber = visualLine.FirstDocumentLine.LineNumber;
-            var line = textView.Document.GetLineByNumber(lineNumber);
-            var lineText = textView.Document.GetText(line.Offset, line.Length);
+            var charWidth = textView.WideSpaceWidth;
+            if (charWidth <= 0) return;
 
-            // Count leading whitespace to determine indent level
-            var indentLevel = GetIndentLevel(lineText);
-
-            // Also check adjacent lines for deeper indents (empty lines should show guides
-            // based on surrounding context)
-            if (string.IsNullOrWhiteSpace(lineText))
+            foreach (var visualLine in textView.VisualLines)
             {
-                indentLevel = GetContextIndent(textView.Document, lineNumber);
+                var lineNumber = visualLine.FirstDocumentLine.LineNumber;
+                var line = textView.Document.GetLineByNumber(lineNumber);
+                var lineText = textView.Document.GetText(line.Offset, line.Length);
+
+                // Count leading whitespace to determine indent level
+                var indentLevel = GetIndentLevel(lineText);
+
+                // Also check adjacent lines for deeper indents (empty lines should show guides
+                // based on surrounding context)
+                if (string.IsNullOrWhiteSpace(lineText))
+                {
+                    indentLevel = GetContextIndent(textView.Document, lineNumber);
+                }
+
+                // Draw vertical guides for each indent level
+                for (int level = 1; level <= indentLevel; level++)
+                {
+                    var xPos = charWidth * level * _tabSize;
+
+                    var yTop = visualLine.GetTextLineVisualYPosition(
+                        visualLine.TextLines[0], VisualYPosition.LineTop);
+                    var yBottom = visualLine.GetTextLineVisualYPosition(
+                        visualLine.TextLines[^1], VisualYPosition.LineBottom);
+
+                    // Adjust for scroll offset
+                    yTop -= textView.VerticalOffset;
+                    yBottom -= textView.VerticalOffset;
+
+                    drawingContext.DrawLine(_pen, new Point(xPos, yTop), new Point(xPos, yBottom));
+                }
             }
-
-            // Draw vertical guides for each indent level
-            for (int level = 1; level <= indentLevel; level++)
-            {
-                var xPos = charWidth * level * _tabSize;
-
-                var yTop = visualLine.GetTextLineVisualYPosition(
-                    visualLine.TextLines[0], VisualYPosition.LineTop);
-                var yBottom = visualLine.GetTextLineVisualYPosition(
-                    visualLine.TextLines[^1], VisualYPosition.LineBottom);
-
-                // Adjust for scroll offset
-                yTop -= textView.VerticalOffset;
-                yBottom -= textView.VerticalOffset;
-
-                drawingContext.DrawLine(_pen, new Point(xPos, yTop), new Point(xPos, yBottom));
-            }
+        }
+        catch
+        {
+            // ignore: best-effort rendering
         }
     }
 

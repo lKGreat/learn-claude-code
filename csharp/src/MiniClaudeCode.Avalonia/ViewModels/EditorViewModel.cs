@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using AvaloniaEdit.Document;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MiniClaudeCode.Avalonia.Editor;
@@ -387,6 +388,7 @@ public partial class EditorViewModel : ObservableObject
             TextBuffer = textBuffer,
             IsPreview = isPreview,
             Model = model,
+            Document = new TextDocument(content),
         };
 
         // Store disk metadata for external change detection (doc 5.4)
@@ -504,6 +506,8 @@ public partial class EditorViewModel : ObservableObject
                         }
                     }
                 }
+                // 确保 Document 与 Content 同步（UI 显示以 Document 为准）
+                existing.Document ??= new TextDocument(existing.Content ?? "");
                 ActivateTab(existing);
                 return;
             }
@@ -810,6 +814,7 @@ public partial class EditorViewModel : ObservableObject
             {
                 // File is clean: silently reload (doc 5.4)
                 tab.Content = diskContent;
+                tab.Document = new TextDocument(diskContent);
                 tab.IsDirty = false;
                 tab.FileState = FileState.Saved;
                 tab.UpdateDiskMetadata(diskContent, fi.LastWriteTimeUtc);
@@ -851,6 +856,7 @@ public partial class EditorViewModel : ObservableObject
             if (result == "Overwrite")
             {
                 tab.Content = diskContent;
+                tab.Document = new TextDocument(diskContent);
                 tab.IsDirty = false;
                 tab.FileState = FileState.Saved;
                 tab.UpdateDiskMetadata(diskContent, diskModTime);
@@ -902,6 +908,7 @@ public partial class EditorViewModel : ObservableObject
         if (wasDirty)
         {
             newTab.Content = oldContent;
+            newTab.Document = new TextDocument(oldContent);
             newTab.IsDirty = true;
         }
 

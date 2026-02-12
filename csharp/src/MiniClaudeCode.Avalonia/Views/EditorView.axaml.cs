@@ -150,9 +150,6 @@ public partial class EditorView : UserControl
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        // Note: CurrentContent changes are NOT handled here.
-        // Content loading is handled exclusively by OnActiveFileChanged to prevent
-        // double-loading and false dirty marking on tab switch.
         if (e.PropertyName == nameof(EditorViewModel.IsIndentGuidesVisible))
         {
             if (_indentGuideRenderer != null)
@@ -194,7 +191,7 @@ public partial class EditorView : UserControl
             _isLoadingContent = true;
             try
             {
-                CodeEditor.Text = "";
+                CodeEditor.Document = new TextDocument("");
             }
             finally
             {
@@ -203,32 +200,65 @@ public partial class EditorView : UserControl
             return;
         }
 
-        var contentToShow = tab.Content ?? string.Empty;
-        LogHelper.UI.Info("[Preview链路] EditorView.OnActiveFileChanged: Path={0}, IsPreview={1}, Language={2}, ContentLength={3}",
-            tab.FilePath, tab.IsPreview, tab.Language, contentToShow.Length);
+        // Preferred: swap AvaloniaEdit Document per tab (more reliable than re-assigning Text)
+        tab.Document ??= new TextDocument(tab.Content ?? string.Empty);
+        LogHelper.UI.Info("[Preview链路] EditorView.OnActiveFileChanged: Path={0}, IsPreview={1}, Language={2}, DocLength={3}",
+            tab.FilePath, tab.IsPreview, tab.Language, tab.Document.TextLength);
 
-        // Final fallback: if tab content is unexpectedly empty but file has bytes on disk,
-        // read directly and force the editor to show it.
-        if (string.IsNullOrEmpty(contentToShow) && File.Exists(tab.FilePath))
+        _isLoadingContent = true;
+        try
         {
+            // Document 切换时，清空“旧文档偏移量”的状态（搜索高亮/选区），否则 renderer 可能越界抛 ArgumentException
             try
             {
-                var fi = new FileInfo(tab.FilePath);
-                if (fi.Length > 0)
-                {
-                    contentToShow = File.ReadAllText(tab.FilePath);
-                    tab.Content = contentToShow;
-                    LogHelper.UI.Warn("OnActiveFileChanged 回退磁盘读取成功: {0}, len={1}",
-                        tab.FilePath, contentToShow.Length);
-                }
+                _searchMatches.Clear();
+                _searchRenderer?.Clear();
+                CodeEditor.TextArea.TextView.InvalidateLayer(AvaloniaEdit.Rendering.KnownLayer.Selection);
             }
-            catch (Exception ex)
+            catch { /* best-effort */ }
+
+            // AvaloniaEdit 在切换 Document 时可能因旧 caret/selection offset 越界抛 ArgumentException（first-chance）。
+            // 先将 caret/selection 归零，再赋值 Document，可显著降低该异常。
+            try
             {
-                LogHelper.UI.Error(ex, "OnActiveFileChanged 回退磁盘读取失败: {0}", tab.FilePath);
+                CodeEditor.TextArea.ClearSelection();
+                CodeEditor.TextArea.Caret.Offset = 0;
+            }
+            catch
+            {
+                // ignore: best-effort
+            }
+
+            try
+            {
+                CodeEditor.Document = tab.Document;
+            }
+            catch (ArgumentException ex)
+            {
+                LogHelper.UI.Error(ex,
+                    "[Preview链路] EditorView.OnActiveFileChanged: CodeEditor.Document 赋值失败(ArgumentException). Path={0}, DocLength={1}",
+                    tab.FilePath, tab.Document.TextLength);
+
+                // 自愈：重建一个新的 TextDocument（避免复用 Document 时内部锚点/segment 状态不一致）
+                var fresh = new TextDocument(tab.Document.Text);
+                tab.Document = fresh;
+                CodeEditor.Document = fresh;
+            }
+
+            try
+            {
+                CodeEditor.TextArea.Caret.Offset = 0;
+            }
+            catch
+            {
+                // ignore: best-effort
             }
         }
+        finally
+        {
+            _isLoadingContent = false;
+        }
 
-        LoadContent(contentToShow);
         ApplyLanguageGrammar(tab.Language);
         UpdateFoldings();
     }
@@ -248,35 +278,7 @@ public partial class EditorView : UserControl
         }
     }
 
-    private void LoadContent(string content)
-    {
-        if (_viewModel == null) return;
-        // 空内容也强制设置，避免「激活现有 tab 时内容不显示」的问题
-        if (!string.IsNullOrEmpty(content) && CodeEditor.Text == content)
-        {
-            LogHelper.UI.Debug("LoadContent: 内容未变化，跳过");
-            return;
-        }
-
-        LogHelper.UI.Debug("LoadContent: 加载内容, length={0}", content.Length);
-        _isLoadingContent = true;
-        try
-        {
-            CodeEditor.Text = content;
-            // Keep ViewModel and editor text synchronized explicitly.
-            if (_viewModel.CurrentContent != content)
-                _viewModel.CurrentContent = content;
-            LogHelper.UI.Debug("LoadContent: 内容已加载到编辑器");
-        }
-        catch (Exception ex)
-        {
-            LogHelper.UI.Error(ex, "LoadContent 失败");
-        }
-        finally
-        {
-            _isLoadingContent = false;
-        }
-    }
+    // Note: content loading is now driven by swapping CodeEditor.Document per-tab.
 
     private void ApplyLanguageGrammar(string language)
     {

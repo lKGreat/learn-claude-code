@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using AvaloniaEdit;
+using MiniClaudeCode.Avalonia.Logging;
 
 namespace MiniClaudeCode.Avalonia.Views;
 
@@ -61,50 +62,67 @@ public partial class MinimapView : UserControl
 
         if (_editor?.Document == null) return;
 
-        var doc = _editor.Document;
-        var totalLines = doc.LineCount;
-        var canvasHeight = Bounds.Height;
-        var canvasWidth = Bounds.Width;
-
-        if (totalLines <= 0 || canvasHeight <= 0) return;
-
-        // Scale factor: map all lines to the canvas height
-        var scale = Math.Min(LineHeight, canvasHeight / totalLines);
-
-        // Draw text lines as small colored bars
-        for (int i = 1; i <= totalLines && (i - 1) * scale < canvasHeight; i++)
+        try
         {
-            var line = doc.GetLineByNumber(i);
-            var lineText = doc.GetText(line.Offset, Math.Min(line.Length, 200));
+            var doc = _editor.Document;
+            var totalLines = doc.LineCount;
+            var canvasHeight = Bounds.Height;
+            var canvasWidth = Bounds.Width;
 
-            if (string.IsNullOrWhiteSpace(lineText)) continue;
+            if (totalLines <= 0 || canvasHeight <= 0) return;
 
-            // Calculate visual width based on text length (simplified)
-            var trimmed = lineText.TrimStart();
-            var indent = lineText.Length - trimmed.Length;
-            var textWidth = Math.Min(trimmed.Length * 0.8, MaxLineWidth);
-            var xStart = HorizontalPadding + indent * 0.8;
-            var yPos = (i - 1) * scale;
+            // Scale factor: map all lines to the canvas height
+            var scale = Math.Min(LineHeight, canvasHeight / totalLines);
 
-            // Simple heuristic: lines starting with keywords get different color
-            var brush = IsLikelyKeyword(trimmed) ? KeywordBrush : TextBrush;
+            // Draw text lines as small colored bars
+            for (int i = 1; i <= totalLines && (i - 1) * scale < canvasHeight; i++)
+            {
+                var line = doc.GetLineByNumber(i);
+                var lineText = doc.GetText(line.Offset, Math.Min(line.Length, 200));
 
-            context.DrawRectangle(brush, null,
-                new Rect(xStart, yPos, textWidth, Math.Max(scale - 0.5, 0.5)));
+                if (string.IsNullOrWhiteSpace(lineText)) continue;
+
+                // Calculate visual width based on text length (simplified)
+                var trimmed = lineText.TrimStart();
+                var indent = lineText.Length - trimmed.Length;
+                var textWidth = Math.Min(trimmed.Length * 0.8, MaxLineWidth);
+                var xStart = HorizontalPadding + indent * 0.8;
+                var yPos = (i - 1) * scale;
+
+                // Simple heuristic: lines starting with keywords get different color
+                var brush = IsLikelyKeyword(trimmed) ? KeywordBrush : TextBrush;
+
+                context.DrawRectangle(brush, null,
+                    new Rect(xStart, yPos, textWidth, Math.Max(scale - 0.5, 0.5)));
+            }
+
+            // Draw viewport indicator - with safe access to VisualLines
+            try
+            {
+                var visualLines = _editor.TextArea.TextView.VisualLines;
+                if (visualLines != null && visualLines.Count > 0)
+                {
+                    var firstVisibleLine = visualLines[0].FirstDocumentLine.LineNumber;
+                    var lastVisibleLine = visualLines[^1].LastDocumentLine.LineNumber;
+
+                    var viewportTop = (firstVisibleLine - 1) * scale;
+                    var viewportHeight = (lastVisibleLine - firstVisibleLine + 1) * scale;
+                    viewportHeight = Math.Max(viewportHeight, 10); // Minimum visible height
+
+                    context.DrawRectangle(ViewportBrush, ViewportBorderPen,
+                        new Rect(0, viewportTop, canvasWidth, viewportHeight));
+                }
+            }
+            catch (AvaloniaEdit.Rendering.VisualLinesInvalidException ex)
+            {
+                LogHelper.UI.Debug(ex, "MinimapView VisualLines 未就绪，跳过 viewport 绘制");
+                // Visual lines not ready yet; skip viewport rendering
+            }
         }
-
-        // Draw viewport indicator
-        if (_editor.TextArea.TextView.VisualLines.Count > 0)
+        catch (Exception ex)
         {
-            var firstVisibleLine = _editor.TextArea.TextView.VisualLines[0].FirstDocumentLine.LineNumber;
-            var lastVisibleLine = _editor.TextArea.TextView.VisualLines[^1].LastDocumentLine.LineNumber;
-
-            var viewportTop = (firstVisibleLine - 1) * scale;
-            var viewportHeight = (lastVisibleLine - firstVisibleLine + 1) * scale;
-            viewportHeight = Math.Max(viewportHeight, 10); // Minimum visible height
-
-            context.DrawRectangle(ViewportBrush, ViewportBorderPen,
-                new Rect(0, viewportTop, canvasWidth, viewportHeight));
+            LogHelper.UI.Error(ex, "MinimapView Render 异常");
+            // Prevent crash; log and continue
         }
     }
 

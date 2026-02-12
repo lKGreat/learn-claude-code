@@ -17,21 +17,50 @@
                 CornerRadius="8"
                 BoxShadow="0 4 24 0 #40000000"
                 VerticalAlignment="Top"
-                Margin="0,100,0,0">
+                Margin="0,80,0,0">
             <DockPanel>
-                <!-- Input box -->
+                <!-- Input box with mode indicator -->
                 <Border DockPanel.Dock="Top"
                         Padding="12,10"
                         BorderBrush="#313244"
                         BorderThickness="0,0,0,1">
-                    <TextBox x:Name="QueryInput"
-                             Text="{Binding QueryText, Mode=TwoWay}"
-                             Watermark="{Binding Placeholder}"
-                             FontSize="14"
-                             Background="Transparent"
-                             BorderThickness="0"
-                             Foreground="#CDD6F4"
-                             CaretBrush="#CDD6F4" />
+                    <DockPanel>
+                        <!-- Mode indicator badge -->
+                        <Border DockPanel.Dock="Left"
+                                Background="#313244"
+                                CornerRadius="3"
+                                Padding="6,2"
+                                Margin="0,0,8,0"
+                                IsVisible="{Binding ModeIndicator, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <TextBlock Text="{Binding ModeIndicator}"
+                                       FontSize="12"
+                                       Foreground="#89B4FA"
+                                       FontFamily="Cascadia Code, Consolas, monospace" />
+                        </Border>
+                        <TextBox x:Name="QueryInput"
+                                 Text="{Binding QueryText, Mode=TwoWay}"
+                                 Watermark="{Binding Placeholder}"
+                                 FontSize="14"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Foreground="#CDD6F4"
+                                 CaretBrush="#CDD6F4" />
+                    </DockPanel>
+                </Border>
+
+                <!-- Mode hint bar -->
+                <Border DockPanel.Dock="Top"
+                        Padding="12,4"
+                        Background="#181825"
+                        BorderBrush="#313244"
+                        BorderThickness="0,0,0,1">
+                    <TextBlock FontSize="10" Foreground="#6C7086" Opacity="0.7">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0}">
+                                <Binding Path="CurrentMode" />
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
                 </Border>
 
                 <!-- Results list -->
@@ -57,16 +86,19 @@
                                         <TextBlock DockPanel.Dock="Right"
                                                    Text="{Binding Shortcut}"
                                                    FontSize="10"
-                                                   Opacity="0.4"
+                                                   Foreground="#6C7086"
+                                                   Opacity="0.6"
                                                    VerticalAlignment="Center"
-                                                   Margin="8,0,0,0" />
+                                                   Margin="8,0,0,0"
+                                                   FontFamily="Cascadia Code, Consolas, monospace" />
                                         <StackPanel Spacing="2">
                                             <TextBlock Text="{Binding Label}"
                                                        FontSize="13"
                                                        Foreground="#CDD6F4" />
                                             <TextBlock Text="{Binding Category}"
                                                        FontSize="11"
-                                                       Opacity="0.5"
+                                                       Foreground="#6C7086"
+                                                       Opacity="0.6"
                                                        IsVisible="{Binding Category, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                         </StackPanel>
                                     </DockPanel>
@@ -75,6 +107,19 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
+
+                <!-- Footer with item count -->
+                <Border DockPanel.Dock="Bottom"
+                        Padding="12,4"
+                        Background="#181825">
+                    <TextBlock FontSize="10"
+                               Foreground="#6C7086"
+                               Opacity="0.5"
+                               HorizontalAlignment="Right">
+                        <Run Text="{Binding FilteredItems.Count, Mode=OneWay}" />
+                        <Run Text=" results" />
+                    </TextBlock>
+                </Border>
             </DockPanel>
         </Border>
     </Panel>

@@ -26,15 +26,33 @@ public partial class CommandPaletteView : UserControl
 
         if (DataContext is not CommandPaletteViewModel vm) return;
 
-        if (e.Key == Key.Escape)
+        switch (e.Key)
         {
-            vm.HideCommand.Execute(null);
-            e.Handled = true;
-        }
-        else if (e.Key == Key.Enter)
-        {
-            vm.ExecuteSelectedCommand.Execute(null);
-            e.Handled = true;
+            case Key.Escape:
+                vm.HideCommand.Execute(null);
+                e.Handled = true;
+                break;
+
+            case Key.Enter:
+                vm.ExecuteSelectedCommand.Execute(null);
+                e.Handled = true;
+                break;
+
+            case Key.Up:
+                vm.MoveUpCommand.Execute(null);
+                e.Handled = true;
+                break;
+
+            case Key.Down:
+                vm.MoveDownCommand.Execute(null);
+                e.Handled = true;
+                break;
+
+            case Key.Tab:
+                // Tab cycles through modes like VS Code
+                vm.MoveDownCommand.Execute(null);
+                e.Handled = true;
+                break;
         }
     }
 }

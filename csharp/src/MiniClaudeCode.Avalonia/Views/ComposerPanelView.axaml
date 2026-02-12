@@ -1,0 +1,449 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:conv="using:MiniClaudeCode.Avalonia.Converters"
+             x:Class="MiniClaudeCode.Avalonia.Views.ComposerPanelView"
+             x:DataType="vm:ComposerPanelViewModel"
+             Width="400">
+
+    <UserControl.Resources>
+        <conv:HexColorToBrushConverter x:Key="HexToBrush" />
+    </UserControl.Resources>
+
+    <Border Background="#1E1E2E"
+            BorderBrush="#313244"
+            BorderThickness="1,0,0,0">
+        <DockPanel>
+
+            <!-- ============================================================ -->
+            <!-- Header: Title + Close Button                                 -->
+            <!-- ============================================================ -->
+            <Border DockPanel.Dock="Top"
+                    Background="#181825"
+                    BorderBrush="#313244"
+                    BorderThickness="0,0,0,1"
+                    Padding="12,8">
+                <DockPanel>
+                    <TextBlock Text="Composer"
+                               FontSize="14"
+                               FontWeight="SemiBold"
+                               Foreground="#CDD6F4"
+                               VerticalAlignment="Center" />
+
+                    <Button DockPanel.Dock="Right"
+                            Content="✕"
+                            Command="{Binding CloseCommand}"
+                            FontSize="14"
+                            Padding="6,2"
+                            Background="Transparent"
+                            Foreground="#6C7086"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            HorizontalAlignment="Right"
+                            ToolTip.Tip="Close Composer" />
+                </DockPanel>
+            </Border>
+
+            <!-- ============================================================ -->
+            <!-- Status Bar (shows current state)                             -->
+            <!-- ============================================================ -->
+            <Border DockPanel.Dock="Top"
+                    Background="#181825"
+                    BorderBrush="#313244"
+                    BorderThickness="0,0,0,1"
+                    Padding="12,6">
+                <TextBlock Text="{Binding StatusMessage}"
+                           FontSize="11"
+                           Foreground="#9CA3AF"
+                           TextWrapping="Wrap" />
+            </Border>
+
+            <!-- ============================================================ -->
+            <!-- Main Content Area (scrollable)                               -->
+            <!-- ============================================================ -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="12" Margin="12">
+
+                    <!-- ======================================================== -->
+                    <!-- Input Area: Description + Generate Button                -->
+                    <!-- ======================================================== -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Describe your changes:"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="#CDD6F4" />
+
+                        <TextBox Text="{Binding Description}"
+                                 Watermark="e.g., Add user authentication with JWT tokens..."
+                                 MinHeight="80"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 FontSize="12"
+                                 VerticalContentAlignment="Top"
+                                 Background="#181825"
+                                 Foreground="#CDD6F4"
+                                 BorderBrush="#313244" />
+
+                        <Button Content="Generate Plan"
+                                Command="{Binding GeneratePlanCommand}"
+                                IsEnabled="{Binding !IsGeneratingPlan}"
+                                Background="#89B4FA"
+                                Foreground="#11111B"
+                                Padding="12,6"
+                                FontSize="12"
+                                FontWeight="SemiBold"
+                                HorizontalAlignment="Stretch"
+                                Cursor="Hand">
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="#74C7EC" />
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+                    </StackPanel>
+
+                    <!-- ======================================================== -->
+                    <!-- Loading Spinner (when generating plan)                   -->
+                    <!-- ======================================================== -->
+                    <StackPanel Spacing="8"
+                                IsVisible="{Binding IsGeneratingPlan}"
+                                HorizontalAlignment="Center"
+                                Margin="0,20">
+                        <TextBlock Text="⟳"
+                                   FontSize="24"
+                                   Foreground="#89B4FA"
+                                   HorizontalAlignment="Center">
+                            <TextBlock.Styles>
+                                <Style Selector="TextBlock">
+                                    <Style.Animations>
+                                        <Animation Duration="0:0:1" IterationCount="Infinite">
+                                            <KeyFrame Cue="0%">
+                                                <Setter Property="RotateTransform.Angle" Value="0" />
+                                            </KeyFrame>
+                                            <KeyFrame Cue="100%">
+                                                <Setter Property="RotateTransform.Angle" Value="360" />
+                                            </KeyFrame>
+                                        </Animation>
+                                    </Style.Animations>
+                                </Style>
+                            </TextBlock.Styles>
+                            <TextBlock.RenderTransform>
+                                <RotateTransform />
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                        <TextBlock Text="Generating plan..."
+                                   FontSize="11"
+                                   Foreground="#9CA3AF"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- ======================================================== -->
+                    <!-- Error Message                                            -->
+                    <!-- ======================================================== -->
+                    <Border IsVisible="{Binding !!ErrorMessage}"
+                            Background="#2E1A1E"
+                            BorderBrush="#F38BA8"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="10">
+                        <TextBlock Text="{Binding ErrorMessage}"
+                                   FontSize="11"
+                                   Foreground="#F38BA8"
+                                   TextWrapping="Wrap" />
+                    </Border>
+
+                    <!-- ======================================================== -->
+                    <!-- Plan View (when plan is generated)                       -->
+                    <!-- ======================================================== -->
+                    <StackPanel Spacing="12" IsVisible="{Binding HasPlan}">
+
+                        <!-- Plan Summary -->
+                        <Border Background="#181825"
+                                BorderBrush="#313244"
+                                BorderThickness="1"
+                                CornerRadius="4"
+                                Padding="10">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="PLAN SUMMARY"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           Foreground="#89B4FA" />
+                                <TextBlock Text="{Binding Plan.Summary}"
+                                           FontSize="12"
+                                           Foreground="#CDD6F4"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Plan.Reasoning}"
+                                           FontSize="11"
+                                           Foreground="#9CA3AF"
+                                           TextWrapping="Wrap"
+                                           Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Steps List -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="STEPS"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="#CDD6F4"
+                                       Margin="0,0,0,4" />
+
+                            <ItemsControl ItemsSource="{Binding Plan.Steps}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ComposerStepDisplay">
+                                        <Border Background="#181825"
+                                                BorderBrush="#313244"
+                                                BorderThickness="1"
+                                                CornerRadius="4"
+                                                Padding="10"
+                                                Margin="0,2">
+                                            <DockPanel>
+                                                <!-- Left: Step Number + Action Icon -->
+                                                <StackPanel DockPanel.Dock="Left"
+                                                            Orientation="Horizontal"
+                                                            Spacing="6"
+                                                            VerticalAlignment="Top"
+                                                            Margin="0,0,10,0">
+                                                    <TextBlock Text="{Binding StepNumber}"
+                                                               FontSize="11"
+                                                               FontWeight="Bold"
+                                                               Foreground="#6C7086"
+                                                               Width="20"
+                                                               HorizontalAlignment="Center" />
+                                                    <Border Width="20" Height="20"
+                                                            Background="{Binding ActionColor, Converter={StaticResource HexToBrush}}"
+                                                            CornerRadius="10">
+                                                        <TextBlock Text="{Binding ActionIcon}"
+                                                                   FontSize="12"
+                                                                   FontWeight="Bold"
+                                                                   Foreground="White"
+                                                                   HorizontalAlignment="Center"
+                                                                   VerticalAlignment="Center" />
+                                                    </Border>
+                                                </StackPanel>
+
+                                                <!-- Right: Status Icon (shown during/after execution) -->
+                                                <TextBlock DockPanel.Dock="Right"
+                                                           Text="{Binding StatusIcon}"
+                                                           FontSize="14"
+                                                           FontWeight="Bold"
+                                                           Foreground="{Binding StatusColor, Converter={StaticResource HexToBrush}}"
+                                                           IsVisible="{Binding !!StatusIcon}"
+                                                           VerticalAlignment="Top"
+                                                           Margin="10,0,0,0" />
+
+                                                <!-- Center: File + Description -->
+                                                <StackPanel Spacing="3">
+                                                    <TextBlock Text="{Binding File}"
+                                                               FontSize="11"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="#CDD6F4"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               FontFamily="Cascadia Code, Consolas, monospace" />
+                                                    <TextBlock Text="{Binding Description}"
+                                                               FontSize="11"
+                                                               Foreground="#9CA3AF"
+                                                               TextWrapping="Wrap" />
+
+                                                    <!-- Error Message (if step failed) -->
+                                                    <TextBlock Text="{Binding ErrorMessage}"
+                                                               FontSize="10"
+                                                               Foreground="#F38BA8"
+                                                               TextWrapping="Wrap"
+                                                               IsVisible="{Binding !!ErrorMessage}"
+                                                               Margin="0,4,0,0" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- Action Buttons (Execute + Refine) -->
+                        <StackPanel Spacing="6"
+                                    IsVisible="{Binding !HasResult}">
+                            <Button Content="Execute Plan"
+                                    Command="{Binding ExecutePlanCommand}"
+                                    IsEnabled="{Binding !IsExecuting}"
+                                    Background="#A6E3A1"
+                                    Foreground="#11111B"
+                                    Padding="12,6"
+                                    FontSize="12"
+                                    FontWeight="SemiBold"
+                                    HorizontalAlignment="Stretch"
+                                    Cursor="Hand">
+                                <Button.Styles>
+                                    <Style Selector="Button:pointerover">
+                                        <Setter Property="Background" Value="#94E2D5" />
+                                    </Style>
+                                </Button.Styles>
+                            </Button>
+
+                            <Button Content="Refine Plan"
+                                    Command="{Binding RefinePlanCommand}"
+                                    IsEnabled="{Binding !IsGeneratingPlan}"
+                                    Background="Transparent"
+                                    BorderBrush="#6C7086"
+                                    BorderThickness="1"
+                                    Foreground="#CDD6F4"
+                                    Padding="12,6"
+                                    FontSize="12"
+                                    HorizontalAlignment="Stretch"
+                                    Cursor="Hand">
+                                <Button.Styles>
+                                    <Style Selector="Button:pointerover">
+                                        <Setter Property="BorderBrush" Value="#89B4FA" />
+                                        <Setter Property="Foreground" Value="#89B4FA" />
+                                    </Style>
+                                </Button.Styles>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- ======================================================== -->
+                    <!-- Execution Progress (when executing)                      -->
+                    <!-- ======================================================== -->
+                    <StackPanel Spacing="8"
+                                IsVisible="{Binding IsExecuting}"
+                                HorizontalAlignment="Center"
+                                Margin="0,20">
+                        <TextBlock Text="⟳"
+                                   FontSize="24"
+                                   Foreground="#A6E3A1"
+                                   HorizontalAlignment="Center">
+                            <TextBlock.Styles>
+                                <Style Selector="TextBlock">
+                                    <Style.Animations>
+                                        <Animation Duration="0:0:1" IterationCount="Infinite">
+                                            <KeyFrame Cue="0%">
+                                                <Setter Property="RotateTransform.Angle" Value="0" />
+                                            </KeyFrame>
+                                            <KeyFrame Cue="100%">
+                                                <Setter Property="RotateTransform.Angle" Value="360" />
+                                            </KeyFrame>
+                                        </Animation>
+                                    </Style.Animations>
+                                </Style>
+                            </TextBlock.Styles>
+                            <TextBlock.RenderTransform>
+                                <RotateTransform />
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                        <TextBlock Text="Executing plan..."
+                                   FontSize="11"
+                                   Foreground="#9CA3AF"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- ======================================================== -->
+                    <!-- Result Summary (after execution)                         -->
+                    <!-- ======================================================== -->
+                    <Border IsVisible="{Binding HasResult}"
+                            Background="#181825"
+                            BorderBrush="#313244"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="12">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Execution Complete"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="#A6E3A1"
+                                       HorizontalAlignment="Center" />
+
+                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" RowSpacing="6">
+                                <!-- Status -->
+                                <StackPanel Grid.Row="0" Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="STATUS"
+                                               FontSize="10"
+                                               Foreground="#6C7086" />
+                                    <TextBlock Text="{Binding Result.Status}"
+                                               FontSize="11"
+                                               Foreground="#CDD6F4" />
+                                </StackPanel>
+
+                                <!-- Duration -->
+                                <StackPanel Grid.Row="0" Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="DURATION"
+                                               FontSize="10"
+                                               Foreground="#6C7086" />
+                                    <TextBlock Text="{Binding Result.Duration}"
+                                               FontSize="11"
+                                               Foreground="#CDD6F4" />
+                                </StackPanel>
+
+                                <!-- Success Count -->
+                                <StackPanel Grid.Row="1" Grid.Column="0" Spacing="2">
+                                    <TextBlock Text="SUCCEEDED"
+                                               FontSize="10"
+                                               Foreground="#6C7086" />
+                                    <TextBlock FontSize="11" Foreground="#A6E3A1">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="{}{0}">
+                                                <Binding Path="Result.SuccessCount" />
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </StackPanel>
+
+                                <!-- Failed Count -->
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="2">
+                                    <TextBlock Text="FAILED"
+                                               FontSize="10"
+                                               Foreground="#6C7086" />
+                                    <TextBlock FontSize="11" Foreground="#F38BA8">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="{}{0}">
+                                                <Binding Path="Result.FailedCount" />
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Close Button -->
+                            <Button Content="Close"
+                                    Command="{Binding CloseCommand}"
+                                    Background="#89B4FA"
+                                    Foreground="#11111B"
+                                    Padding="12,6"
+                                    FontSize="12"
+                                    HorizontalAlignment="Stretch"
+                                    Cursor="Hand"
+                                    Margin="0,8,0,0">
+                                <Button.Styles>
+                                    <Style Selector="Button:pointerover">
+                                        <Setter Property="Background" Value="#74C7EC" />
+                                    </Style>
+                                </Button.Styles>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ======================================================== -->
+                    <!-- Clear Button (start over)                                -->
+                    <!-- ======================================================== -->
+                    <Button Content="Start Over"
+                            Command="{Binding ClearCommand}"
+                            IsVisible="{Binding HasPlan}"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="#6C7086"
+                            Padding="6,4"
+                            FontSize="11"
+                            HorizontalAlignment="Center"
+                            Cursor="Hand"
+                            Margin="0,10,0,0">
+                        <Button.Styles>
+                            <Style Selector="Button:pointerover">
+                                <Setter Property="Foreground" Value="#CDD6F4" />
+                            </Style>
+                        </Button.Styles>
+                    </Button>
+
+                </StackPanel>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</UserControl>

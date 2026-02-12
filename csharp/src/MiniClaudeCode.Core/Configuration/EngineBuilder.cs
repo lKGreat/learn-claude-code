@@ -6,6 +6,7 @@ using MiniClaudeCode.Abstractions.Services;
 using MiniClaudeCode.Abstractions.UI;
 using MiniClaudeCode.Core.Agents;
 using MiniClaudeCode.Core.AI;
+using MiniClaudeCode.Core.Indexing;
 using MiniClaudeCode.Core.Plugins;
 using MiniClaudeCode.Core.Services;
 using MiniClaudeCode.Core.Services.Providers;
@@ -86,6 +87,10 @@ public class EngineBuilder
         var parallelExecutor = new ParallelAgentExecutor(subAgentRunner);
         var agentTeam = new AgentTeam(subAgentRunner, parallelExecutor, _output);
 
+        // Indexing services
+        var codebaseIndex = new CodebaseIndexService();
+        var symbolIndex = new SymbolIndexService(codebaseIndex);
+
         // AI services
         var completionService = new InlineCompletionService(
             _providerConfigs, _activeProvider);
@@ -141,6 +146,8 @@ public class EngineBuilder
             SubAgentRunner = subAgentRunner,
             ParallelExecutor = parallelExecutor,
             AgentTeam = agentTeam,
+            CodebaseIndex = codebaseIndex,
+            SymbolIndex = symbolIndex,
             CompletionService = completionService,
             EditService = editService,
             ComposerService = composerService,
@@ -216,6 +223,8 @@ public class EngineContext
     public required SubAgentRunner SubAgentRunner { get; init; }
     public required ParallelAgentExecutor ParallelExecutor { get; init; }
     public required AgentTeam AgentTeam { get; init; }
+    public required CodebaseIndexService CodebaseIndex { get; init; }
+    public required SymbolIndexService SymbolIndex { get; init; }
     public required InlineCompletionService CompletionService { get; init; }
     public required InlineEditService EditService { get; init; }
     public required ComposerService ComposerService { get; init; }

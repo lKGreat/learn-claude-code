@@ -60,6 +60,7 @@ public partial class MainWindowViewModel : ObservableObject
     public GitHistoryViewModel GitHistory { get; } = new();
     public AuxiliaryBarViewModel AuxiliaryBar { get; } = new();
     public WorkspaceTrustViewModel WorkspaceTrust { get; } = new();
+    public ComposerPanelViewModel ComposerPanel { get; } = new();
 
     // =========================================================================
     // Observable Properties
@@ -302,6 +303,15 @@ public partial class MainWindowViewModel : ObservableObject
         Editor.SetCompletionService(engine.CompletionService);
         Editor.InlineEdit.SetEditService(engine.EditService);
 
+        // Wire up indexing services to chat mention picker
+        Chat.SetIndexServices(engine.CodebaseIndex, engine.SymbolIndex);
+
+        // Wire up composer service
+        ComposerPanel.SetComposerService(engine.ComposerService);
+
+        // Start background indexing
+        _ = engine.CodebaseIndex.IndexWorkspaceAsync(workDir);
+
         DispatcherService.Post(() =>
         {
             ProviderDisplay = activeConfig.DisplayName;
@@ -431,6 +441,12 @@ public partial class MainWindowViewModel : ObservableObject
             // Wire up completion service and edit service to editor
             Editor.SetCompletionService(engine.CompletionService);
             Editor.InlineEdit.SetEditService(engine.EditService);
+
+            // Wire up indexing services to chat mention picker
+            Chat.SetIndexServices(engine.CodebaseIndex, engine.SymbolIndex);
+
+            // Wire up composer service
+            ComposerPanel.SetComposerService(engine.ComposerService);
 
             DispatcherService.Post(() =>
             {
@@ -593,6 +609,7 @@ public partial class MainWindowViewModel : ObservableObject
                     "  /compact    - Summarize conversation\n" +
                     "  /plan       - Toggle plan mode\n" +
                     "  /analyze    - Analyze project with multiple agents\n" +
+                    "  /composer   - Open multi-file composer panel\n" +
                     "  /exit       - Exit application\n" +
                     "\n" +
                     "Keyboard:\n" +
@@ -604,6 +621,7 @@ public partial class MainWindowViewModel : ObservableObject
                     "  Ctrl+`          - Toggle terminal\n" +
                     "  Ctrl+Shift+E    - Toggle explorer\n" +
                     "  Ctrl+Shift+P    - Toggle plan mode\n" +
+                    "  Ctrl+Shift+I    - Open composer\n" +
                     "  Escape          - Cancel operation");
                 break;
 
@@ -674,6 +692,11 @@ public partial class MainWindowViewModel : ObservableObject
 
             case "/analyze":
                 RunAnalyzeProject();
+                break;
+
+            case "/composer":
+                ComposerPanel.Show();
+                Chat.AddSystemMessage("Composer panel opened. Describe your multi-file changes.");
                 break;
 
             case "/exit" or "/quit" or "/q":
@@ -1135,6 +1158,7 @@ public partial class MainWindowViewModel : ObservableObject
             new() { Id = "toggle_plan", Label = "Toggle Plan Mode", Category = "Mode", Shortcut = "Ctrl+Shift+P", Execute = () => HandleSlashCommand("/plan") },
             new() { Id = "analyze_project", Label = "Analyze Project", Category = "Agent", Execute = () => HandleSlashCommand("/analyze") },
             new() { Id = "compact", Label = "Compact Conversation", Category = "Chat", Execute = () => HandleSlashCommand("/compact") },
+            new() { Id = "open_composer", Label = "Open Composer", Category = "AI", Shortcut = "Ctrl+Shift+I", Execute = () => ComposerPanel.Show() },
             new() { Id = "open_workspace", Label = "Open Folder...", Category = "File", Shortcut = "Ctrl+O", Execute = () => _ = OpenWorkspace() },
             new() { Id = "toggle_terminal", Label = "Toggle Terminal", Category = "View", Shortcut = "Ctrl+`", Execute = () => ToggleTerminal() },
             new() { Id = "toggle_sidebar", Label = "Toggle Sidebar", Category = "View", Execute = () => Sidebar.IsVisible = !Sidebar.IsVisible },
@@ -1216,6 +1240,9 @@ public partial class MainWindowViewModel : ObservableObject
 
     [RelayCommand]
     private void ExitApp() => HandleSlashCommand("/exit");
+
+    [RelayCommand]
+    private void OpenComposer() => ComposerPanel.Show();
 
     private static void LoadEnvFiles()
     {

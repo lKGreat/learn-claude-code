@@ -31,7 +31,10 @@
         <!-- Command Palette -->
         <KeyBinding Gesture="Ctrl+Shift+P" Command="{Binding CommandPalette.ShowCommand}" />
         <KeyBinding Gesture="Ctrl+P" Command="{Binding CommandPalette.ShowQuickOpenCommand}" />
-        
+
+        <!-- AI Tools -->
+        <KeyBinding Gesture="Ctrl+Shift+I" Command="{Binding OpenComposerCommand}" />
+
         <!-- Other -->
         <KeyBinding Gesture="Escape" Command="{Binding CancelOperationCommand}" />
     </Window.KeyBindings>
@@ -291,31 +294,39 @@
                     </Panel>
                 </DockPanel>
 
-                <!-- Column 3: Auxiliary Bar (right sidebar, toggled with Ctrl+Alt+B) -->
-                <Border Grid.Column="3"
-                        Width="{Binding AuxiliaryBar.Width}"
-                        IsVisible="{Binding AuxiliaryBar.IsVisible}"
-                        Background="#181825"
-                        BorderBrush="#313244"
-                        BorderThickness="1,0,0,0">
-                    <DockPanel>
-                        <Border DockPanel.Dock="Top" Padding="8,6" Background="#1E1E2E"
-                                BorderBrush="#313244" BorderThickness="0,0,0,1">
-                            <DockPanel>
-                                <TextBlock Text="Secondary Sidebar"
-                                           FontSize="12" FontWeight="Bold"
-                                           Foreground="#CDD6F4" VerticalAlignment="Center" />
-                                <Button DockPanel.Dock="Right"
-                                        Content="&#x2715;"
-                                        Command="{Binding AuxiliaryBar.ToggleCommand}"
-                                        FontSize="10" Padding="4,2"
-                                        Background="Transparent" Foreground="#6C7086"
-                                        HorizontalAlignment="Right" />
-                            </DockPanel>
-                        </Border>
-                        <views:ChatView DataContext="{Binding Chat}" />
-                    </DockPanel>
-                </Border>
+                <!-- Column 3: Auxiliary Bar + Composer Panel (right sidebar) -->
+                <Panel Grid.Column="3">
+                    <!-- Auxiliary Bar (toggled with Ctrl+Alt+B) -->
+                    <Border Width="{Binding AuxiliaryBar.Width}"
+                            IsVisible="{Binding AuxiliaryBar.IsVisible}"
+                            Background="#181825"
+                            BorderBrush="#313244"
+                            BorderThickness="1,0,0,0">
+                        <DockPanel>
+                            <Border DockPanel.Dock="Top" Padding="8,6" Background="#1E1E2E"
+                                    BorderBrush="#313244" BorderThickness="0,0,0,1">
+                                <DockPanel>
+                                    <TextBlock Text="Secondary Sidebar"
+                                               FontSize="12" FontWeight="Bold"
+                                               Foreground="#CDD6F4" VerticalAlignment="Center" />
+                                    <Button DockPanel.Dock="Right"
+                                            Content="&#x2715;"
+                                            Command="{Binding AuxiliaryBar.ToggleCommand}"
+                                            FontSize="10" Padding="4,2"
+                                            Background="Transparent" Foreground="#6C7086"
+                                            HorizontalAlignment="Right" />
+                                </DockPanel>
+                            </Border>
+                            <views:ChatView DataContext="{Binding Chat}" />
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Composer Panel (overlay when visible) -->
+                    <views:ComposerPanelView DataContext="{Binding ComposerPanel}"
+                                              IsVisible="{Binding IsVisible}"
+                                              IsHitTestVisible="{Binding IsVisible}"
+                                              HorizontalAlignment="Right" />
+                </Panel>
             </Grid>
         </DockPanel>
 

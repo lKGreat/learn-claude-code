@@ -251,7 +251,8 @@ public partial class EditorView : UserControl
     private void LoadContent(string content)
     {
         if (_viewModel == null) return;
-        if (CodeEditor.Text == content)
+        // 空内容也强制设置，避免「激活现有 tab 时内容不显示」的问题
+        if (!string.IsNullOrEmpty(content) && CodeEditor.Text == content)
         {
             LogHelper.UI.Debug("LoadContent: 内容未变化，跳过");
             return;

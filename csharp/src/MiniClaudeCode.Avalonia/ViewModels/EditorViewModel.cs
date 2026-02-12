@@ -482,7 +482,28 @@ public partial class EditorViewModel : ObservableObject
             var existing = Tabs.FirstOrDefault(t => t.FilePath == filePath);
             if (existing != null)
             {
-                LogHelper.UI.Info("[Preview链路] EditorViewModel.PreviewFile: 文件已打开，激活现有 tab");
+                LogHelper.UI.Info("[Preview链路] EditorViewModel.PreviewFile: 文件已打开，激活现有 tab, ContentLength={0}", existing.Content?.Length ?? 0);
+                // 确保 existing tab 的内容可用：从 Model 或磁盘同步，避免内容不显示
+                if (string.IsNullOrEmpty(existing.Content) && !existing.IsLargeFile)
+                {
+                    if (existing.Model != null && !string.IsNullOrEmpty(existing.Model.Content))
+                    {
+                        existing.Content = existing.Model.Content;
+                        LogHelper.UI.Info("[Preview链路] EditorViewModel.PreviewFile: 从 Model 同步内容, Length={0}", existing.Content.Length);
+                    }
+                    else if (File.Exists(filePath))
+                    {
+                        try
+                        {
+                            existing.Content = await File.ReadAllTextAsync(filePath);
+                            LogHelper.UI.Info("[Preview链路] EditorViewModel.PreviewFile: 从磁盘重新加载内容, Length={0}", existing.Content.Length);
+                        }
+                        catch (Exception ex)
+                        {
+                            LogHelper.UI.Error(ex, "[Preview链路] EditorViewModel.PreviewFile: 磁盘读取失败, Path={0}", filePath);
+                        }
+                    }
+                }
                 ActivateTab(existing);
                 return;
             }

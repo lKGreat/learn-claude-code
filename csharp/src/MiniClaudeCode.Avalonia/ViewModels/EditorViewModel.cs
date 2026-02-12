@@ -4,12 +4,20 @@ using CommunityToolkit.Mvvm.Input;
 using MiniClaudeCode.Avalonia.Editor;
 using MiniClaudeCode.Avalonia.Editor.TextBuffer;
 using MiniClaudeCode.Avalonia.Models;
+using MiniClaudeCode.Avalonia.Services;
+using MiniClaudeCode.Avalonia.Services.Explorer;
 using MiniClaudeCode.Core.AI;
 
 namespace MiniClaudeCode.Avalonia.ViewModels;
 
 /// <summary>
+/// Result of a save confirmation dialog.
+/// </summary>
+public enum SaveConfirmResult { Save, DontSave, Cancel }
+
+/// <summary>
 /// ViewModel for the editor area - manages open tabs, editor groups, and split view.
+/// Integrates with ITextFileService for file operations (doc sections 6, 7, 8).
 /// </summary>
 public partial class EditorViewModel : ObservableObject
 {
@@ -54,6 +62,23 @@ public partial class EditorViewModel : ObservableObject
 
     /// <summary>Fired when the active file changes (for status bar language).</summary>
     public event Action<EditorTab?>? ActiveFileChanged;
+
+    // =========================================================================
+    // Save Confirmation Support
+    // =========================================================================
+
+    /// <summary>Fired when user tries to close a dirty tab. Returns Save/DontSave/Cancel.</summary>
+    public event Func<EditorTab, Task<SaveConfirmResult>>? SaveConfirmRequested;
+
+    /// <summary>Fired when a save error occurs (for notification).</summary>
+    public event Action<string>? SaveError;
+
+    // =========================================================================
+    // External File Change Detection
+    // =========================================================================
+
+    /// <summary>Fired when a conflict is detected (dirty file changed on disk). Returns user choice.</summary>
+    public event Func<EditorTab, string, Task<string?>>? ConflictResolutionRequested;
 
     // =========================================================================
     // Inline Completion Support
@@ -107,6 +132,52 @@ public partial class EditorViewModel : ObservableObject
     /// <summary>Fired when inline edit is accepted (for applying changes).</summary>
     public event Action<string, string>? InlineEditAccepted; // (filePath, modifiedCode)
 
+    // =========================================================================
+    // TextFileService Integration (Doc Sections 6, 7, 8)
+    // =========================================================================
+
+    private ITextFileService? _textFileService;
+    private FileBackupService? _backupService;
+
+    /// <summary>Set the text file service instance (called from MainWindowViewModel).</summary>
+    public void SetTextFileService(ITextFileService service)
+    {
+        _textFileService = service;
+
+        // Subscribe to service events
+        _textFileService.OnDidChangeDirty += OnModelDirtyChanged;
+        _textFileService.OnDidSave += OnModelSaved;
+        _textFileService.OnDidLoad += OnModelLoaded;
+    }
+
+    /// <summary>Set the backup service instance (called from MainWindowViewModel).</summary>
+    public void SetBackupService(FileBackupService service) => _backupService = service;
+
+    private void OnModelDirtyChanged(TextFileModelChangeEvent evt)
+    {
+        var tab = Tabs.FirstOrDefault(t =>
+            string.Equals(t.FilePath, evt.Resource, StringComparison.OrdinalIgnoreCase));
+        if (tab != null)
+        {
+            tab.IsDirty = evt.IsDirty;
+        }
+    }
+
+    private void OnModelSaved(TextFileSaveEvent evt)
+    {
+        var tab = Tabs.FirstOrDefault(t =>
+            string.Equals(t.FilePath, evt.Resource, StringComparison.OrdinalIgnoreCase));
+        if (tab != null)
+        {
+            tab.MarkSaved();
+        }
+    }
+
+    private void OnModelLoaded(TextFileLoadEvent evt)
+    {
+        // Model loaded -- could be used for notifications
+    }
+
     public EditorViewModel()
     {
         // Wire up inline edit events
@@ -125,35 +196,27 @@ public partial class EditorViewModel : ObservableObject
         _completionService = service;
     }
 
-    /// <summary>
-    /// Request an inline completion at the current cursor position.
-    /// Implements debouncing: waits CompletionDebounceMs before sending request.
-    /// </summary>
+    // =========================================================================
+    // Inline Completion
+    // =========================================================================
+
     public async Task RequestCompletionAsync(string text, int line, int column)
     {
-        // Cancel any pending completion request
         _completionCts?.Cancel();
         _completionCts = new CancellationTokenSource();
-
-        // Clear any existing ghost text
         DismissCompletion();
 
-        // Don't request completion if service is not available or file is not open
         if (_completionService == null || ActiveTab == null)
             return;
 
-        // Don't request completion for large files (performance)
         if (IsLargeFile)
             return;
 
         try
         {
-            // Debounce: wait for typing to settle
             await Task.Delay(CompletionDebounceMs, _completionCts.Token);
-
             IsCompletionLoading = true;
 
-            // Build completion request
             var lines = text.Split('\n');
             var beforeCursor = string.Join('\n', lines.Take(line));
             var afterCursor = line < lines.Length
@@ -170,23 +233,17 @@ public partial class EditorViewModel : ObservableObject
                 CodeAfter = afterCursor
             };
 
-            // Request completion from service
             var result = await _completionService.GetCompletionAsync(request, _completionCts.Token);
 
-            // If we got a result, show ghost text
             if (result != null && !string.IsNullOrWhiteSpace(result.Text))
             {
                 GhostText = result.Text;
                 GhostTextColumn = column;
             }
         }
-        catch (OperationCanceledException)
-        {
-            // Request was cancelled (user continued typing)
-        }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
-            // Log error but don't crash the editor
             System.Diagnostics.Debug.WriteLine($"Completion error: {ex.Message}");
         }
         finally
@@ -195,10 +252,6 @@ public partial class EditorViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Accept the current ghost text completion.
-    /// Returns the ghost text to be inserted, or null if no completion is active.
-    /// </summary>
     public string? AcceptCompletion()
     {
         if (string.IsNullOrEmpty(GhostText))
@@ -209,19 +262,12 @@ public partial class EditorViewModel : ObservableObject
         return text;
     }
 
-    /// <summary>
-    /// Dismiss the current ghost text completion.
-    /// </summary>
     public void DismissCompletion()
     {
         GhostText = null;
         GhostTextColumn = 0;
     }
 
-    /// <summary>
-    /// Cancel any pending completion request.
-    /// Called when user types a character or moves cursor.
-    /// </summary>
     public void CancelPendingCompletion()
     {
         _completionCts?.Cancel();
@@ -229,10 +275,10 @@ public partial class EditorViewModel : ObservableObject
         DismissCompletion();
     }
 
-    /// <summary>
-    /// Show the inline edit panel for the selected code.
-    /// Called from EditorView when Ctrl+K is pressed.
-    /// </summary>
+    // =========================================================================
+    // Inline Edit (Ctrl+K)
+    // =========================================================================
+
     public void ShowInlineEdit(
         string selectedCode,
         int startLine,
@@ -253,48 +299,54 @@ public partial class EditorViewModel : ObservableObject
             contextAfter);
     }
 
-    public void OpenFile(string filePath)
-    {
-        // Check if already open
-        var existing = Tabs.FirstOrDefault(t => t.FilePath == filePath);
-        if (existing != null)
-        {
-            ActivateTab(existing);
-            return;
-        }
+    // =========================================================================
+    // File Open / Tab Management (Doc Section 6)
+    // =========================================================================
 
-        // Load file content using chunked reading for large file support
+    /// <summary>
+    /// Create a tab from a file path, using TextFileService for model caching.
+    /// </summary>
+    private async Task<EditorTab> CreateTabAsync(string filePath, bool isPreview = false)
+    {
         string content;
         PieceTreeTextBuffer? textBuffer = null;
-        bool isLarge = false;
-        try
+        TextFileModel? model = null;
+
+        if (_textFileService != null)
         {
-            var fileInfo = new FileInfo(filePath);
-            
-            if (fileInfo.Length > LargeFileConstants.LargeFileSizeThreshold)
-            {
-                // Load via PieceTreeTextBuffer for large files - keep the buffer reference
-                isLarge = true;
-                textBuffer = PieceTreeTextBufferBuilder.LoadFileAsync(filePath).GetAwaiter().GetResult();
-                
-                // Only load first viewport worth of content (avoid materializing entire file)
-                var viewportLines = 200;
-                var sb = new System.Text.StringBuilder();
-                for (int line = 1; line <= Math.Min(viewportLines, textBuffer.LineCount); line++)
-                {
-                    if (line > 1) sb.Append('\n');
-                    sb.Append(textBuffer.GetLineContent(line));
-                }
-                content = sb.ToString();
-            }
-            else
-            {
-                content = File.ReadAllText(filePath);
-            }
+            // Use TextFileService for model caching (doc 6.3)
+            model = await _textFileService.ResolveAsync(filePath);
+            content = model.Content;
+            textBuffer = model.TextBuffer;
         }
-        catch (Exception ex)
+        else
         {
-            content = $"Error loading file: {ex.Message}";
+            // Fallback: direct file read
+            try
+            {
+                var fileInfo = new FileInfo(filePath);
+
+                if (fileInfo.Length > LargeFileConstants.LargeFileSizeThreshold)
+                {
+                    textBuffer = PieceTreeTextBufferBuilder.LoadFileAsync(filePath).GetAwaiter().GetResult();
+                    var viewportLines = 200;
+                    var sb = new System.Text.StringBuilder();
+                    for (int line = 1; line <= Math.Min(viewportLines, textBuffer.LineCount); line++)
+                    {
+                        if (line > 1) sb.Append('\n');
+                        sb.Append(textBuffer.GetLineContent(line));
+                    }
+                    content = sb.ToString();
+                }
+                else
+                {
+                    content = File.ReadAllText(filePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                content = $"Error loading file: {ex.Message}";
+            }
         }
 
         var tab = new EditorTab
@@ -302,21 +354,104 @@ public partial class EditorViewModel : ObservableObject
             FilePath = filePath,
             Content = content,
             TextBuffer = textBuffer,
+            IsPreview = isPreview,
+            Model = model,
         };
 
+        // Store disk metadata for external change detection (doc 5.4)
+        try
+        {
+            var fi = new FileInfo(filePath);
+            tab.UpdateDiskMetadata(content, fi.LastWriteTimeUtc);
+        }
+        catch { /* ignore */ }
+
+        return tab;
+    }
+
+    /// <summary>
+    /// Open a file in the editor (permanent tab).
+    /// Follows doc section 6.1 flow: check existing -> resolve -> create/activate tab.
+    /// </summary>
+    public async void OpenFile(string filePath)
+    {
+        // Step 1: Check if already open (doc 6.2 step 1)
+        var existing = Tabs.FirstOrDefault(t => t.FilePath == filePath);
+        if (existing != null)
+        {
+            // If it's a preview tab, pin it (make permanent)
+            if (existing.IsPreview)
+                existing.IsPreview = false;
+            ActivateTab(existing);
+            return;
+        }
+
+        // Step 2-5: Create tab with model (doc 6.2 steps 2-5)
+        var tab = await CreateTabAsync(filePath, isPreview: false);
+
+        // Step 6: Add to tab list
         Tabs.Add(tab);
         ActivateTab(tab);
-        
-        if (isLarge)
+
+        // Step 7: Update large file warning
+        if (tab.IsLargeFile)
         {
             IsLargeFile = true;
-            LargeFileWarning = $"Large file ({new FileInfo(filePath).Length / (1024 * 1024):F1} MB, {textBuffer!.LineCount:N0} lines) - Some features disabled for performance.";
+            try
+            {
+                LargeFileWarning = $"Large file ({new FileInfo(filePath).Length / (1024 * 1024):F1} MB, {tab.TextBuffer!.LineCount:N0} lines) - Some features disabled for performance.";
+            }
+            catch
+            {
+                LargeFileWarning = "Large file - Some features disabled for performance.";
+            }
         }
         else
         {
             IsLargeFile = false;
             LargeFileWarning = "";
         }
+    }
+
+    /// <summary>
+    /// Open a file in preview mode (single-click). Preview tabs are replaced by the next preview.
+    /// Follows doc section 6.2 preview handling.
+    /// </summary>
+    public async void PreviewFile(string filePath)
+    {
+        // Check if already open (preview or permanent)
+        var existing = Tabs.FirstOrDefault(t => t.FilePath == filePath);
+        if (existing != null)
+        {
+            ActivateTab(existing);
+            return;
+        }
+
+        // Find and replace existing preview tab (doc 6.2 step 2 - preview mode)
+        var existingPreview = Tabs.FirstOrDefault(t => t.IsPreview);
+        if (existingPreview != null)
+        {
+            var index = Tabs.IndexOf(existingPreview);
+
+            // Release model reference for old preview tab
+            if (_textFileService != null && existingPreview.Model != null)
+                _textFileService.ReleaseModel(existingPreview.FilePath);
+
+            Tabs.Remove(existingPreview);
+
+            var tab = await CreateTabAsync(filePath, isPreview: true);
+            Tabs.Insert(index, tab);
+            ActivateTab(tab);
+        }
+        else
+        {
+            var tab = await CreateTabAsync(filePath, isPreview: true);
+            Tabs.Add(tab);
+            ActivateTab(tab);
+        }
+
+        IsLargeFile = false;
+        LargeFileWarning = "";
     }
 
     public void ActivateTab(EditorTab tab)
@@ -327,17 +462,50 @@ public partial class EditorViewModel : ObservableObject
         CurrentContent = tab.Content;
         HasOpenFiles = true;
         UpdateBreadcrumb(tab);
+
+        // Step 8: Fire events (doc 6.1 step 8)
         ActiveFileChanged?.Invoke(tab);
     }
 
+    // =========================================================================
+    // Close Tab (Doc Section 8)
+    // =========================================================================
+
     [RelayCommand]
-    private void CloseTab(EditorTab? tab)
+    private async Task CloseTab(EditorTab? tab)
     {
         if (tab == null) return;
 
+        // Step 2: Check dirty state (doc 8.1 step 2)
+        if (tab.IsDirty)
+        {
+            if (SaveConfirmRequested != null)
+            {
+                var result = await SaveConfirmRequested.Invoke(tab);
+                switch (result)
+                {
+                    case SaveConfirmResult.Save:
+                        await SaveFileForTabAsync(tab);
+                        break;
+                    case SaveConfirmResult.Cancel:
+                        return; // Don't close
+                    case SaveConfirmResult.DontSave:
+                        break; // Close without saving
+                }
+            }
+        }
+
         var index = Tabs.IndexOf(tab);
+        var wasActive = tab == ActiveTab;
+
+        // Step 3: Remove from tab list (doc 8.1 step 3)
         Tabs.Remove(tab);
 
+        // Step 4: Release model reference (doc 8.1 step 4)
+        if (_textFileService != null && tab.Model != null)
+            _textFileService.ReleaseModel(tab.FilePath);
+
+        // Step 5: Fire close event and activate next tab (doc 8.1 step 5)
         if (Tabs.Count == 0)
         {
             ActiveTab = null;
@@ -346,32 +514,38 @@ public partial class EditorViewModel : ObservableObject
             Breadcrumb = "";
             ActiveFileChanged?.Invoke(null);
         }
-        else if (tab == ActiveTab)
+        else if (wasActive)
         {
-            // Activate adjacent tab
             var nextIndex = Math.Min(index, Tabs.Count - 1);
             ActivateTab(Tabs[nextIndex]);
         }
     }
 
     [RelayCommand]
-    private void CloseOtherTabs(EditorTab? tab)
+    private async Task CloseOtherTabs(EditorTab? tab)
     {
         if (tab == null) return;
         var toRemove = Tabs.Where(t => t != tab && !t.IsPinned).ToList();
-        foreach (var t in toRemove) Tabs.Remove(t);
-        ActivateTab(tab);
+        foreach (var t in toRemove)
+        {
+            await CloseTab(t);
+            // If user cancelled on any tab, stop
+            if (Tabs.Contains(t)) return;
+        }
+        if (Tabs.Contains(tab))
+            ActivateTab(tab);
     }
 
     [RelayCommand]
-    private void CloseAllTabs()
+    private async Task CloseAllTabs()
     {
-        Tabs.Clear();
-        ActiveTab = null;
-        CurrentContent = "";
-        HasOpenFiles = false;
-        Breadcrumb = "";
-        ActiveFileChanged?.Invoke(null);
+        var allTabs = Tabs.ToList();
+        foreach (var t in allTabs)
+        {
+            await CloseTab(t);
+            // If user cancelled, stop closing
+            if (Tabs.Contains(t)) return;
+        }
     }
 
     [RelayCommand]
@@ -380,43 +554,111 @@ public partial class EditorViewModel : ObservableObject
         if (tab != null) tab.IsPinned = !tab.IsPinned;
     }
 
-    /// <summary>Fired when a save error occurs (for notification).</summary>
-    public event Action<string>? SaveError;
+    // =========================================================================
+    // Save (Doc Section 7)
+    // =========================================================================
+
+    /// <summary>
+    /// Save a specific tab to disk using TextFileService.
+    /// Follows doc section 7.2 flow: onWillSave -> backup -> write -> update -> onDidSave.
+    /// </summary>
+    public async Task SaveFileForTabAsync(EditorTab tab)
+    {
+        if (_textFileService != null)
+        {
+            // Sync content from tab to model before saving
+            var model = _textFileService.GetModel(tab.FilePath);
+            if (model != null && model.Content != tab.Content)
+            {
+                model.ApplyEdit(tab.Content);
+            }
+
+            var success = await _textFileService.SaveAsync(tab.FilePath, new SaveOptions
+            {
+                CreateBackup = true,
+                Reason = SaveReason.Explicit
+            });
+
+            if (!success)
+            {
+                SaveError?.Invoke($"Failed to save {tab.FileName}");
+            }
+        }
+        else
+        {
+            // Fallback: direct save
+            SaveFileForTab(tab);
+        }
+    }
+
+    /// <summary>Save a specific tab to disk (synchronous fallback).</summary>
+    public void SaveFileForTab(EditorTab tab)
+    {
+        try
+        {
+            _backupService?.CreateBackup(tab.FilePath);
+
+            if (tab.TextBuffer != null)
+            {
+                using var writer = new StreamWriter(tab.FilePath);
+                foreach (var chunk in tab.TextBuffer.CreateSnapshot())
+                    writer.Write(chunk);
+            }
+            else
+            {
+                File.WriteAllText(tab.FilePath, tab.Content);
+            }
+            tab.MarkSaved();
+
+            // Update disk metadata (doc 5.4)
+            try
+            {
+                var fi = new FileInfo(tab.FilePath);
+                tab.UpdateDiskMetadata(tab.Content, fi.LastWriteTimeUtc);
+            }
+            catch { /* ignore */ }
+        }
+        catch (Exception ex)
+        {
+            SaveError?.Invoke($"Failed to save {tab.FileName}: {ex.Message}");
+        }
+    }
 
     [RelayCommand]
     private void SaveFile()
     {
         if (ActiveTab == null || !ActiveTab.IsDirty) return;
 
-        try
+        if (_textFileService != null)
         {
-            if (ActiveTab.TextBuffer != null)
-            {
-                // Large file: save from PieceTree buffer
-                using var writer = new StreamWriter(ActiveTab.FilePath);
-                foreach (var chunk in ActiveTab.TextBuffer.CreateSnapshot())
-                {
-                    writer.Write(chunk);
-                }
-            }
-            else
-            {
-                File.WriteAllText(ActiveTab.FilePath, ActiveTab.Content);
-            }
-            ActiveTab.IsDirty = false;
+            _ = SaveFileForTabAsync(ActiveTab);
         }
-        catch (Exception ex)
+        else
         {
-            SaveError?.Invoke($"Failed to save {ActiveTab.FileName}: {ex.Message}");
+            SaveFileForTab(ActiveTab);
         }
     }
 
+    /// <summary>
+    /// Update content from editor. Uses version-based dirty detection (doc 5.3).
+    /// </summary>
     public void UpdateContent(string newContent)
     {
         if (ActiveTab == null) return;
+
+        // Auto-pin preview tab when user starts editing
+        if (ActiveTab.IsPreview)
+            ActiveTab.IsPreview = false;
+
         ActiveTab.Content = newContent;
-        ActiveTab.IsDirty = true;
+        ActiveTab.IncrementVersion(); // Version-based dirty detection (doc 5.3)
         CurrentContent = newContent;
+
+        // Also update the TextFileModel if available
+        if (ActiveTab.Model != null)
+        {
+            ActiveTab.Model.ApplyEdit(newContent);
+        }
     }
 
     public void UpdateCursorPosition(int line, int column)
@@ -426,32 +668,160 @@ public partial class EditorViewModel : ObservableObject
         CursorPositionChanged?.Invoke(line, column);
     }
 
+    // =========================================================================
+    // External File Change Detection (Doc Section 5.4)
+    // =========================================================================
+
     /// <summary>
-    /// Request to scroll the editor to a specific line.
-    /// The view should subscribe to GoToLineRequested to perform the actual scroll.
+    /// Handle an externally modified file that is open in a tab.
+    /// Uses hash-based comparison for accurate conflict detection.
     /// </summary>
+    public void HandleExternalFileChange(EditorTab tab)
+    {
+        if (!File.Exists(tab.FilePath))
+        {
+            HandleExternalFileDeletion(tab);
+            return;
+        }
+
+        try
+        {
+            var fi = new FileInfo(tab.FilePath);
+            var diskContent = File.ReadAllText(tab.FilePath);
+
+            // Use hash-based comparison (doc 5.4)
+            if (!tab.HasDiskContentChanged(diskContent, fi.LastWriteTimeUtc))
+                return;
+
+            if (!tab.IsDirty)
+            {
+                // File is clean: silently reload (doc 5.4)
+                tab.Content = diskContent;
+                tab.IsDirty = false;
+                tab.FileState = FileState.Saved;
+                tab.UpdateDiskMetadata(diskContent, fi.LastWriteTimeUtc);
+
+                // Also update the TextFileModel
+                if (tab.Model != null)
+                {
+                    tab.Model.Revert(diskContent);
+                    tab.Model.UpdateDiskMetadata(diskContent, fi.LastWriteTimeUtc);
+                }
+
+                if (tab == ActiveTab)
+                {
+                    CurrentContent = diskContent;
+                    ActiveFileChanged?.Invoke(tab);
+                }
+            }
+            else
+            {
+                // File is dirty: conflict! (doc 5.4)
+                tab.FileState = FileState.Conflict;
+                _ = ResolveConflictAsync(tab, diskContent, fi.LastWriteTimeUtc);
+            }
+        }
+        catch (Exception ex)
+        {
+            tab.FileState = FileState.Error;
+            SaveError?.Invoke($"Error reading {tab.FileName}: {ex.Message}");
+        }
+    }
+
+    private async Task ResolveConflictAsync(EditorTab tab, string diskContent, DateTime diskModTime)
+    {
+        if (ConflictResolutionRequested != null)
+        {
+            var result = await ConflictResolutionRequested.Invoke(tab,
+                $"'{tab.FileName}' has been changed on disk. Overwrite with disk version?");
+
+            if (result == "Overwrite")
+            {
+                tab.Content = diskContent;
+                tab.IsDirty = false;
+                tab.FileState = FileState.Saved;
+                tab.UpdateDiskMetadata(diskContent, diskModTime);
+
+                // Also update the TextFileModel
+                if (tab.Model != null)
+                {
+                    tab.Model.Revert(diskContent);
+                    tab.Model.UpdateDiskMetadata(diskContent, diskModTime);
+                }
+
+                if (tab == ActiveTab)
+                {
+                    CurrentContent = diskContent;
+                    ActiveFileChanged?.Invoke(tab);
+                }
+            }
+            // else: keep local changes, stay in Conflict state
+        }
+    }
+
+    /// <summary>Handle an externally deleted file that is open in a tab (doc 5.4).</summary>
+    public void HandleExternalFileDeletion(EditorTab tab)
+    {
+        tab.FileState = FileState.Orphan;
+        if (!tab.IsDirty)
+            tab.IsDirty = true; // Mark dirty so save-on-close prompts
+
+        if (tab.Model != null)
+            tab.Model.IsOrphaned = true;
+    }
+
+    /// <summary>Handle an externally renamed file that is open in a tab.</summary>
+    public async void HandleExternalFileRename(EditorTab tab, string newPath)
+    {
+        // Since FilePath is init-only, we close old tab and open new one at same position
+        var index = Tabs.IndexOf(tab);
+        var wasActive = tab == ActiveTab;
+        var oldContent = tab.Content;
+        var wasDirty = tab.IsDirty;
+
+        // Release old model reference
+        if (_textFileService != null && tab.Model != null)
+            _textFileService.ReleaseModel(tab.FilePath);
+
+        Tabs.Remove(tab);
+
+        var newTab = await CreateTabAsync(newPath);
+        if (wasDirty)
+        {
+            newTab.Content = oldContent;
+            newTab.IsDirty = true;
+        }
+
+        if (index >= 0 && index <= Tabs.Count)
+            Tabs.Insert(index, newTab);
+        else
+            Tabs.Add(newTab);
+
+        if (wasActive)
+            ActivateTab(newTab);
+    }
+
+    // =========================================================================
+    // Navigation
+    // =========================================================================
+
     public event Action<int>? GoToLineRequested;
 
-    /// <summary>Navigate to a specific line in the active editor.</summary>
     public void GoToLine(int line)
     {
         if (line < 1 || ActiveTab == null) return;
         GoToLineRequested?.Invoke(line);
     }
 
-    /// <summary>
-    /// Open a file in diff mode (showing git changes).
-    /// Fires DiffOpenRequested for the view to render.
-    /// </summary>
+    // =========================================================================
+    // Diff Support
+    // =========================================================================
+
     public event Action<string, string, string>? DiffOpenRequested;
 
-    /// <summary>Open a file showing its git diff.</summary>
     public void OpenDiff(string fullPath, string relativePath)
     {
-        // Open the file in a tab first
         OpenFile(fullPath);
-
-        // Then request the diff view
         _ = LoadAndShowDiffAsync(fullPath, relativePath);
     }
 
@@ -459,7 +829,6 @@ public partial class EditorViewModel : ObservableObject
     {
         try
         {
-            // Get diff from git
             var psi = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = "git",
@@ -487,9 +856,10 @@ public partial class EditorViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Split the editor into two groups. Moves the active tab to the new group.
-    /// </summary>
+    // =========================================================================
+    // Split Editor
+    // =========================================================================
+
     [RelayCommand]
     private void SplitEditor()
     {
@@ -497,12 +867,10 @@ public partial class EditorViewModel : ObservableObject
 
         if (!IsSplit)
         {
-            // Create group 1 from existing tabs
             var group1 = new EditorGroup { GroupId = _nextGroupId++, IsActive = false };
             foreach (var tab in Tabs) group1.Tabs.Add(tab);
             if (ActiveTab != null) group1.ActivateTab(ActiveTab);
 
-            // Create group 2 (empty for now - will open same file)
             var group2 = new EditorGroup { GroupId = _nextGroupId++, IsActive = true };
 
             Groups.Clear();
@@ -513,26 +881,18 @@ public partial class EditorViewModel : ObservableObject
         }
         else
         {
-            // Already split - add another group
             var newGroup = new EditorGroup { GroupId = _nextGroupId++, IsActive = true };
-
-            // Deactivate current active group
             if (ActiveGroup != null) ActiveGroup.IsActive = false;
-
             Groups.Add(newGroup);
             ActiveGroup = newGroup;
         }
     }
 
-    /// <summary>
-    /// Close all split groups and merge back to single editor.
-    /// </summary>
     [RelayCommand]
     private void UnsplitEditor()
     {
         if (!IsSplit) return;
 
-        // Collect all unique tabs from all groups
         var allTabs = Groups.SelectMany(g => g.Tabs)
             .GroupBy(t => t.FilePath)
             .Select(g => g.First())
@@ -549,34 +909,36 @@ public partial class EditorViewModel : ObservableObject
             ActivateTab(Tabs[0]);
     }
 
-    /// <summary>Show the find panel (Ctrl+F).</summary>
+    // =========================================================================
+    // Find & Replace
+    // =========================================================================
+
     public void ShowFind()
     {
         FindReplace.IsVisible = true;
         FindReplace.IsReplaceVisible = false;
     }
 
-    /// <summary>Show the find and replace panel (Ctrl+H).</summary>
     public void ShowReplace()
     {
         FindReplace.IsVisible = true;
         FindReplace.IsReplaceVisible = true;
     }
 
+    // =========================================================================
+    // Breadcrumb
+    // =========================================================================
+
     private string _workspacePath = string.Empty;
 
-    /// <summary>Set the workspace root path for breadcrumb relative paths.</summary>
     public void SetWorkspacePath(string path) => _workspacePath = path;
 
     private void UpdateBreadcrumb(EditorTab tab)
     {
-        // Build breadcrumb: directory > filename
         var dir = Path.GetDirectoryName(tab.FilePath) ?? "";
         var segments = dir.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         var last3 = segments.Length > 3 ? segments[^3..] : segments;
         Breadcrumb = string.Join(" > ", last3.Append(tab.FileName));
-
-        // Also update the rich breadcrumb ViewModel
         BreadcrumbNav.Update(tab.FilePath, _workspacePath);
     }
 }

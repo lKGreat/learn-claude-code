@@ -9,6 +9,7 @@ using Microsoft.SemanticKernel.ChatCompletion;
 using MiniClaudeCode.Avalonia.Adapters;
 using MiniClaudeCode.Avalonia.Models;
 using MiniClaudeCode.Avalonia.Services;
+using MiniClaudeCode.Avalonia.Services.Explorer;
 using MiniClaudeCode.Core.Configuration;
 
 namespace MiniClaudeCode.Avalonia.ViewModels;
@@ -118,6 +119,13 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly FileWatcherService _fileWatcher = new();
     private Window? _mainWindow;
 
+    // =========================================================================
+    // Service Layer (Doc Section 3 + 4.1)
+    // =========================================================================
+
+    private readonly ExplorerService _explorerService = new();
+    private TextFileService? _textFileService;
+
     /// <summary>Central keybinding registry.</summary>
     public KeybindingService Keybindings { get; } = new();
 
@@ -181,6 +189,48 @@ public partial class MainWindowViewModel : ObservableObject
                 FileExplorer.LoadWorkspace(FileExplorer.WorkspacePath);
         };
         FileExplorer.FileOperations.ErrorOccurred += (msg) => Notification.ShowError(msg);
+
+        // Wire delete confirmation dialog for file operations
+        FileExplorer.FileOperations.ConfirmDeleteRequested += async (message) =>
+        {
+            var result = await QuestionDialog.AskSelectionAsync(
+                message,
+                ["Delete", "Cancel"]);
+            return result == "Delete";
+        };
+
+        // Wire preview: single-click in explorer -> preview tab
+        FileExplorer.FilePreviewRequested += (path) => Editor.PreviewFile(path);
+
+        // Wire save confirmation dialog for dirty tabs
+        Editor.SaveConfirmRequested += async (tab) =>
+        {
+            var result = await QuestionDialog.AskSelectionAsync(
+                $"Do you want to save changes to '{tab.FileName}'?",
+                ["Save", "Don't Save", "Cancel"]);
+            return result switch
+            {
+                "Save" => SaveConfirmResult.Save,
+                "Don't Save" => SaveConfirmResult.DontSave,
+                _ => SaveConfirmResult.Cancel
+            };
+        };
+
+        // Wire conflict resolution dialog for externally changed files
+        Editor.ConflictResolutionRequested += async (tab, message) =>
+        {
+            return await QuestionDialog.AskSelectionAsync(
+                message,
+                ["Overwrite", "Keep My Changes"]);
+        };
+
+        // Create and wire backup service and file services (doc sections 3, 4.1)
+        var backupService = new FileBackupService();
+        _textFileService = new TextFileService(backupService);
+
+        Editor.SetBackupService(backupService);
+        Editor.SetTextFileService(_textFileService);
+        FileExplorer.SetExplorerService(_explorerService);
 
         // Set initial active panel
         Sidebar.SetActivePanel("explorer");
@@ -355,13 +405,48 @@ public partial class MainWindowViewModel : ObservableObject
             // Start terminal in workspace
             Terminal.WorkingDirectory = workDir;
 
-            // Start file watcher for auto-refresh
+            // Start file watcher for auto-refresh (doc 10.3 - file system watch data flow)
             _fileWatcher.Watch(workDir);
             _fileWatcher.FilesChanged += (changes) =>
             {
                 // Auto-refresh file explorer and SCM on external changes
+                // FileExplorer.LoadWorkspace already delegates to _explorerService.LoadWorkspace
                 FileExplorer.LoadWorkspace(workDir);
                 _ = Scm.RefreshCommand.ExecuteAsync(null);
+
+                // Notify editor of external changes to open tabs via TextFileService
+                foreach (var changedPath in changes)
+                {
+                    // Check TextFileService first for hash-based detection
+                    if (_textFileService != null)
+                    {
+                        _ = HandleExternalFileChangeViaService(changedPath);
+                    }
+                    else
+                    {
+                        var tab = Editor.Tabs.FirstOrDefault(t =>
+                            string.Equals(t.FilePath, changedPath, StringComparison.OrdinalIgnoreCase));
+                        if (tab != null)
+                            Editor.HandleExternalFileChange(tab);
+                    }
+                }
+            };
+            _fileWatcher.FileDeleted += (deletedPath) =>
+            {
+                // Notify TextFileService of deletion
+                _textFileService?.HandleExternalDeletion(deletedPath);
+
+                var tab = Editor.Tabs.FirstOrDefault(t =>
+                    string.Equals(t.FilePath, deletedPath, StringComparison.OrdinalIgnoreCase));
+                if (tab != null)
+                    Editor.HandleExternalFileDeletion(tab);
+            };
+            _fileWatcher.FileRenamed += (oldPath, newPath) =>
+            {
+                var tab = Editor.Tabs.FirstOrDefault(t =>
+                    string.Equals(t.FilePath, oldPath, StringComparison.OrdinalIgnoreCase));
+                if (tab != null)
+                    Editor.HandleExternalFileRename(tab, newPath);
             };
 
             // Register command palette commands and populate file list
@@ -378,6 +463,57 @@ public partial class MainWindowViewModel : ObservableObject
 
             LoadRecentWorkspacesList();
         });
+    }
+
+    // =========================================================================
+    // External File Change Routing (Doc Section 10.3)
+    // =========================================================================
+
+    /// <summary>
+    /// Route external file changes through TextFileService for hash-based detection,
+    /// then update the corresponding EditorTab.
+    /// </summary>
+    private async Task HandleExternalFileChangeViaService(string filePath)
+    {
+        if (_textFileService == null) return;
+
+        var result = await _textFileService.HandleExternalChangeAsync(filePath);
+
+        var tab = Editor.Tabs.FirstOrDefault(t =>
+            string.Equals(t.FilePath, filePath, StringComparison.OrdinalIgnoreCase));
+
+        switch (result)
+        {
+            case ExternalChangeResult.AutoReloaded:
+                if (tab != null)
+                {
+                    var model = _textFileService.GetModel(filePath);
+                    if (model != null)
+                    {
+                        tab.Content = model.Content;
+                        tab.IsDirty = false;
+                        tab.FileState = FileState.Saved;
+                        tab.UpdateDiskMetadata(model.Content, model.DiskModifiedTime);
+                        if (tab == Editor.ActiveTab)
+                        {
+                            Editor.CurrentContent = model.Content;
+                        }
+                    }
+                }
+                break;
+
+            case ExternalChangeResult.Conflict:
+                if (tab != null)
+                    Editor.HandleExternalFileChange(tab);
+                break;
+
+            case ExternalChangeResult.Error:
+                if (tab != null)
+                {
+                    tab.FileState = FileState.Error;
+                }
+                break;
+        }
     }
 
     // =========================================================================

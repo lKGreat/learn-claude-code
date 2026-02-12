@@ -10,6 +10,7 @@
 
     <UserControl.Resources>
         <conv:BoolToOpacityConverter x:Key="BoolOpacity" />
+        <conv:BoolToFontStyleConverter x:Key="BoolToItalic" />
     </UserControl.Resources>
 
     <Border Background="#1E1E2E">
@@ -71,6 +72,7 @@
                                                 Click="OnTabClick">
                                             <TextBlock Text="{Binding DisplayTitle}"
                                                        FontSize="12"
+                                                       FontStyle="{Binding IsPreview, Converter={StaticResource BoolToItalic}}"
                                                        Foreground="#CDD6F4"
                                                        Opacity="{Binding IsActive, Converter={StaticResource BoolOpacity}}"
                                                        VerticalAlignment="Center" />

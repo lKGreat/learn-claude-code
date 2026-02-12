@@ -2,15 +2,25 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MiniClaudeCode.Avalonia.Models;
+using MiniClaudeCode.Avalonia.Services.Explorer;
 
 namespace MiniClaudeCode.Avalonia.ViewModels;
 
 /// <summary>
 /// ViewModel for the file explorer panel showing workspace directory tree.
+/// Acts as a thin UI coordinator that delegates to IExplorerService (doc 4.1).
 /// </summary>
 public partial class FileExplorerViewModel : ObservableObject
 {
-    public ObservableCollection<FileTreeNode> RootNodes { get; } = [];
+    private IExplorerService? _explorerService;
+
+    /// <summary>Root nodes of the file tree (bound to TreeView).</summary>
+    public ObservableCollection<FileTreeNode> RootNodes => _explorerService?.RootNodes ?? _fallbackRootNodes;
+    private readonly ObservableCollection<FileTreeNode> _fallbackRootNodes = [];
+
+    /// <summary>Selected nodes for multi-selection support (doc 4.2).</summary>
+    public ObservableCollection<FileTreeNode> SelectedNodes => _explorerService?.SelectedNodes ?? _fallbackSelectedNodes;
+    private readonly ObservableCollection<FileTreeNode> _fallbackSelectedNodes = [];
 
     /// <summary>File operations (create, rename, delete) sub-ViewModel.</summary>
     public FileOperationsViewModel FileOperations { get; } = new();
@@ -28,18 +38,56 @@ public partial class FileExplorerViewModel : ObservableObject
     private FileTreeNode? _selectedNode;
 
     /// <summary>
-    /// Fired when user double-clicks a file to view it.
+    /// Fired when user double-clicks a file to view it (permanent open).
     /// </summary>
     public event Action<string>? FileViewRequested;
 
     /// <summary>
-    /// Directories to skip in the file explorer.
+    /// Fired when user single-clicks a file to preview it (preview mode).
     /// </summary>
-    private static readonly HashSet<string> SkipDirs = new(StringComparer.OrdinalIgnoreCase)
+    public event Action<string>? FilePreviewRequested;
+
+    /// <summary>
+    /// Set the explorer service instance (called from MainWindowViewModel).
+    /// </summary>
+    public void SetExplorerService(IExplorerService service)
     {
-        ".git", "node_modules", "bin", "obj", ".vs", "__pycache__",
-        ".venv", "venv", ".idea", ".cursor", ".codex", ".claude"
-    };
+        _explorerService = service;
+
+        // Subscribe to explorer events
+        _explorerService.EventFired += OnExplorerEvent;
+
+        // Notify UI that RootNodes/SelectedNodes collections changed
+        OnPropertyChanged(nameof(RootNodes));
+        OnPropertyChanged(nameof(SelectedNodes));
+    }
+
+    /// <summary>
+    /// Handle explorer events from the service layer.
+    /// </summary>
+    private void OnExplorerEvent(ExplorerEvent evt)
+    {
+        switch (evt.Type)
+        {
+            case ExplorerEventType.NodeClick:
+                SelectedNode = evt.Node;
+                break;
+
+            case ExplorerEventType.NodeDoubleClick:
+                if (!evt.Node.IsDirectory && evt.Node.FullPath.Length > 0)
+                    FileViewRequested?.Invoke(evt.Node.FullPath);
+                break;
+
+            case ExplorerEventType.NodeExpand:
+            case ExplorerEventType.NodeCollapse:
+                // Expansion state is already handled by ExplorerService
+                break;
+
+            case ExplorerEventType.NodeDrop:
+                // Refresh was already handled by ExplorerService.MoveNode
+                break;
+        }
+    }
 
     /// <summary>
     /// Load the workspace root into the tree.
@@ -49,20 +97,10 @@ public partial class FileExplorerViewModel : ObservableObject
         WorkspacePath = path;
         WorkspaceName = Path.GetFileName(path) ?? path;
         FileOperations.SetWorkspace(path);
-        RootNodes.Clear();
 
-        if (!Directory.Exists(path)) return;
-
-        try
+        if (_explorerService != null)
         {
-            var rootNode = CreateDirectoryNode(path, Path.GetFileName(path) ?? path);
-            LoadChildren(rootNode);
-            rootNode.IsExpanded = true;
-            RootNodes.Add(rootNode);
-        }
-        catch
-        {
-            // Silently handle errors
+            _explorerService.LoadWorkspace(path);
         }
     }
 
@@ -71,47 +109,7 @@ public partial class FileExplorerViewModel : ObservableObject
     /// </summary>
     public void LoadChildren(FileTreeNode node)
     {
-        if (!node.IsDirectory || node.IsLoaded) return;
-
-        node.Children.Clear();
-
-        try
-        {
-            // Add directories first
-            var dirs = Directory.GetDirectories(node.FullPath)
-                .Where(d => !SkipDirs.Contains(Path.GetFileName(d) ?? ""))
-                .OrderBy(d => Path.GetFileName(d), StringComparer.OrdinalIgnoreCase);
-
-            foreach (var dir in dirs)
-            {
-                var child = CreateDirectoryNode(dir, Path.GetFileName(dir) ?? dir);
-                // Add a dummy child so the expander arrow shows
-                child.Children.Add(new FileTreeNode { Name = "Loading...", FullPath = "", IsDirectory = false });
-                node.Children.Add(child);
-            }
-
-            // Add files
-            var files = Directory.GetFiles(node.FullPath)
-                .Where(f => !ShouldSkipFile(f))
-                .OrderBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase);
-
-            foreach (var file in files)
-            {
-                node.Children.Add(new FileTreeNode
-                {
-                    Name = Path.GetFileName(file) ?? file,
-                    FullPath = file,
-                    IsDirectory = false,
-                    IsLoaded = true
-                });
-            }
-
-            node.IsLoaded = true;
-        }
-        catch
-        {
-            // Permission errors, etc.
-        }
+        _explorerService?.LoadChildren(node);
     }
 
     [RelayCommand]
@@ -130,15 +128,7 @@ public partial class FileExplorerViewModel : ObservableObject
     [RelayCommand]
     private void CollapseAll()
     {
-        foreach (var node in RootNodes)
-            CollapseRecursive(node);
-    }
-
-    private static void CollapseRecursive(FileTreeNode node)
-    {
-        node.IsExpanded = false;
-        foreach (var child in node.Children)
-            CollapseRecursive(child);
+        _explorerService?.CollapseAll();
     }
 
     [RelayCommand]
@@ -146,27 +136,42 @@ public partial class FileExplorerViewModel : ObservableObject
     {
         if (node is { IsDirectory: false, FullPath.Length: > 0 })
         {
+            _explorerService?.FireEvent(new ExplorerEvent(ExplorerEventType.NodeDoubleClick, node));
             FileViewRequested?.Invoke(node.FullPath);
         }
     }
 
-    private static FileTreeNode CreateDirectoryNode(string path, string name) => new()
+    [RelayCommand]
+    private void PreviewFile(FileTreeNode? node)
     {
-        Name = name,
-        FullPath = path,
-        IsDirectory = true,
-        IsLoaded = false
-    };
+        if (node is { IsDirectory: false, FullPath.Length: > 0 })
+        {
+            _explorerService?.FireEvent(new ExplorerEvent(ExplorerEventType.NodeClick, node));
+            FilePreviewRequested?.Invoke(node.FullPath);
+        }
+    }
 
-    private static bool ShouldSkipFile(string path)
+    /// <summary>
+    /// Toggle expansion of a directory node via the service.
+    /// </summary>
+    public void ToggleNodeExpansion(FileTreeNode node)
     {
-        var ext = Path.GetExtension(path)?.ToLowerInvariant();
-        string[] binaryExts = [".exe", ".dll", ".pdb", ".bin", ".obj", ".o", ".so", ".dylib",
-                               ".zip", ".tar", ".gz", ".7z", ".rar",
-                               ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".webp",
-                               ".pdf", ".mp3", ".mp4", ".avi", ".mov", ".wav",
-                               ".woff", ".woff2", ".ttf", ".eot",
-                               ".nupkg", ".snupkg"];
-        return binaryExts.Contains(ext);
+        _explorerService?.ToggleNodeExpansion(node);
+    }
+
+    /// <summary>
+    /// Set selected nodes via the service.
+    /// </summary>
+    public void SetSelectedNodes(IEnumerable<FileTreeNode> nodes)
+    {
+        _explorerService?.SetSelectedNodes(nodes);
+    }
+
+    /// <summary>
+    /// Move a node to a new parent (drag & drop) via the service.
+    /// </summary>
+    public bool MoveNode(FileTreeNode source, FileTreeNode targetParent)
+    {
+        return _explorerService?.MoveNode(source, targetParent) ?? false;
     }
 }

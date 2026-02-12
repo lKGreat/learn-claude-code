@@ -7,6 +7,8 @@ namespace MiniClaudeCode.Avalonia.Views;
 
 public partial class MainWindow : Window
 {
+    private bool _forceClose;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -23,6 +25,52 @@ public partial class MainWindow : Window
 
         // Sync the maximize/restore button icon with initial state
         UpdateMaxRestoreIcon();
+    }
+
+    // =========================================================================
+    // Window Close Guard
+    // =========================================================================
+
+    protected override async void OnClosing(WindowClosingEventArgs e)
+    {
+        if (_forceClose)
+        {
+            base.OnClosing(e);
+            return;
+        }
+
+        if (DataContext is MainWindowViewModel vm)
+        {
+            var dirtyTabs = vm.Editor.Tabs.Where(t => t.IsDirty).ToList();
+            if (dirtyTabs.Count > 0)
+            {
+                e.Cancel = true;
+
+                var fileList = string.Join(", ", dirtyTabs.Select(t => t.FileName));
+                var result = await vm.QuestionDialog.AskSelectionAsync(
+                    $"Save changes to {dirtyTabs.Count} file(s)? ({fileList})",
+                    ["Save All", "Don't Save", "Cancel"]);
+
+                switch (result)
+                {
+                    case "Save All":
+                        foreach (var tab in dirtyTabs)
+                            vm.Editor.SaveFileForTab(tab);
+                        _forceClose = true;
+                        Close();
+                        break;
+                    case "Don't Save":
+                        _forceClose = true;
+                        Close();
+                        break;
+                    // Cancel: do nothing, window stays open
+                }
+
+                return;
+            }
+        }
+
+        base.OnClosing(e);
     }
 
     // =========================================================================

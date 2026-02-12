@@ -148,11 +148,10 @@ public partial class EditorView : UserControl
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(EditorViewModel.CurrentContent))
-        {
-            LoadContent();
-        }
-        else if (e.PropertyName == nameof(EditorViewModel.IsIndentGuidesVisible))
+        // Note: CurrentContent changes are NOT handled here.
+        // Content loading is handled exclusively by OnActiveFileChanged to prevent
+        // double-loading and false dirty marking on tab switch.
+        if (e.PropertyName == nameof(EditorViewModel.IsIndentGuidesVisible))
         {
             if (_indentGuideRenderer != null)
             {
@@ -186,7 +185,20 @@ public partial class EditorView : UserControl
 
     private void OnActiveFileChanged(EditorTab? tab)
     {
-        if (tab == null) return;
+        if (tab == null)
+        {
+            // All tabs closed: clear editor content
+            _isLoadingContent = true;
+            try
+            {
+                CodeEditor.Text = "";
+            }
+            finally
+            {
+                _isLoadingContent = false;
+            }
+            return;
+        }
 
         LoadContent();
         ApplyLanguageGrammar(tab.Language);
@@ -211,6 +223,7 @@ public partial class EditorView : UserControl
     private void LoadContent()
     {
         if (_viewModel == null) return;
+        if (CodeEditor.Text == _viewModel.CurrentContent) return; // No change needed
 
         _isLoadingContent = true;
         try

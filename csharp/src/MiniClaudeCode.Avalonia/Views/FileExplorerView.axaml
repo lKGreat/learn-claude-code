@@ -100,6 +100,12 @@
                       Background="Transparent"
                       DoubleTapped="OnTreeDoubleTapped"
                       SelectionChanged="OnTreeSelectionChanged">
+                <!-- CRITICAL: Bind TreeViewItem.IsExpanded to FileTreeNode.IsExpanded (two-way) -->
+                <TreeView.Styles>
+                    <Style Selector="TreeViewItem" x:DataType="models:FileTreeNode">
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                    </Style>
+                </TreeView.Styles>
                 <TreeView.ItemTemplate>
                     <TreeDataTemplate ItemsSource="{Binding Children}" x:DataType="models:FileTreeNode">
                         <Panel>
@@ -119,7 +125,8 @@
                                 <TextBox Text="{Binding EditName, Mode=TwoWay}"
                                          FontSize="12" Background="#11111B" Foreground="#CDD6F4"
                                          BorderBrush="#89B4FA" BorderThickness="1" Padding="2,0"
-                                         MinWidth="120" />
+                                         MinWidth="120"
+                                         KeyDown="OnRenameBoxKeyDown" />
                             </StackPanel>
                         </Panel>
 

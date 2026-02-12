@@ -12,6 +12,7 @@ using AvaloniaEdit.Rendering;
 using AvaloniaEdit.TextMate;
 using MiniClaudeCode.Avalonia.Editor.Folding;
 using MiniClaudeCode.Avalonia.Editor.Rendering;
+using MiniClaudeCode.Avalonia.Logging;
 using MiniClaudeCode.Avalonia.Models;
 using MiniClaudeCode.Avalonia.ViewModels;
 using TextMateSharp.Grammars;
@@ -188,6 +189,7 @@ public partial class EditorView : UserControl
         if (tab == null)
         {
             // All tabs closed: clear editor content
+            LogHelper.UI.Debug("OnActiveFileChanged: tab=null, 清空编辑器");
             _isLoadingContent = true;
             try
             {
@@ -200,6 +202,7 @@ public partial class EditorView : UserControl
             return;
         }
 
+        LogHelper.UI.Debug("OnActiveFileChanged: {0}, Language={1}", tab.FilePath, tab.Language);
         LoadContent();
         ApplyLanguageGrammar(tab.Language);
         UpdateFoldings();
@@ -216,19 +219,29 @@ public partial class EditorView : UserControl
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Folding update error: {ex.Message}");
+            LogHelper.UI.Warn(ex, "折叠更新错误");
         }
     }
 
     private void LoadContent()
     {
         if (_viewModel == null) return;
-        if (CodeEditor.Text == _viewModel.CurrentContent) return; // No change needed
+        if (CodeEditor.Text == _viewModel.CurrentContent)
+        {
+            LogHelper.UI.Debug("LoadContent: 内容未变化，跳过");
+            return;
+        }
 
+        LogHelper.UI.Debug("LoadContent: 加载内容, length={0}", _viewModel.CurrentContent.Length);
         _isLoadingContent = true;
         try
         {
             CodeEditor.Text = _viewModel.CurrentContent;
+            LogHelper.UI.Debug("LoadContent: 内容已加载到编辑器");
+        }
+        catch (Exception ex)
+        {
+            LogHelper.UI.Error(ex, "LoadContent 失败");
         }
         finally
         {

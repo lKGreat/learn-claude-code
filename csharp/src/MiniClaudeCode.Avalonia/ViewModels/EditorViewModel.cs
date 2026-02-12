@@ -3,10 +3,12 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MiniClaudeCode.Avalonia.Editor;
 using MiniClaudeCode.Avalonia.Editor.TextBuffer;
+using MiniClaudeCode.Avalonia.Logging;
 using MiniClaudeCode.Avalonia.Models;
 using MiniClaudeCode.Avalonia.Services;
 using MiniClaudeCode.Avalonia.Services.Explorer;
 using MiniClaudeCode.Core.AI;
+using System.Text;
 
 namespace MiniClaudeCode.Avalonia.ViewModels;
 
@@ -308,7 +310,7 @@ public partial class EditorViewModel : ObservableObject
     /// </summary>
     private async Task<EditorTab> CreateTabAsync(string filePath, bool isPreview = false)
     {
-        DebugLogger.Log($"CreateTabAsync: {filePath}, isPreview={isPreview}");
+        LogHelper.UI.Info("CreateTabAsync 开始: {0}, isPreview={1}", filePath, isPreview);
         
         string content;
         PieceTreeTextBuffer? textBuffer = null;
@@ -318,16 +320,16 @@ public partial class EditorViewModel : ObservableObject
         {
             if (_textFileService != null)
             {
-                DebugLogger.Log($"Using TextFileService to resolve: {filePath}");
+                LogHelper.UI.Debug("使用 TextFileService 解析: {0}", filePath);
                 // Use TextFileService for model caching (doc 6.3)
                 model = await _textFileService.ResolveAsync(filePath);
                 content = model.Content;
                 textBuffer = model.TextBuffer;
-                DebugLogger.Log($"File resolved, length={content.Length}");
+                LogHelper.UI.Debug("文件已解析, length={0}", content.Length);
             }
             else
             {
-                DebugLogger.Log($"Fallback: direct file read");
+                LogHelper.UI.Debug("回退: 直接读取文件");
                 // Fallback: direct file read
                 try
                 {
@@ -344,24 +346,25 @@ public partial class EditorViewModel : ObservableObject
                             sb.Append(textBuffer.GetLineContent(line));
                         }
                         content = sb.ToString();
-                        DebugLogger.Log($"Large file loaded via PieceTree, lineCount={textBuffer.LineCount}");
+                        LogHelper.UI.Debug("大文件已通过 PieceTree 加载, lineCount={0}", textBuffer.LineCount);
                     }
                     else
                     {
-                        content = File.ReadAllText(filePath);
-                        DebugLogger.Log($"File read, length={content.Length}");
+                        // 尝试多种编码来处理可能的乱码问题
+                        content = TryReadFileWithMultipleEncodings(filePath);
+                        LogHelper.UI.Debug("文件已读（多编码尝试）, length={0}", content.Length);
                     }
                 }
                 catch (Exception ex)
                 {
-                    DebugLogger.LogError($"Error loading file content: {filePath}", ex);
+                    LogHelper.UI.Error(ex, "文件内容加载错误: {0}", filePath);
                     content = $"Error loading file: {ex.Message}";
                 }
             }
         }
         catch (Exception ex)
         {
-            DebugLogger.LogError($"Error loading file content: {filePath}", ex);
+            LogHelper.UI.Error(ex, "文件内容加载错误: {0}", filePath);
             content = $"Error loading file: {ex.Message}";
         }
 
@@ -382,10 +385,10 @@ public partial class EditorViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            DebugLogger.LogError($"Failed to update disk metadata for: {filePath}", ex);
+            LogHelper.UI.Warn(ex, "无法更新磁盘元数据: {0}", filePath);
         }
 
-        DebugLogger.Log($"CreateTabAsync completed for: {filePath}");
+        LogHelper.UI.Info("CreateTabAsync 完成: {0}, contentLength={1}", filePath, content.Length);
         return tab;
     }
 
@@ -395,7 +398,8 @@ public partial class EditorViewModel : ObservableObject
     /// </summary>
     public async void OpenFile(string filePath)
     {
-        DebugLogger.Log($"OpenFile called: {filePath}");
+        LogHelper.UI.Info("===== OpenFile 开始 =====");
+        LogHelper.UI.Info("文件路径: {0}", filePath);
         
         try
         {
@@ -403,7 +407,7 @@ public partial class EditorViewModel : ObservableObject
             var existing = Tabs.FirstOrDefault(t => t.FilePath == filePath);
             if (existing != null)
             {
-                DebugLogger.Log($"File already open, activating tab");
+                LogHelper.UI.Debug("文件已打开，激活现有 tab");
                 // If it's a preview tab, pin it (make permanent)
                 if (existing.IsPreview)
                     existing.IsPreview = false;
@@ -411,14 +415,18 @@ public partial class EditorViewModel : ObservableObject
                 return;
             }
 
-            DebugLogger.Log($"Creating new tab for: {filePath}");
+            LogHelper.UI.Debug("为以下文件创建新 tab: {0}", filePath);
             // Step 2-5: Create tab with model (doc 6.2 steps 2-5)
             var tab = await CreateTabAsync(filePath, isPreview: false);
+            LogHelper.UI.Debug("Tab 已创建, Content.Length={0}", tab.Content.Length);
 
-            DebugLogger.Log($"Tab created, adding to list");
+            LogHelper.UI.Debug("将 tab 添加到列表");
             // Step 6: Add to tab list
             Tabs.Add(tab);
+            LogHelper.UI.Debug("Tabs 总数: {0}", Tabs.Count);
+            
             ActivateTab(tab);
+            LogHelper.UI.Info("激活 tab 完成");
 
             // Step 7: Update large file warning
             if (tab.IsLargeFile)
@@ -439,11 +447,11 @@ public partial class EditorViewModel : ObservableObject
                 LargeFileWarning = "";
             }
             
-            DebugLogger.Log($"OpenFile completed successfully");
+            LogHelper.UI.Info("===== OpenFile 完成 =====");
         }
         catch (Exception ex)
         {
-            DebugLogger.LogError($"Failed to open file: {filePath}", ex);
+            LogHelper.UI.Error(ex, "打开文件失败: {0}", filePath);
             SaveError?.Invoke($"Failed to open file: {ex.Message}");
         }
     }
@@ -454,7 +462,8 @@ public partial class EditorViewModel : ObservableObject
     /// </summary>
     public async void PreviewFile(string filePath)
     {
-        DebugLogger.Log($"PreviewFile called: {filePath}");
+        LogHelper.UI.Info("===== PreviewFile 开始 =====");
+        LogHelper.UI.Info("文件路径: {0}", filePath);
         
         try
         {
@@ -462,7 +471,7 @@ public partial class EditorViewModel : ObservableObject
             var existing = Tabs.FirstOrDefault(t => t.FilePath == filePath);
             if (existing != null)
             {
-                DebugLogger.Log($"File already open, activating existing tab");
+                LogHelper.UI.Debug("文件已打开，激活现有 tab");
                 ActivateTab(existing);
                 return;
             }
@@ -471,7 +480,7 @@ public partial class EditorViewModel : ObservableObject
             var existingPreview = Tabs.FirstOrDefault(t => t.IsPreview);
             if (existingPreview != null)
             {
-                DebugLogger.Log($"Replacing existing preview tab");
+                LogHelper.UI.Debug("替换现有预览 tab");
                 var index = Tabs.IndexOf(existingPreview);
 
                 // Release model reference for old preview tab
@@ -481,40 +490,63 @@ public partial class EditorViewModel : ObservableObject
                 Tabs.Remove(existingPreview);
 
                 var tab = await CreateTabAsync(filePath, isPreview: true);
+                LogHelper.UI.Debug("新预览 tab 已创建, Content.Length={0}", tab.Content.Length);
+                
                 Tabs.Insert(index, tab);
+                LogHelper.UI.Debug("新 tab 已插入到位置 {0}", index);
+                
                 ActivateTab(tab);
             }
             else
             {
-                DebugLogger.Log($"Creating new preview tab");
+                LogHelper.UI.Debug("创建新的预览 tab");
                 var tab = await CreateTabAsync(filePath, isPreview: true);
+                LogHelper.UI.Debug("新预览 tab 已创建, Content.Length={0}", tab.Content.Length);
+                
                 Tabs.Add(tab);
+                LogHelper.UI.Debug("Tabs 总数: {0}", Tabs.Count);
+                
                 ActivateTab(tab);
             }
 
             IsLargeFile = false;
             LargeFileWarning = "";
             
-            DebugLogger.Log($"PreviewFile completed successfully");
+            LogHelper.UI.Info("===== PreviewFile 完成 =====");
         }
         catch (Exception ex)
         {
-            DebugLogger.LogError($"Failed to preview file: {filePath}", ex);
+            LogHelper.UI.Error(ex, "预览文件失败: {0}", filePath);
             SaveError?.Invoke($"Failed to preview file: {ex.Message}");
         }
     }
 
     public void ActivateTab(EditorTab tab)
     {
-        if (ActiveTab != null) ActiveTab.IsActive = false;
+        LogHelper.UI.Info("===== ActivateTab 开始 =====");
+        LogHelper.UI.Info("Tab: {0}, IsPreview={1}, ContentLength={2}", 
+            tab.FilePath, tab.IsPreview, tab.Content.Length);
+        
+        if (ActiveTab != null)
+        {
+            LogHelper.UI.Debug("取消激活前一个 tab: {0}", ActiveTab.FilePath);
+            ActiveTab.IsActive = false;
+        }
+        
         tab.IsActive = true;
         ActiveTab = tab;
+        
+        LogHelper.UI.Debug("设置 CurrentContent, length={0}", tab.Content.Length);
         CurrentContent = tab.Content;
+        LogHelper.UI.Debug("CurrentContent 已设置");
+        
         HasOpenFiles = true;
         UpdateBreadcrumb(tab);
 
+        LogHelper.UI.Info("触发 ActiveFileChanged 事件");
         // Step 8: Fire events (doc 6.1 step 8)
         ActiveFileChanged?.Invoke(tab);
+        LogHelper.UI.Info("===== ActivateTab 完成 =====");
     }
 
     // =========================================================================
@@ -525,6 +557,8 @@ public partial class EditorViewModel : ObservableObject
     private async Task CloseTab(EditorTab? tab)
     {
         if (tab == null) return;
+
+        LogHelper.UI.Debug("关闭 Tab: {0}", tab.FilePath);
 
         // Step 2: Check dirty state (doc 8.1 step 2)
         if (tab.IsDirty)
@@ -538,6 +572,7 @@ public partial class EditorViewModel : ObservableObject
                         await SaveFileForTabAsync(tab);
                         break;
                     case SaveConfirmResult.Cancel:
+                        LogHelper.UI.Debug("用户取消了保存，放弃关闭");
                         return; // Don't close
                     case SaveConfirmResult.DontSave:
                         break; // Close without saving
@@ -550,6 +585,7 @@ public partial class EditorViewModel : ObservableObject
 
         // Step 3: Remove from tab list (doc 8.1 step 3)
         Tabs.Remove(tab);
+        LogHelper.UI.Info("Tab 已从列表移除: {0}", tab.FilePath);
 
         // Step 4: Release model reference (doc 8.1 step 4)
         if (_textFileService != null && tab.Model != null)
@@ -563,10 +599,12 @@ public partial class EditorViewModel : ObservableObject
             HasOpenFiles = false;
             Breadcrumb = "";
             ActiveFileChanged?.Invoke(null);
+            LogHelper.UI.Info("所有 Tab 已关闭");
         }
         else if (wasActive)
         {
             var nextIndex = Math.Min(index, Tabs.Count - 1);
+            LogHelper.UI.Debug("激活下一个 Tab: {0}", Tabs[nextIndex].FilePath);
             ActivateTab(Tabs[nextIndex]);
         }
     }
@@ -990,5 +1028,34 @@ public partial class EditorViewModel : ObservableObject
         var last3 = segments.Length > 3 ? segments[^3..] : segments;
         Breadcrumb = string.Join(" > ", last3.Append(tab.FileName));
         BreadcrumbNav.Update(tab.FilePath, _workspacePath);
+    }
+
+    /// <summary>
+    /// 尝试多种编码读取文件，避免乱码问题
+    /// </summary>
+    private static string TryReadFileWithMultipleEncodings(string filePath)
+    {
+        Encoding[] encodings = [
+            Encoding.UTF8,
+            Encoding.Default, // system default
+            Encoding.GetEncoding("gb2312"), // Chinese
+            Encoding.GetEncoding("big5"),   // Traditional Chinese
+            Encoding.ASCII
+        ];
+
+        foreach (var encoding in encodings)
+        {
+            try
+            {
+                var content = File.ReadAllText(filePath, encoding);
+                // Check if content is valid (not mostly replacement chars)
+                if (!content.Contains('\uFFFD') || content.Length < 100)
+                    return content;
+            }
+            catch { /* try next encoding */ }
+        }
+
+        // Fallback: read with UTF8, allow invalid chars
+        return File.ReadAllText(filePath, new UTF8Encoding(false));
     }
 }

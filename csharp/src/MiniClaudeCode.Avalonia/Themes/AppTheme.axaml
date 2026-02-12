@@ -1,6 +1,10 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+    <!-- ============================================================ -->
+    <!--  MiniClaudeCode Dark Theme Overrides (Catppuccin Mocha-ish)  -->
+    <!-- ============================================================ -->
+
     <!-- Global font settings -->
     <Style Selector="TextBlock">
         <Setter Property="FontSize" Value="13" />
@@ -48,9 +52,30 @@
         <Setter Property="Margin" Value="0,1" />
     </Style>
 
+    <!-- Accent button style -->
+    <Style Selector="Button.accent">
+        <Setter Property="Background" Value="#60A5FA" />
+        <Setter Property="Foreground" Value="#11111B" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#93C5FD" />
+    </Style>
+
     <!-- Separator line -->
     <Style Selector="Separator">
         <Setter Property="Margin" Value="0,4" />
+        <Setter Property="Background" Value="#313244" />
+    </Style>
+
+    <!-- Scrollbar tweaks for dark theme -->
+    <Style Selector="ScrollViewer">
+        <Setter Property="AllowAutoHide" Value="True" />
+    </Style>
+
+    <!-- Processing indicator in input -->
+    <Style Selector="TextBox:disabled">
+        <Setter Property="Opacity" Value="0.6" />
     </Style>
 
 </Styles>

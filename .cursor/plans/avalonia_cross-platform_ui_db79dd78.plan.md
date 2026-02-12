@@ -40,7 +40,7 @@ todos:
     status: completed
   - id: theme-polish
     content: Apply Semi.Avalonia dark theme, custom styles for message bubbles, status colors, monospace code fonts, notification toasts, keyboard shortcuts
-    status: in_progress
+    status: completed
 isProject: false
 ---
 

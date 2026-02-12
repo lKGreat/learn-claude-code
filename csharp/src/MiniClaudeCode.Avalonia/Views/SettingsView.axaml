@@ -1,0 +1,144 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             x:Class="MiniClaudeCode.Avalonia.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+
+    <!-- Full-window overlay -->
+    <Panel IsVisible="{Binding IsVisible}"
+           Background="#F0181825">
+        <Border Margin="40,20"
+                Background="#1E1E2E"
+                BorderBrush="#45475A"
+                BorderThickness="1"
+                CornerRadius="8"
+                BoxShadow="0 4 24 0 #40000000">
+            <DockPanel>
+                <!-- Header -->
+                <Border DockPanel.Dock="Top"
+                        Padding="16,12"
+                        Background="#181825"
+                        BorderBrush="#313244"
+                        BorderThickness="0,0,0,1">
+                    <DockPanel>
+                        <TextBlock Text="Settings"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="#CDD6F4"
+                                   VerticalAlignment="Center" />
+                        <Button DockPanel.Dock="Right"
+                                Content="\u2715"
+                                Command="{Binding HideCommand}"
+                                Background="Transparent"
+                                Foreground="#6C7086"
+                                FontSize="16"
+                                Padding="8,4"
+                                HorizontalAlignment="Right"
+                                Cursor="Hand">
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Foreground" Value="#CDD6F4" />
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+
+                        <!-- Search -->
+                        <TextBox Text="{Binding SearchQuery}"
+                                 Watermark="Search settings..."
+                                 FontSize="13"
+                                 Background="#11111B"
+                                 BorderBrush="#313244"
+                                 Margin="20,0"
+                                 Padding="8,6" />
+                    </DockPanel>
+                </Border>
+
+                <!-- Body: Category list + Settings -->
+                <Grid ColumnDefinitions="180,*">
+                    <!-- Category list -->
+                    <Border Grid.Column="0"
+                            Background="#181825"
+                            BorderBrush="#313244"
+                            BorderThickness="0,0,1,0"
+                            Padding="8">
+                        <ItemsControl ItemsSource="{Binding Categories}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SettingCategory">
+                                    <Button Background="Transparent"
+                                            BorderThickness="0"
+                                            Padding="8,6"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Left"
+                                            Command="{Binding $parent[ItemsControl].((vm:SettingsViewModel)DataContext).SelectCategoryCommand}"
+                                            CommandParameter="{Binding Name}"
+                                            Cursor="Hand">
+                                        <Button.Styles>
+                                            <Style Selector="Button:pointerover">
+                                                <Setter Property="Background" Value="#313244" />
+                                            </Style>
+                                        </Button.Styles>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding Icon}"
+                                                       FontSize="14"
+                                                       VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding Name}"
+                                                       FontSize="13"
+                                                       Foreground="#CDD6F4"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+
+                    <!-- Settings list -->
+                    <ScrollViewer Grid.Column="1"
+                                  VerticalScrollBarVisibility="Auto"
+                                  Padding="16">
+                        <ItemsControl ItemsSource="{Binding FilteredSettings}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SettingEntry">
+                                    <Border Padding="12,10"
+                                            Margin="0,0,0,4"
+                                            Background="#11111B"
+                                            CornerRadius="6">
+                                        <StackPanel Spacing="4">
+                                            <!-- Setting label + key -->
+                                            <DockPanel>
+                                                <TextBlock Text="{Binding Label}"
+                                                           FontSize="13"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#CDD6F4" />
+                                                <TextBlock DockPanel.Dock="Right"
+                                                           Text="{Binding Key}"
+                                                           FontSize="10"
+                                                           Foreground="#6C7086"
+                                                           Opacity="0.5"
+                                                           VerticalAlignment="Center"
+                                                           HorizontalAlignment="Right"
+                                                           FontFamily="Cascadia Code, Consolas, monospace" />
+                                            </DockPanel>
+                                            <!-- Description -->
+                                            <TextBlock Text="{Binding Description}"
+                                                       FontSize="11"
+                                                       Foreground="#9CA3AF"
+                                                       TextWrapping="Wrap" />
+                                            <!-- Value input -->
+                                            <TextBox Text="{Binding Value, Mode=TwoWay}"
+                                                     FontSize="12"
+                                                     Background="#181825"
+                                                     BorderBrush="#313244"
+                                                     Padding="8,4"
+                                                     Margin="0,4,0,0" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </DockPanel>
+        </Border>
+    </Panel>
+</UserControl>

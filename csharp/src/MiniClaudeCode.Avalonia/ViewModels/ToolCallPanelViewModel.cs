@@ -17,6 +17,13 @@ public partial class ToolCallPanelViewModel : ObservableObject
     [ObservableProperty]
     private int _runningCount;
 
+    public void Clear()
+    {
+        ToolCalls.Clear();
+        TotalCount = 0;
+        RunningCount = 0;
+    }
+
     public void AddToolCall(ToolCallItem item)
     {
         ToolCalls.Insert(0, item);

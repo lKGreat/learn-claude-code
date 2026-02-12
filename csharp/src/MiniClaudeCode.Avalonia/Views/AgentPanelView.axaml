@@ -38,6 +38,29 @@
                 </DockPanel>
             </Border>
 
+            <!-- New Agent Launch UI -->
+            <Border DockPanel.Dock="Bottom" Padding="6,4" Background="#1E1E2E">
+                <StackPanel Spacing="4">
+                    <DockPanel>
+                        <ComboBox ItemsSource="{Binding AvailableAgentTypes}"
+                                  SelectedItem="{Binding SelectedAgentType}"
+                                  FontSize="11"
+                                  MinWidth="90"
+                                  VerticalAlignment="Center" />
+                        <Button DockPanel.Dock="Right"
+                                Content="Launch"
+                                Command="{Binding LaunchAgentCommand}"
+                                FontSize="11"
+                                Padding="8,3"
+                                Margin="4,0,0,0" />
+                    </DockPanel>
+                    <TextBox Text="{Binding NewAgentPrompt}"
+                             Watermark="Agent prompt..."
+                             FontSize="11"
+                             MinHeight="28" />
+                </StackPanel>
+            </Border>
+
             <!-- Agent List -->
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <ItemsControl ItemsSource="{Binding Agents}" Padding="4">
@@ -72,11 +95,20 @@
                                                FontSize="11" Opacity="0.7"
                                                TextTrimming="CharacterEllipsis"
                                                MaxLines="1" />
+                                    <!-- Tool call count -->
+                                    <TextBlock FontSize="10" Opacity="0.4"
+                                               IsVisible="{Binding !!ToolCallCount}">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="Tools: {0}">
+                                                <Binding Path="ToolCallCount" />
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
                                     <!-- Expanded result -->
-                                    <TextBlock Text="{Binding Result}"
+                                    <SelectableTextBlock Text="{Binding Result}"
                                                FontSize="11" Opacity="0.6"
                                                TextWrapping="Wrap"
-                                               MaxLines="5"
+                                               MaxLines="10"
                                                IsVisible="{Binding IsExpanded}"
                                                FontFamily="Cascadia Code, Consolas, monospace" />
                                 </StackPanel>

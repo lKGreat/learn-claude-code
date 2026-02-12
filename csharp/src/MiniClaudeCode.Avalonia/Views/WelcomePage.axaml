@@ -1,0 +1,75 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             x:Class="MiniClaudeCode.Avalonia.Views.WelcomePage"
+             x:DataType="vm:MainWindowViewModel">
+
+    <Border Background="#181825">
+        <StackPanel VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Spacing="20"
+                    MaxWidth="500">
+
+            <!-- Logo / Title -->
+            <TextBlock Text="MiniClaudeCode"
+                       FontSize="32"
+                       FontWeight="Bold"
+                       Foreground="#CDD6F4"
+                       HorizontalAlignment="Center" />
+
+            <TextBlock Text="AI-Powered Coding Assistant"
+                       FontSize="16"
+                       Foreground="#9CA3AF"
+                       HorizontalAlignment="Center" />
+
+            <Border Height="1" Background="#313244" Margin="40,10" />
+
+            <!-- Open Folder -->
+            <Button Content="Open Folder..."
+                    Command="{Binding OpenWorkspaceCommand}"
+                    HorizontalAlignment="Center"
+                    Padding="20,10"
+                    FontSize="14" />
+
+            <!-- Recent Workspaces Header -->
+            <TextBlock Text="Recent Workspaces"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       Foreground="#A6ADC8"
+                       Margin="0,10,0,4" />
+
+            <!-- Recent Workspaces List -->
+            <ItemsControl ItemsSource="{Binding RecentWorkspaces}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Background="Transparent"
+                                Padding="8,6"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left"
+                                Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).OpenRecentCommand}"
+                                CommandParameter="{Binding Path}">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="{Binding DisplayName}"
+                                           FontSize="13"
+                                           Foreground="#89B4FA" />
+                                <TextBlock Text="{Binding Path}"
+                                           FontSize="10"
+                                           Foreground="#6C7086"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Hint -->
+            <TextBlock Text="Open a project folder to get started, or start chatting directly."
+                       FontSize="11"
+                       Foreground="#585B70"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
+                       Margin="0,20,0,0" />
+        </StackPanel>
+    </Border>
+</UserControl>

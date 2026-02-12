@@ -1,0 +1,107 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:models="using:MiniClaudeCode.Avalonia.Models"
+             x:Class="MiniClaudeCode.Avalonia.Views.TerminalView"
+             x:DataType="vm:TerminalViewModel">
+
+    <Border Background="#11111B" CornerRadius="0">
+        <DockPanel>
+            <!-- Toolbar -->
+            <Border DockPanel.Dock="Top" Padding="6,4" Background="#1E1E2E">
+                <DockPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="Terminal"
+                                   FontWeight="Bold"
+                                   FontSize="12"
+                                   Foreground="#CDD6F4"
+                                   VerticalAlignment="Center" />
+
+                        <!-- Shell selector -->
+                        <ComboBox ItemsSource="{Binding AvailableShells}"
+                                  SelectedItem="{Binding SelectedShell}"
+                                  FontSize="11"
+                                  MinWidth="100"
+                                  VerticalAlignment="Center" />
+
+                        <Button Content="+"
+                                Command="{Binding NewSessionCommand}"
+                                ToolTip.Tip="New Terminal"
+                                FontSize="12"
+                                Padding="6,2" />
+
+                        <Button Content="Kill"
+                                Command="{Binding KillSessionCommand}"
+                                ToolTip.Tip="Kill Session"
+                                FontSize="11"
+                                Padding="6,2" />
+
+                        <Button Content="Clear"
+                                Command="{Binding ClearOutputCommand}"
+                                ToolTip.Tip="Clear Output"
+                                FontSize="11"
+                                Padding="6,2" />
+
+                        <Button Content="X"
+                                Command="{Binding CloseSessionCommand}"
+                                ToolTip.Tip="Close Session"
+                                FontSize="11"
+                                Padding="6,2"
+                                Foreground="#F87171" />
+                    </StackPanel>
+
+                    <!-- Session tabs -->
+                    <ItemsControl DockPanel.Dock="Right"
+                                  ItemsSource="{Binding Sessions}"
+                                  HorizontalAlignment="Right">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" Spacing="2" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:TerminalSession">
+                                <Button Content="{Binding ShellType}"
+                                        Command="{Binding $parent[ItemsControl].((vm:TerminalViewModel)DataContext).SwitchSessionCommand}"
+                                        CommandParameter="{Binding}"
+                                        FontSize="10"
+                                        Padding="6,2" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+
+            <!-- Input at bottom -->
+            <Border DockPanel.Dock="Bottom" Padding="6,4" Background="#181825">
+                <DockPanel>
+                    <TextBlock Text=">"
+                               Foreground="#A6E3A1"
+                               FontFamily="Cascadia Code, Consolas, monospace"
+                               FontSize="13"
+                               VerticalAlignment="Center"
+                               Margin="0,0,6,0" />
+                    <TextBox Text="{Binding InputText}"
+                             FontFamily="Cascadia Code, Consolas, monospace"
+                             FontSize="13"
+                             Foreground="#CDD6F4"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
+
+            <!-- Output area -->
+            <ScrollViewer x:Name="TerminalScroller"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Auto">
+                <SelectableTextBlock Text="{Binding OutputText}"
+                           TextWrapping="NoWrap"
+                           FontFamily="Cascadia Code, Consolas, monospace"
+                           FontSize="12"
+                           Foreground="#CDD6F4"
+                           Padding="8,4" />
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</UserControl>

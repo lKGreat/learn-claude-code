@@ -6,6 +6,8 @@ namespace MiniClaudeCode.Avalonia.Views;
 
 public partial class ChatView : UserControl
 {
+    private ChatViewModel? _currentVm;
+
     public ChatView()
     {
         InitializeComponent();
@@ -14,19 +16,32 @@ public partial class ChatView : UserControl
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        // Unsubscribe from previous VM
+        if (_currentVm != null)
+        {
+            _currentVm.Messages.CollectionChanged -= OnMessagesChanged;
+            _currentVm.ScrollToBottomRequested -= ScrollToBottom;
+        }
+
         if (DataContext is ChatViewModel vm)
         {
+            _currentVm = vm;
             vm.Messages.CollectionChanged += OnMessagesChanged;
+            vm.ScrollToBottomRequested += ScrollToBottom;
         }
     }
 
     private void OnMessagesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        // Auto-scroll to bottom when new messages are added
         if (e.Action == NotifyCollectionChangedAction.Add)
         {
-            var scroller = this.FindControl<ScrollViewer>("ChatScroller");
-            scroller?.ScrollToEnd();
+            ScrollToBottom();
         }
+    }
+
+    private void ScrollToBottom()
+    {
+        var scroller = this.FindControl<ScrollViewer>("ChatScroller");
+        scroller?.ScrollToEnd();
     }
 }

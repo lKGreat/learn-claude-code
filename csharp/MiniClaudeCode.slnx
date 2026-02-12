@@ -3,7 +3,7 @@
     <Project Path="src/MiniClaudeCode.Abstractions/MiniClaudeCode.Abstractions.csproj" />
     <Project Path="src/MiniClaudeCode.Core/MiniClaudeCode.Core.csproj" />
     <Project Path="src/MiniClaudeCode.Rpc/MiniClaudeCode.Rpc.csproj" />
-    <Project Path="src/MiniClaudeCode.Tui/MiniClaudeCode.Tui.csproj" />
+
     <Project Path="src/MiniClaudeCode.Avalonia/MiniClaudeCode.Avalonia.csproj" />
   </Folder>
 </Solution>

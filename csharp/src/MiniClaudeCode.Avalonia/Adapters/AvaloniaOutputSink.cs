@@ -33,4 +33,17 @@ public class AvaloniaOutputSink(ChatViewModel chat) : IOutputSink
 
     public void Clear()
         => DispatcherService.Post(() => chat.ClearMessages());
+
+    // =========================================================================
+    // Streaming methods for real-time token-by-token display
+    // =========================================================================
+
+    public void StreamStart(string messageId)
+        => DispatcherService.Post(() => chat.BeginStreamingMessage());
+
+    public void StreamAppend(string messageId, string chunk)
+        => DispatcherService.Post(() => chat.AppendToStreaming(chunk));
+
+    public void StreamEnd(string messageId)
+        => DispatcherService.Post(() => chat.EndStreaming());
 }

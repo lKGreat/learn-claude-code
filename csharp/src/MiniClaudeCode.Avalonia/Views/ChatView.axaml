@@ -3,11 +3,14 @@
              xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
              xmlns:models="using:MiniClaudeCode.Avalonia.Models"
              xmlns:conv="using:MiniClaudeCode.Avalonia.Converters"
+             xmlns:md="https://github.com/whistyun/Markdown.Avalonia"
              x:Class="MiniClaudeCode.Avalonia.Views.ChatView"
              x:DataType="vm:ChatViewModel">
 
     <UserControl.Resources>
         <conv:HexColorToBrushConverter x:Key="HexToBrush" />
+        <conv:RoleToMarkdownVisibilityConverter x:Key="IsAssistantRole" />
+        <conv:RoleToTextVisibilityConverter x:Key="IsNonAssistantRole" />
     </UserControl.Resources>
 
     <Border Background="#181825" CornerRadius="0">
@@ -33,12 +36,49 @@
                                                HorizontalAlignment="Right"
                                                VerticalAlignment="Center" />
                                 </DockPanel>
+
                                 <!-- Message content -->
-                                <TextBlock Text="{Binding Content}"
-                                           TextWrapping="Wrap"
-                                           FontSize="13"
-                                           Foreground="#CDD6F4"
-                                           FontFamily="Cascadia Code, Consolas, Menlo, monospace" />
+                                <Panel>
+                                    <!-- Markdown rendered content for Assistant messages -->
+                                    <md:MarkdownScrollViewer
+                                        Markdown="{Binding Content}"
+                                        IsVisible="{Binding Role, Converter={StaticResource IsAssistantRole}}" />
+
+                                    <!-- Plain text for non-assistant messages (System, User, Error, Warning) -->
+                                    <SelectableTextBlock Text="{Binding Content}"
+                                               IsVisible="{Binding Role, Converter={StaticResource IsNonAssistantRole}}"
+                                               TextWrapping="Wrap"
+                                               FontSize="13"
+                                               Foreground="#CDD6F4"
+                                               FontFamily="Cascadia Code, Consolas, Menlo, monospace" />
+
+                                    <!-- Streaming blinking cursor indicator -->
+                                    <TextBlock Text=" ..."
+                                               IsVisible="{Binding IsStreaming}"
+                                               FontSize="13"
+                                               Foreground="#89B4FA"
+                                               FontFamily="Cascadia Code, Consolas, Menlo, monospace"
+                                               HorizontalAlignment="Left"
+                                               VerticalAlignment="Bottom"
+                                               Opacity="0.7">
+                                        <TextBlock.Styles>
+                                            <Style Selector="TextBlock">
+                                                <Style.Animations>
+                                                    <Animation Duration="0:0:0.8"
+                                                               IterationCount="INFINITE"
+                                                               PlaybackDirection="Alternate">
+                                                        <KeyFrame Cue="0%">
+                                                            <Setter Property="Opacity" Value="0.3" />
+                                                        </KeyFrame>
+                                                        <KeyFrame Cue="100%">
+                                                            <Setter Property="Opacity" Value="1.0" />
+                                                        </KeyFrame>
+                                                    </Animation>
+                                                </Style.Animations>
+                                            </Style>
+                                        </TextBlock.Styles>
+                                    </TextBlock>
+                                </Panel>
                             </StackPanel>
                         </Border>
                     </DataTemplate>

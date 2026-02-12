@@ -1,24 +1,50 @@
+using System.Collections.ObjectModel;
+using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using MiniClaudeCode.Avalonia.Adapters;
+using MiniClaudeCode.Avalonia.Models;
 using MiniClaudeCode.Avalonia.Services;
 using MiniClaudeCode.Core.Configuration;
 
 namespace MiniClaudeCode.Avalonia.ViewModels;
 
 /// <summary>
+/// Helper item for recent workspace menu.
+/// </summary>
+public partial class RecentWorkspaceMenuItem : ObservableObject
+{
+    public string DisplayName { get; init; } = "";
+    public string Path { get; init; } = "";
+    public required Action<string> OpenAction { get; init; }
+
+    [RelayCommand]
+    private void Open() => OpenAction(Path);
+}
+
+/// <summary>
 /// Root ViewModel that orchestrates all panels and the engine lifecycle.
 /// </summary>
 public partial class MainWindowViewModel : ObservableObject
 {
+    // =========================================================================
+    // Sub-ViewModels
+    // =========================================================================
     public ChatViewModel Chat { get; } = new();
     public AgentPanelViewModel AgentPanel { get; } = new();
     public TodoPanelViewModel TodoPanel { get; } = new();
     public ToolCallPanelViewModel ToolCallPanel { get; } = new();
     public SetupWizardViewModel SetupWizard { get; } = new();
     public QuestionDialogViewModel QuestionDialog { get; } = new();
+    public FileExplorerViewModel FileExplorer { get; } = new();
+    public TerminalViewModel Terminal { get; } = new();
+
+    // =========================================================================
+    // Observable Properties
+    // =========================================================================
 
     [ObservableProperty]
     private string _windowTitle = "MiniClaudeCode v0.3.0 - Avalonia";
@@ -38,13 +64,38 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private int _toolCallCount;
 
+    [ObservableProperty]
+    private bool _isPlanMode;
+
+    [ObservableProperty]
+    private bool _hasWorkspace;
+
+    public ObservableCollection<WorkspaceInfo> RecentWorkspaces { get; } = [];
+    public ObservableCollection<RecentWorkspaceMenuItem> RecentWorkspaceMenuItems { get; } = [];
+
+    // =========================================================================
+    // Private State
+    // =========================================================================
+
     private EngineContext? _engine;
     private bool _initialized;
+    private CancellationTokenSource? _currentCts;
+    private readonly WorkspaceService _workspaceService = new();
+    private Window? _mainWindow;
 
     public MainWindowViewModel()
     {
         Chat.MessageSubmitted += OnMessageSubmitted;
+        TodoPanel.ExecutePlanRequested += OnExecutePlan;
+        AgentPanel.LaunchAgentRequested += OnLaunchAgent;
+        AgentPanel.ResumeAgentRequested += OnResumeAgent;
+        LoadRecentWorkspacesList();
     }
+
+    /// <summary>
+    /// Set the main window reference for dialogs.
+    /// </summary>
+    public void SetMainWindow(Window window) => _mainWindow = window;
 
     /// <summary>
     /// Initialize the engine asynchronously after the window is shown.
@@ -54,9 +105,14 @@ public partial class MainWindowViewModel : ObservableObject
         if (_initialized) return;
         _initialized = true;
 
+        // Check for workspace path from command line args
+        string? initialWorkspace = null;
+        if (args.Length > 0 && Directory.Exists(args[0]))
+            initialWorkspace = args[0];
+
         try
         {
-            await InitializeEngineAsync();
+            await InitializeEngineAsync(initialWorkspace);
         }
         catch (Exception ex)
         {
@@ -68,7 +124,11 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    private async Task InitializeEngineAsync()
+    // =========================================================================
+    // Engine Initialization
+    // =========================================================================
+
+    private async Task InitializeEngineAsync(string? workspacePath = null)
     {
         // Load .env files
         LoadEnvFiles();
@@ -119,7 +179,7 @@ public partial class MainWindowViewModel : ObservableObject
         var activeProvider = ModelProviderConfig.ResolveActiveProvider(providerConfigs);
         var activeConfig = providerConfigs[activeProvider];
         var agentProviderOverrides = ModelProviderConfig.LoadAgentProviderOverrides(providerConfigs);
-        var workDir = Directory.GetCurrentDirectory();
+        var workDir = workspacePath ?? Directory.GetCurrentDirectory();
 
         // Create adapters wired to ViewModels
         var outputSink = new AvaloniaOutputSink(Chat);
@@ -142,18 +202,109 @@ public partial class MainWindowViewModel : ObservableObject
         engine.Kernel.AutoFunctionInvocationFilters.Add(filter);
 
         _engine = engine;
+        _workspaceService.SetCurrentWorkspace(workDir);
 
         DispatcherService.Post(() =>
         {
             ProviderDisplay = activeConfig.DisplayName;
-            WindowTitle = $"MiniClaudeCode v0.3.0 - {activeConfig.DisplayName}";
+            HasWorkspace = true;
+            UpdateTitle();
             StatusText = $"{activeConfig.DisplayName} | {workDir}";
+
+            // Load file explorer
+            FileExplorer.LoadWorkspace(workDir);
+
+            // Start terminal in workspace
+            Terminal.WorkingDirectory = workDir;
+
             Chat.AddSystemMessage(
                 $"MiniClaudeCode v0.3.0 | {activeConfig.DisplayName}\n" +
                 $"Workspace: {workDir}\n" +
                 "Type your message or use /help for commands. (Enter = send, Shift+Enter = newline)");
+
+            LoadRecentWorkspacesList();
         });
     }
+
+    // =========================================================================
+    // Workspace Management
+    // =========================================================================
+
+    [RelayCommand]
+    private async Task OpenWorkspace()
+    {
+        if (_mainWindow == null) return;
+
+        var folders = await _mainWindow.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+        {
+            Title = "Open Workspace Folder",
+            AllowMultiple = false
+        });
+
+        if (folders.Count > 0)
+        {
+            var path = folders[0].Path.LocalPath;
+            await SwitchWorkspace(path);
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenRecent(string? path)
+    {
+        if (!string.IsNullOrEmpty(path) && Directory.Exists(path))
+        {
+            await SwitchWorkspace(path);
+        }
+    }
+
+    private async Task SwitchWorkspace(string path)
+    {
+        // Cancel any running operation
+        CancelOperation();
+
+        // Reset state
+        Chat.ClearMessages();
+        AgentPanel.Clear();
+        TodoPanel.Clear();
+        ToolCallPanel.Clear();
+        TurnCount = 0;
+        ToolCallCount = 0;
+        _engine = null;
+
+        Chat.AddSystemMessage($"Switching to workspace: {path}");
+
+        try
+        {
+            await InitializeEngineAsync(path);
+        }
+        catch (Exception ex)
+        {
+            Chat.AddErrorMessage($"Failed to open workspace: {ex.Message}");
+        }
+    }
+
+    private void LoadRecentWorkspacesList()
+    {
+        var recent = _workspaceService.LoadRecentWorkspaces();
+
+        RecentWorkspaces.Clear();
+        RecentWorkspaceMenuItems.Clear();
+
+        foreach (var ws in recent)
+        {
+            RecentWorkspaces.Add(ws);
+            RecentWorkspaceMenuItems.Add(new RecentWorkspaceMenuItem
+            {
+                DisplayName = $"{ws.DisplayName} - {ws.Path}",
+                Path = ws.Path,
+                OpenAction = p => _ = OpenRecent(p)
+            });
+        }
+    }
+
+    // =========================================================================
+    // Message Processing
+    // =========================================================================
 
     private void OnMessageSubmitted(string input)
     {
@@ -175,11 +326,14 @@ public partial class MainWindowViewModel : ObservableObject
         Chat.IsProcessing = true;
         Chat.AddUserMessage(input);
 
+        _currentCts = new CancellationTokenSource();
+        var ct = _currentCts.Token;
+
         _ = Task.Run(async () =>
         {
             try
             {
-                await ProcessAgentMessageAsync(input);
+                await ProcessAgentMessageAsync(input, ct);
             }
             finally
             {
@@ -189,7 +343,7 @@ public partial class MainWindowViewModel : ObservableObject
                     Chat.IsProcessing = false;
                 });
             }
-        });
+        }, ct);
     }
 
     private void HandleSlashCommand(string input)
@@ -209,13 +363,20 @@ public partial class MainWindowViewModel : ObservableObject
                     "  /status     - Show session status\n" +
                     "  /model      - Show current model info\n" +
                     "  /compact    - Summarize conversation\n" +
+                    "  /plan       - Toggle plan mode\n" +
+                    "  /analyze    - Analyze project with multiple agents\n" +
                     "  /exit       - Exit application\n" +
                     "\n" +
                     "Keyboard:\n" +
-                    "  Enter       - Send message\n" +
-                    "  Shift+Enter - New line\n" +
-                    "  Ctrl+N      - New conversation\n" +
-                    "  Ctrl+L      - Clear chat");
+                    "  Enter           - Send message\n" +
+                    "  Shift+Enter     - New line\n" +
+                    "  Ctrl+N          - New conversation\n" +
+                    "  Ctrl+L          - Clear chat\n" +
+                    "  Ctrl+O          - Open folder\n" +
+                    "  Ctrl+`          - Toggle terminal\n" +
+                    "  Ctrl+Shift+E    - Toggle explorer\n" +
+                    "  Ctrl+Shift+P    - Toggle plan mode\n" +
+                    "  Escape          - Cancel operation");
                 break;
 
             case "/new" or "/reset":
@@ -243,7 +404,8 @@ public partial class MainWindowViewModel : ObservableObject
                         $"Workspace: {_engine.WorkDir}\n" +
                         $"Turns: {TurnCount}\n" +
                         $"Tool Calls: {ToolCallCount}\n" +
-                        $"Agents: {_engine.AgentRegistry.Count} registered");
+                        $"Agents: {_engine.AgentRegistry.Count} registered\n" +
+                        $"Plan Mode: {(IsPlanMode ? "ON" : "OFF")}");
                 }
                 break;
 
@@ -278,8 +440,16 @@ public partial class MainWindowViewModel : ObservableObject
                 });
                 break;
 
+            case "/plan":
+                TogglePlanMode();
+                break;
+
+            case "/analyze":
+                RunAnalyzeProject();
+                break;
+
             case "/exit" or "/quit" or "/q":
-                // Close the application
+                Terminal.Dispose();
                 if (global::Avalonia.Application.Current?.ApplicationLifetime
                     is global::Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
                 {
@@ -293,7 +463,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    private async Task ProcessAgentMessageAsync(string input)
+    private async Task ProcessAgentMessageAsync(string input, CancellationToken ct = default)
     {
         if (_engine == null) return;
 
@@ -307,37 +477,311 @@ public partial class MainWindowViewModel : ObservableObject
 
         try
         {
-            var message = new ChatMessageContent(AuthorRole.User, input);
-            string lastContent = "";
+            // If plan mode is active, prepend plan mode instruction
+            var effectiveInput = IsPlanMode
+                ? $"[PLAN MODE - Read-only analysis only. Do NOT make changes. Present a structured plan.]\n\n{input}"
+                : input;
 
-            await foreach (var response in _engine.Agent.InvokeAsync(message, _engine.Thread))
+            var message = new ChatMessageContent(AuthorRole.User, effectiveInput);
+
+            // Start streaming - create placeholder message on UI thread
+            DispatcherService.Post(() => Chat.BeginStreamingMessage());
+
+            string accumulated = "";
+            await foreach (var response in _engine.Agent.InvokeAsync(message, _engine.Thread).WithCancellation(ct))
             {
                 if (!string.IsNullOrEmpty(response.Message.Content))
-                    lastContent = response.Message.Content;
-            }
-
-            if (!string.IsNullOrEmpty(lastContent))
-            {
-                DispatcherService.Post(() =>
                 {
-                    Chat.AddAssistantMessage(lastContent);
-                    ToolCallCount = _engine.TotalToolCalls;
-                    UpdateTitle();
-
-                    // Sync todos from engine
-                    SyncTodos();
-                });
+                    var fullContent = response.Message.Content;
+                    if (fullContent.Length > accumulated.Length && fullContent.StartsWith(accumulated))
+                    {
+                        var delta = fullContent[accumulated.Length..];
+                        accumulated = fullContent;
+                        DispatcherService.Post(() => Chat.AppendToStreaming(delta));
+                    }
+                    else if (fullContent != accumulated)
+                    {
+                        accumulated = fullContent;
+                        DispatcherService.Post(() =>
+                        {
+                            Chat.EndStreaming();
+                            Chat.BeginStreamingMessage();
+                            Chat.AppendToStreaming(fullContent);
+                        });
+                    }
+                }
             }
+
+            DispatcherService.Post(() =>
+            {
+                Chat.EndStreaming();
+                ToolCallCount = _engine.TotalToolCalls;
+                UpdateTitle();
+                SyncTodos();
+            });
         }
         catch (OperationCanceledException)
         {
-            DispatcherService.Post(() => Chat.AddSystemMessage("Operation cancelled."));
+            DispatcherService.Post(() =>
+            {
+                Chat.EndStreaming();
+                Chat.AddSystemMessage("Operation cancelled.");
+            });
         }
         catch (Exception ex)
         {
-            DispatcherService.Post(() => Chat.AddErrorMessage($"Error: {ex.Message}"));
+            DispatcherService.Post(() =>
+            {
+                Chat.EndStreaming();
+                Chat.AddErrorMessage($"Error: {ex.Message}");
+            });
         }
     }
+
+    // =========================================================================
+    // Plan Mode
+    // =========================================================================
+
+    [RelayCommand]
+    private void TogglePlanMode()
+    {
+        IsPlanMode = !IsPlanMode;
+        TodoPanel.IsPlanMode = IsPlanMode;
+        Chat.AddSystemMessage(IsPlanMode
+            ? "Plan Mode: ON - Agent will analyze and plan without making changes."
+            : "Plan Mode: OFF - Agent will execute changes normally.");
+        UpdateTitle();
+    }
+
+    private void OnExecutePlan()
+    {
+        // Switch off plan mode and send plan context to the agent
+        if (IsPlanMode)
+        {
+            IsPlanMode = false;
+            TodoPanel.IsPlanMode = false;
+            UpdateTitle();
+
+            // Compose plan context from todos
+            var planItems = TodoPanel.Todos
+                .Select(t => $"- [{t.Status}] {t.Content}")
+                .ToList();
+
+            if (planItems.Count > 0)
+            {
+                var planContext = "Execute the following plan step by step:\n" + string.Join("\n", planItems);
+                Chat.AddSystemMessage("Plan Mode: OFF - Executing plan...");
+
+                // Submit the plan as a message
+                IsProcessing = true;
+                Chat.IsProcessing = true;
+                Chat.AddUserMessage(planContext);
+
+                _currentCts = new CancellationTokenSource();
+                var ct = _currentCts.Token;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await ProcessAgentMessageAsync(planContext, ct);
+                    }
+                    finally
+                    {
+                        DispatcherService.Post(() =>
+                        {
+                            IsProcessing = false;
+                            Chat.IsProcessing = false;
+                        });
+                    }
+                }, ct);
+            }
+            else
+            {
+                Chat.AddSystemMessage("No plan items to execute. Plan Mode: OFF.");
+            }
+        }
+    }
+
+    // =========================================================================
+    // Multi-Agent Analysis
+    // =========================================================================
+
+    private void RunAnalyzeProject()
+    {
+        if (_engine == null)
+        {
+            Chat.AddSystemMessage("No engine available. Open a workspace first.");
+            return;
+        }
+
+        IsProcessing = true;
+        Chat.IsProcessing = true;
+        Chat.AddSystemMessage("Analyzing project with multiple agents...");
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var tasks = new[]
+                {
+                    AnalyzeWithAgent("Architecture & Dependencies",
+                        "Analyze the project architecture, directory structure, main entry points, and key dependencies. List the technology stack."),
+                    AnalyzeWithAgent("Code Patterns & Conventions",
+                        "Analyze coding patterns, naming conventions, design patterns used (MVVM, DI, etc.), and code style in this project."),
+                    AnalyzeWithAgent("Public APIs & Entry Points",
+                        "Identify all public APIs, entry points, services, and interfaces. Summarize what each major component does."),
+                    AnalyzeWithAgent("Project Health",
+                        "Assess project health: check for TODOs, potential issues, missing error handling, and suggest improvements.")
+                };
+
+                var results = await Task.WhenAll(tasks);
+
+                DispatcherService.Post(() =>
+                {
+                    Chat.AddAssistantMessage(
+                        "## Project Analysis Complete\n\n" +
+                        string.Join("\n\n---\n\n", results.Where(r => !string.IsNullOrEmpty(r))));
+                });
+            }
+            catch (Exception ex)
+            {
+                DispatcherService.Post(() =>
+                    Chat.AddErrorMessage($"Analysis failed: {ex.Message}"));
+            }
+            finally
+            {
+                DispatcherService.Post(() =>
+                {
+                    IsProcessing = false;
+                    Chat.IsProcessing = false;
+                });
+            }
+        });
+    }
+
+    private async Task<string> AnalyzeWithAgent(string title, string prompt)
+    {
+        if (_engine == null) return "";
+
+        try
+        {
+            var result = await _engine.SubAgentRunner.RunAsync(new MiniClaudeCode.Abstractions.Agents.AgentTask
+            {
+                Description = title,
+                Prompt = prompt,
+                AgentType = "explore",
+                ModelTier = "fast",
+                ReadOnly = true
+            });
+
+            return $"### {title}\n\n{result.Output}";
+        }
+        catch (Exception ex)
+        {
+            return $"### {title}\n\n*Error: {ex.Message}*";
+        }
+    }
+
+    // =========================================================================
+    // Manual Agent Launch / Resume
+    // =========================================================================
+
+    private void OnLaunchAgent(string agentType, string prompt)
+    {
+        if (_engine == null)
+        {
+            Chat.AddSystemMessage("No engine available. Open a workspace first.");
+            return;
+        }
+
+        Chat.AddSystemMessage($"Launching {agentType} agent: {prompt}");
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var result = await _engine.SubAgentRunner.RunAsync(
+                    new MiniClaudeCode.Abstractions.Agents.AgentTask
+                    {
+                        Description = prompt.Length > 50 ? prompt[..50] + "..." : prompt,
+                        Prompt = prompt,
+                        AgentType = agentType,
+                        ReadOnly = agentType is "explore" or "plan"
+                    });
+
+                DispatcherService.Post(() =>
+                {
+                    Chat.AddAssistantMessage($"**Agent ({agentType}) Result:**\n\n{result.Output}");
+                });
+            }
+            catch (Exception ex)
+            {
+                DispatcherService.Post(() =>
+                    Chat.AddErrorMessage($"Agent failed: {ex.Message}"));
+            }
+        });
+    }
+
+    private void OnResumeAgent(string agentId)
+    {
+        if (_engine == null)
+        {
+            Chat.AddSystemMessage("No engine available.");
+            return;
+        }
+
+        Chat.AddSystemMessage($"Resuming agent {agentId}...");
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var result = await _engine.SubAgentRunner.RunAsync(
+                    new MiniClaudeCode.Abstractions.Agents.AgentTask
+                    {
+                        Description = $"Resume agent {agentId}",
+                        Prompt = "Continue from where you left off.",
+                        AgentType = "generalPurpose",
+                        ResumeAgentId = agentId
+                    });
+
+                DispatcherService.Post(() =>
+                {
+                    Chat.AddAssistantMessage($"**Resumed Agent Result:**\n\n{result.Output}");
+                });
+            }
+            catch (Exception ex)
+            {
+                DispatcherService.Post(() =>
+                    Chat.AddErrorMessage($"Agent resume failed: {ex.Message}"));
+            }
+        });
+    }
+
+    // =========================================================================
+    // Cancellation
+    // =========================================================================
+
+    [RelayCommand]
+    private void CancelOperation()
+    {
+        _currentCts?.Cancel();
+        _currentCts = null;
+    }
+
+    // =========================================================================
+    // Terminal
+    // =========================================================================
+
+    [RelayCommand]
+    private void ToggleTerminal()
+    {
+        Terminal.IsVisible = !Terminal.IsVisible;
+    }
+
+    // =========================================================================
+    // Utility
+    // =========================================================================
 
     private async Task<string> CompactConversationAsync()
     {
@@ -368,34 +812,23 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void UpdateTitle()
     {
+        var planIndicator = IsPlanMode ? " [PLAN]" : "";
         WindowTitle = _engine != null
-            ? $"MiniClaudeCode - {_engine.ActiveConfig.DisplayName} | Turn:{TurnCount} Tools:{ToolCallCount}"
+            ? $"MiniClaudeCode - {_engine.ActiveConfig.DisplayName} | Turn:{TurnCount} Tools:{ToolCallCount}{planIndicator}"
             : "MiniClaudeCode v0.3.0 - Avalonia";
     }
 
     [RelayCommand]
-    private void NewConversation()
-    {
-        HandleSlashCommand("/new");
-    }
+    private void NewConversation() => HandleSlashCommand("/new");
 
     [RelayCommand]
-    private void ClearChat()
-    {
-        Chat.ClearMessages();
-    }
+    private void ClearChat() => Chat.ClearMessages();
 
     [RelayCommand]
-    private void ShowStatus()
-    {
-        HandleSlashCommand("/status");
-    }
+    private void ShowStatus() => HandleSlashCommand("/status");
 
     [RelayCommand]
-    private void ExitApp()
-    {
-        HandleSlashCommand("/exit");
-    }
+    private void ExitApp() => HandleSlashCommand("/exit");
 
     private static void LoadEnvFiles()
     {

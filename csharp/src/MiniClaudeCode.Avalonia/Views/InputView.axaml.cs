@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using MiniClaudeCode.Avalonia.ViewModels;
 
 namespace MiniClaudeCode.Avalonia.Views;
@@ -39,6 +40,16 @@ public partial class InputView : UserControl
             {
                 vm.NavigateHistoryDown();
             }
+        }
+    }
+
+    private void OnCancelClick(object? sender, RoutedEventArgs e)
+    {
+        // Walk up to find the MainWindowViewModel for cancellation
+        var window = TopLevel.GetTopLevel(this);
+        if (window?.DataContext is MainWindowViewModel mainVm)
+        {
+            mainVm.CancelOperationCommand.Execute(null);
         }
     }
 }

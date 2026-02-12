@@ -8,7 +8,7 @@
             BorderBrush="#313244"
             BorderThickness="0,1,0,0"
             Padding="8,6">
-        <Grid ColumnDefinitions="*,Auto">
+        <Grid ColumnDefinitions="*,Auto,Auto">
             <TextBox x:Name="InputBox"
                      Grid.Column="0"
                      Classes="chatInput"
@@ -19,13 +19,25 @@
                      Watermark="Type a message... (Enter to send, Shift+Enter for newline)"
                      IsEnabled="{Binding !IsProcessing}"
                      KeyDown="OnInputKeyDown" />
+
+            <!-- Send button (visible when not processing) -->
             <Button Grid.Column="1"
                     Content="Send"
                     Command="{Binding SendMessageCommand}"
-                    IsEnabled="{Binding !IsProcessing}"
+                    IsVisible="{Binding !IsProcessing}"
                     VerticalAlignment="Bottom"
                     Margin="6,0,0,0"
                     Padding="16,8" />
+
+            <!-- Cancel button (visible when processing) -->
+            <Button Grid.Column="2"
+                    Content="Cancel"
+                    IsVisible="{Binding IsProcessing}"
+                    VerticalAlignment="Bottom"
+                    Margin="6,0,0,0"
+                    Padding="16,8"
+                    Foreground="#F87171"
+                    Click="OnCancelClick" />
         </Grid>
     </Border>
 </UserControl>

@@ -229,6 +229,9 @@ internal class NullOutputSink : IOutputSink
     public void WriteDebug(string message) { }
     public void WriteLine(string text = "") { }
     public void Clear() { }
+    public void StreamStart(string messageId) { }
+    public void StreamAppend(string messageId, string chunk) { }
+    public void StreamEnd(string messageId) { }
 }
 
 /// <summary>

@@ -52,9 +52,10 @@ public class CodingPlugin
     // =========================================================================
 
     [KernelFunction("bash")]
-    [Description("Run a shell command. Use for: ls, find, git, npm, python, curl, etc.")]
+    [Description("Run a shell command. Use for: ls, find, git, npm, python, curl, etc. On Windows, supports cmd, powershell, or bash shells.")]
     public async Task<string> RunBash(
-        [Description("The shell command to execute")] string command)
+        [Description("The shell command to execute")] string command,
+        [Description("Shell to use: 'powershell', 'cmd', or 'bash'. Default: 'powershell' on Windows, 'bash' on Linux/Mac.")] string? shell_type = null)
     {
         string[] dangerous = ["rm -rf /", "sudo rm -rf", "shutdown", "reboot", "> /dev/"];
         if (dangerous.Any(d => command.Contains(d, StringComparison.OrdinalIgnoreCase)))
@@ -67,8 +68,22 @@ public class CodingPlugin
             string shell, shellArgs;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                shell = "cmd.exe";
-                shellArgs = $"/c {command}";
+                var selectedShell = (shell_type ?? "powershell").ToLowerInvariant();
+                switch (selectedShell)
+                {
+                    case "cmd":
+                        shell = "cmd.exe";
+                        shellArgs = $"/c {command}";
+                        break;
+                    case "bash":
+                        shell = "bash";
+                        shellArgs = $"-c \"{command.Replace("\"", "\\\"")}\"";
+                        break;
+                    default: // powershell
+                        shell = "powershell.exe";
+                        shellArgs = $"-NoProfile -NonInteractive -Command \"{command.Replace("\"", "\\\"")}\"";
+                        break;
+                }
             }
             else
             {

@@ -21,10 +21,18 @@ public partial class ChatViewModel : ObservableObject
     private readonly List<string> _inputHistory = [];
     private int _historyIndex = -1;
 
+    // Streaming state
+    private ChatMessage? _streamingMessage;
+
     /// <summary>
     /// Fired when the user submits a message.
     /// </summary>
     public event Action<string>? MessageSubmitted;
+
+    /// <summary>
+    /// Fired when messages change to trigger auto-scroll.
+    /// </summary>
+    public event Action? ScrollToBottomRequested;
 
     [RelayCommand]
     private void SendMessage()
@@ -65,33 +73,87 @@ public partial class ChatViewModel : ObservableObject
         }
     }
 
+    // =========================================================================
+    // Standard message methods
+    // =========================================================================
+
     public void AddUserMessage(string content)
     {
         Messages.Add(new ChatMessage { Role = ChatMessageRole.User, Content = content });
+        ScrollToBottomRequested?.Invoke();
     }
 
     public void AddAssistantMessage(string content)
     {
         Messages.Add(new ChatMessage { Role = ChatMessageRole.Assistant, Content = content });
+        ScrollToBottomRequested?.Invoke();
     }
 
     public void AddSystemMessage(string content)
     {
         Messages.Add(new ChatMessage { Role = ChatMessageRole.System, Content = content });
+        ScrollToBottomRequested?.Invoke();
     }
 
     public void AddErrorMessage(string content)
     {
         Messages.Add(new ChatMessage { Role = ChatMessageRole.Error, Content = content });
+        ScrollToBottomRequested?.Invoke();
     }
 
     public void AddWarningMessage(string content)
     {
         Messages.Add(new ChatMessage { Role = ChatMessageRole.Warning, Content = content });
+        ScrollToBottomRequested?.Invoke();
+    }
+
+    // =========================================================================
+    // Streaming methods for real-time token-by-token display
+    // =========================================================================
+
+    /// <summary>
+    /// Begin a streaming assistant message. Returns the placeholder message.
+    /// </summary>
+    public ChatMessage BeginStreamingMessage()
+    {
+        _streamingMessage = new ChatMessage
+        {
+            Role = ChatMessageRole.Assistant,
+            IsStreaming = true,
+            Content = ""
+        };
+        Messages.Add(_streamingMessage);
+        ScrollToBottomRequested?.Invoke();
+        return _streamingMessage;
+    }
+
+    /// <summary>
+    /// Append a text chunk to the current streaming message.
+    /// </summary>
+    public void AppendToStreaming(string chunk)
+    {
+        if (_streamingMessage != null)
+        {
+            _streamingMessage.Content += chunk;
+            ScrollToBottomRequested?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// Finalize the streaming message.
+    /// </summary>
+    public void EndStreaming()
+    {
+        if (_streamingMessage != null)
+        {
+            _streamingMessage.IsStreaming = false;
+            _streamingMessage = null;
+        }
     }
 
     public void ClearMessages()
     {
+        _streamingMessage = null;
         Messages.Clear();
     }
 }

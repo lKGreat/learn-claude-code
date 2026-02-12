@@ -62,6 +62,16 @@
         <Setter Property="Background" Value="#93C5FD" />
     </Style>
 
+    <!-- Cancel / danger button style -->
+    <Style Selector="Button.danger">
+        <Setter Property="Background" Value="#45475A" />
+        <Setter Property="Foreground" Value="#F87171" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.danger:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#585B70" />
+    </Style>
+
     <!-- Separator line -->
     <Style Selector="Separator">
         <Setter Property="Margin" Value="0,4" />
@@ -76,6 +86,16 @@
     <!-- Processing indicator in input -->
     <Style Selector="TextBox:disabled">
         <Setter Property="Opacity" Value="0.6" />
+    </Style>
+
+    <!-- TreeView styling for file explorer -->
+    <Style Selector="TreeViewItem">
+        <Setter Property="Padding" Value="2,1" />
+    </Style>
+
+    <!-- ComboBox compact styling -->
+    <Style Selector="ComboBox">
+        <Setter Property="Padding" Value="6,3" />
     </Style>
 
 </Styles>

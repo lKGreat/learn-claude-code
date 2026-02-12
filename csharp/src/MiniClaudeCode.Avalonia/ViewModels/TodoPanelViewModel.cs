@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using MiniClaudeCode.Avalonia.Models;
 
 namespace MiniClaudeCode.Avalonia.ViewModels;
@@ -23,6 +24,29 @@ public partial class TodoPanelViewModel : ObservableObject
 
     [ObservableProperty]
     private string _renderedText = "(no todos)";
+
+    [ObservableProperty]
+    private bool _isPlanMode;
+
+    /// <summary>
+    /// Fired when user clicks "Execute Plan" to switch from plan to execution mode.
+    /// </summary>
+    public event Action? ExecutePlanRequested;
+
+    [RelayCommand]
+    private void ExecutePlan()
+    {
+        ExecutePlanRequested?.Invoke();
+    }
+
+    public void Clear()
+    {
+        Todos.Clear();
+        TotalCount = 0;
+        CompletedCount = 0;
+        ProgressPercent = 0;
+        RenderedText = "(no todos)";
+    }
 
     /// <summary>
     /// Update from the TodoManager's rendered text output.

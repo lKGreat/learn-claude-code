@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:models="using:MiniClaudeCode.Avalonia.Models"
+             x:Class="MiniClaudeCode.Avalonia.Views.FileExplorerView"
+             x:DataType="vm:FileExplorerViewModel">
+
+    <Border Background="#181825" Padding="4">
+        <DockPanel>
+            <!-- Header -->
+            <Border DockPanel.Dock="Top" Padding="8,6" Background="#1E1E2E" CornerRadius="4,4,0,0">
+                <DockPanel>
+                    <TextBlock Text="Explorer"
+                               FontWeight="Bold"
+                               FontSize="12"
+                               Foreground="#CDD6F4"
+                               VerticalAlignment="Center" />
+                    <TextBlock DockPanel.Dock="Right"
+                               Text="{Binding WorkspaceName}"
+                               FontSize="11"
+                               Opacity="0.6"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
+
+            <!-- Tree View -->
+            <TreeView ItemsSource="{Binding RootNodes}"
+                      SelectedItem="{Binding SelectedNode}"
+                      Background="Transparent">
+                <TreeView.ItemTemplate>
+                    <TreeDataTemplate ItemsSource="{Binding Children}" x:DataType="models:FileTreeNode">
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="2">
+                            <TextBlock Text="{Binding Icon}" FontSize="14" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding Name}"
+                                       FontSize="12"
+                                       Foreground="#CDD6F4"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </TreeDataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+        </DockPanel>
+    </Border>
+</UserControl>

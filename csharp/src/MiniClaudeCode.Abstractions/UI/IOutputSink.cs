@@ -26,4 +26,17 @@ public interface IOutputSink
 
     /// <summary>Clear the output area.</summary>
     void Clear();
+
+    // =========================================================================
+    // Streaming methods for real-time token-by-token display
+    // =========================================================================
+
+    /// <summary>Begin a new streaming assistant message.</summary>
+    void StreamStart(string messageId);
+
+    /// <summary>Append a chunk of text to the current streaming message.</summary>
+    void StreamAppend(string messageId, string chunk);
+
+    /// <summary>Finalize the streaming message.</summary>
+    void StreamEnd(string messageId);
 }

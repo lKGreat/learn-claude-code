@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using MiniClaudeCode.Avalonia.ViewModels;
 
 namespace MiniClaudeCode.Avalonia.Views;
 
@@ -8,6 +9,16 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        Loaded += OnLoaded;
+    }
+
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        // Pass window reference to VM for dialogs (folder picker, etc.)
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.SetMainWindow(this);
+        }
     }
 
     private void OnAboutClick(object? sender, RoutedEventArgs e)

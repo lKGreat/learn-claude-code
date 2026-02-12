@@ -1,3 +1,5 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+
 namespace MiniClaudeCode.Avalonia.Models;
 
 /// <summary>
@@ -12,10 +14,16 @@ public enum ChatMessageRole
     Warning
 }
 
-public class ChatMessage
+public partial class ChatMessage : ObservableObject
 {
     public ChatMessageRole Role { get; init; }
-    public string Content { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    private string _content = string.Empty;
+
+    [ObservableProperty]
+    private bool _isStreaming;
+
     public DateTime Timestamp { get; init; } = DateTime.Now;
 
     public string RoleLabel => Role switch

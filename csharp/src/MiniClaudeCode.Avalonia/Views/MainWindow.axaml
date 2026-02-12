@@ -5,13 +5,18 @@
         x:Class="MiniClaudeCode.Avalonia.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="{Binding WindowTitle}"
-        Width="1280" Height="800"
+        Width="1400" Height="900"
         MinWidth="900" MinHeight="600"
         WindowStartupLocation="CenterScreen">
 
     <Window.KeyBindings>
         <KeyBinding Gesture="Ctrl+N" Command="{Binding NewConversationCommand}" />
         <KeyBinding Gesture="Ctrl+L" Command="{Binding ClearChatCommand}" />
+        <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenWorkspaceCommand}" />
+        <KeyBinding Gesture="Ctrl+OemTilde" Command="{Binding ToggleTerminalCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+E" Command="{Binding FileExplorer.ToggleVisibilityCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+P" Command="{Binding TogglePlanModeCommand}" />
+        <KeyBinding Gesture="Escape" Command="{Binding CancelOperationCommand}" />
     </Window.KeyBindings>
 
     <!-- Use Panel as root to allow overlay dialogs -->
@@ -21,6 +26,16 @@
             <!-- Menu Bar -->
             <Menu DockPanel.Dock="Top">
                 <MenuItem Header="_File">
+                    <MenuItem Header="_Open Folder..." InputGesture="Ctrl+O" Command="{Binding OpenWorkspaceCommand}" />
+                    <MenuItem Header="Recent _Workspaces" ItemsSource="{Binding RecentWorkspaceMenuItems}">
+                        <MenuItem.ItemContainerTheme>
+                            <ControlTheme TargetType="MenuItem" x:DataType="vm:RecentWorkspaceMenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                                <Setter Property="Header" Value="{Binding DisplayName}" />
+                                <Setter Property="Command" Value="{Binding OpenCommand}" />
+                            </ControlTheme>
+                        </MenuItem.ItemContainerTheme>
+                    </MenuItem>
+                    <Separator />
                     <MenuItem Header="_New Conversation" InputGesture="Ctrl+N" Command="{Binding NewConversationCommand}" />
                     <MenuItem Header="_Clear Chat" InputGesture="Ctrl+L" Command="{Binding ClearChatCommand}" />
                     <Separator />
@@ -29,6 +44,10 @@
                     <MenuItem Header="E_xit" Command="{Binding ExitAppCommand}" />
                 </MenuItem>
                 <MenuItem Header="_View">
+                    <MenuItem Header="_Explorer" InputGesture="Ctrl+Shift+E" Command="{Binding FileExplorer.ToggleVisibilityCommand}" />
+                    <MenuItem Header="_Terminal" InputGesture="Ctrl+OemTilde" Command="{Binding ToggleTerminalCommand}" />
+                    <MenuItem Header="_Plan Mode" InputGesture="Ctrl+Shift+P" Command="{Binding TogglePlanModeCommand}" />
+                    <Separator />
                     <MenuItem Header="_Status" Command="{Binding ShowStatusCommand}" />
                 </MenuItem>
                 <MenuItem Header="_Help">
@@ -37,16 +56,29 @@
             </Menu>
 
             <!-- Status Bar -->
-            <Border DockPanel.Dock="Bottom" 
-                    Background="#1E1E2E" 
+            <Border DockPanel.Dock="Bottom"
+                    Background="#1E1E2E"
                     Padding="10,4">
-                <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Grid.Column="0"
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <!-- Plan Mode indicator -->
+                    <Border Grid.Column="0"
+                            IsVisible="{Binding IsPlanMode}"
+                            Background="#45475A"
+                            CornerRadius="3"
+                            Padding="6,2"
+                            Margin="0,0,8,0">
+                        <TextBlock Text="PLAN"
+                                   FontSize="10"
+                                   FontWeight="Bold"
+                                   Foreground="#F9E2AF" />
+                    </Border>
+
+                    <TextBlock Grid.Column="1"
                                Text="{Binding StatusText}"
                                FontSize="11"
                                Opacity="0.7"
                                VerticalAlignment="Center" />
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16">
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16">
                         <TextBlock FontSize="11" Opacity="0.7" VerticalAlignment="Center">
                             <TextBlock.Text>
                                 <MultiBinding StringFormat="T:{0} | TC:{1}">
@@ -63,11 +95,34 @@
                 </Grid>
             </Border>
 
-            <!-- Main Content Area -->
-            <Grid ColumnDefinitions="*,5,340">
+            <!-- Main Content Area: File Explorer | Chat+Terminal | Right Panels -->
+            <Grid ColumnDefinitions="Auto,Auto,*,5,340">
 
-                <!-- LEFT: Chat + Input -->
-                <DockPanel Grid.Column="0">
+                <!-- LEFT SIDEBAR: File Explorer (collapsible) -->
+                <views:FileExplorerView Grid.Column="0"
+                                         DataContext="{Binding FileExplorer}"
+                                         IsVisible="{Binding IsVisible}"
+                                         Width="250" />
+
+                <GridSplitter Grid.Column="1"
+                              IsVisible="{Binding FileExplorer.IsVisible}"
+                              ResizeDirection="Columns"
+                              Background="#2D2D3F"
+                              Width="5" />
+
+                <!-- CENTER: Chat + Input + Terminal -->
+                <DockPanel Grid.Column="2">
+                    <!-- Terminal Panel (bottom, collapsible) -->
+                    <GridSplitter DockPanel.Dock="Bottom"
+                                  IsVisible="{Binding Terminal.IsVisible}"
+                                  ResizeDirection="Rows"
+                                  Background="#2D2D3F"
+                                  Height="5" />
+                    <views:TerminalView DockPanel.Dock="Bottom"
+                                         DataContext="{Binding Terminal}"
+                                         IsVisible="{Binding IsVisible}"
+                                         Height="250" />
+
                     <!-- Input Area at bottom -->
                     <views:InputView DockPanel.Dock="Bottom"
                                      DataContext="{Binding Chat}"
@@ -78,12 +133,12 @@
                 </DockPanel>
 
                 <!-- Vertical Splitter -->
-                <GridSplitter Grid.Column="1"
+                <GridSplitter Grid.Column="3"
                               ResizeDirection="Columns"
                               Background="#2D2D3F" />
 
                 <!-- RIGHT: Agent + Todo + ToolCall panels -->
-                <Grid Grid.Column="2" RowDefinitions="*,5,*,5,*">
+                <Grid Grid.Column="4" RowDefinitions="*,5,*,5,*">
 
                     <!-- Agent Panel -->
                     <views:AgentPanelView Grid.Row="0"

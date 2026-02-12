@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -70,6 +71,20 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasWorkspace;
 
+    // =========================================================================
+    // Model Selector
+    // =========================================================================
+
+    public ObservableCollection<ModelOption> AvailableModels { get; } = [];
+
+    [ObservableProperty]
+    private ModelOption? _selectedModel;
+
+    /// <summary>
+    /// Whether the context row (plan badge, stats) should be visible.
+    /// </summary>
+    public bool ShowContextRow => IsPlanMode || HasWorkspace;
+
     public ObservableCollection<WorkspaceInfo> RecentWorkspaces { get; } = [];
     public ObservableCollection<RecentWorkspaceMenuItem> RecentWorkspaceMenuItems { get; } = [];
 
@@ -91,6 +106,9 @@ public partial class MainWindowViewModel : ObservableObject
         AgentPanel.ResumeAgentRequested += OnResumeAgent;
         LoadRecentWorkspacesList();
     }
+
+    partial void OnIsPlanModeChanged(bool value) => OnPropertyChanged(nameof(ShowContextRow));
+    partial void OnHasWorkspaceChanged(bool value) => OnPropertyChanged(nameof(ShowContextRow));
 
     /// <summary>
     /// Set the main window reference for dialogs.
@@ -211,6 +229,9 @@ public partial class MainWindowViewModel : ObservableObject
             UpdateTitle();
             StatusText = $"{activeConfig.DisplayName} | {workDir}";
 
+            // Populate model selector
+            PopulateAvailableModels();
+
             // Load file explorer
             FileExplorer.LoadWorkspace(workDir);
 
@@ -224,6 +245,99 @@ public partial class MainWindowViewModel : ObservableObject
 
             LoadRecentWorkspacesList();
         });
+    }
+
+    // =========================================================================
+    // Model Switching
+    // =========================================================================
+
+    private bool _suppressModelSwitch;
+
+    /// <summary>
+    /// Populate the model dropdown from configured providers.
+    /// </summary>
+    private void PopulateAvailableModels()
+    {
+        _suppressModelSwitch = true;
+        AvailableModels.Clear();
+
+        if (_engine == null)
+        {
+            _suppressModelSwitch = false;
+            return;
+        }
+
+        ModelOption? activeOption = null;
+        foreach (var (provider, config) in _engine.ProviderConfigs)
+        {
+            var option = new ModelOption(provider, config.ModelId, config.DisplayName);
+            AvailableModels.Add(option);
+
+            if (provider == _engine.ActiveConfig.Provider && config.ModelId == _engine.ActiveConfig.ModelId)
+                activeOption = option;
+        }
+
+        SelectedModel = activeOption ?? (AvailableModels.Count > 0 ? AvailableModels[0] : null);
+        _suppressModelSwitch = false;
+    }
+
+    partial void OnSelectedModelChanged(ModelOption? value)
+    {
+        if (_suppressModelSwitch || value == null || _engine == null) return;
+
+        // Check if it's actually a different model
+        if (value.Provider == _engine.ActiveConfig.Provider && value.ModelId == _engine.ActiveConfig.ModelId)
+            return;
+
+        // Switch the engine to the new provider/model
+        _ = SwitchModelAsync(value);
+    }
+
+    private async Task SwitchModelAsync(ModelOption model)
+    {
+        if (_engine == null) return;
+
+        CancelOperation();
+        Chat.AddSystemMessage($"Switching to {model.DisplayName}...");
+
+        try
+        {
+            var workDir = _engine.WorkDir;
+
+            // Create adapters wired to ViewModels
+            var outputSink = new AvaloniaOutputSink(Chat);
+            var userInteraction = new AvaloniaUserInteraction(QuestionDialog);
+            var progressReporter = new AvaloniaProgressReporter(AgentPanel, Chat);
+            var toolCallObserver = new AvaloniaToolCallObserver(ToolCallPanel, Chat);
+
+            // Rebuild engine with new active provider
+            var engine = new EngineBuilder()
+                .WithProviders(_engine.ProviderConfigs, model.Provider)
+                .WithAgentProviderOverrides(_engine.AgentProviderOverrides)
+                .WithWorkDir(workDir)
+                .WithOutputSink(outputSink)
+                .WithUserInteraction(userInteraction)
+                .WithProgressReporter(progressReporter)
+                .Build();
+
+            var filter = new AvaloniaToolCallFilter(toolCallObserver, engine);
+            engine.Kernel.AutoFunctionInvocationFilters.Add(filter);
+
+            _engine = engine;
+
+            DispatcherService.Post(() =>
+            {
+                ProviderDisplay = model.DisplayName;
+                StatusText = $"{model.DisplayName} | {workDir}";
+                UpdateTitle();
+                Chat.AddSystemMessage($"Switched to {model.DisplayName}. Conversation reset.");
+            });
+        }
+        catch (Exception ex)
+        {
+            DispatcherService.Post(() =>
+                Chat.AddErrorMessage($"Model switch failed: {ex.Message}"));
+        }
     }
 
     // =========================================================================
@@ -487,34 +601,28 @@ public partial class MainWindowViewModel : ObservableObject
             // Start streaming - create placeholder message on UI thread
             DispatcherService.Post(() => Chat.BeginStreamingMessage());
 
-            string accumulated = "";
-            await foreach (var response in _engine.Agent.InvokeAsync(message, _engine.Thread).WithCancellation(ct))
+            // Start elapsed timer
+            var sw = Stopwatch.StartNew();
+            var timerCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            _ = UpdateStreamingTimerAsync(sw, timerCts.Token);
+
+            // Use InvokeStreamingAsync for true token-level streaming
+            // This returns actual delta chunks from the provider (SSE stream)
+            await foreach (var chunk in _engine.Agent.InvokeStreamingAsync(message, _engine.Thread).WithCancellation(ct))
             {
-                if (!string.IsNullOrEmpty(response.Message.Content))
+                var content = chunk.Message.Content;
+                if (!string.IsNullOrEmpty(content))
                 {
-                    var fullContent = response.Message.Content;
-                    if (fullContent.Length > accumulated.Length && fullContent.StartsWith(accumulated))
-                    {
-                        var delta = fullContent[accumulated.Length..];
-                        accumulated = fullContent;
-                        DispatcherService.Post(() => Chat.AppendToStreaming(delta));
-                    }
-                    else if (fullContent != accumulated)
-                    {
-                        accumulated = fullContent;
-                        DispatcherService.Post(() =>
-                        {
-                            Chat.EndStreaming();
-                            Chat.BeginStreamingMessage();
-                            Chat.AppendToStreaming(fullContent);
-                        });
-                    }
+                    DispatcherService.Post(() => Chat.AppendToStreaming(content));
                 }
             }
 
+            sw.Stop();
+            timerCts.Cancel();
+
             DispatcherService.Post(() =>
             {
-                Chat.EndStreaming();
+                Chat.EndStreaming(sw.Elapsed);
                 ToolCallCount = _engine.TotalToolCalls;
                 UpdateTitle();
                 SyncTodos();
@@ -536,6 +644,22 @@ public partial class MainWindowViewModel : ObservableObject
                 Chat.AddErrorMessage($"Error: {ex.Message}");
             });
         }
+    }
+
+    /// <summary>
+    /// Periodically updates the streaming elapsed timer on the UI.
+    /// </summary>
+    private async Task UpdateStreamingTimerAsync(Stopwatch sw, CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                await Task.Delay(200, ct);
+                DispatcherService.Post(() => Chat.UpdateStreamingElapsed(sw.Elapsed));
+            }
+        }
+        catch (OperationCanceledException) { }
     }
 
     // =========================================================================

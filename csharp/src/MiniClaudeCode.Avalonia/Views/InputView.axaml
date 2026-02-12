@@ -1,43 +1,134 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:models="using:MiniClaudeCode.Avalonia.Models"
              x:Class="MiniClaudeCode.Avalonia.Views.InputView"
-             x:DataType="vm:ChatViewModel">
+             x:DataType="vm:MainWindowViewModel">
 
     <Border Background="#1E1E2E"
             BorderBrush="#313244"
             BorderThickness="0,1,0,0"
-            Padding="8,6">
-        <Grid ColumnDefinitions="*,Auto,Auto">
+            CornerRadius="8,8,0,0"
+            Margin="4,0,4,0">
+        <DockPanel>
+            <!-- Top: Context Row (plan badge, context chips) -->
+            <Border DockPanel.Dock="Top"
+                    Padding="10,4"
+                    IsVisible="{Binding ShowContextRow}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <!-- Plan Mode Badge -->
+                    <Border IsVisible="{Binding IsPlanMode}"
+                            Background="#45475A"
+                            CornerRadius="4"
+                            Padding="8,2">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="PLAN"
+                                       FontSize="10"
+                                       FontWeight="Bold"
+                                       Foreground="#F9E2AF" />
+                            <Button Content="x"
+                                    FontSize="9"
+                                    Padding="2,0"
+                                    Background="Transparent"
+                                    Foreground="#9CA3AF"
+                                    Command="{Binding TogglePlanModeCommand}"
+                                    VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Rules count indicator (if engine loaded) -->
+                    <Border IsVisible="{Binding HasWorkspace}"
+                            Background="#313244"
+                            CornerRadius="4"
+                            Padding="6,2">
+                        <TextBlock FontSize="10"
+                                   Opacity="0.6"
+                                   Foreground="#CDD6F4">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="T:{0} | TC:{1}">
+                                    <Binding Path="TurnCount" />
+                                    <Binding Path="ToolCallCount" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- Bottom: Action Row (hints + model selector + buttons) -->
+            <Grid DockPanel.Dock="Bottom"
+                  Margin="10,4,10,6"
+                  ColumnDefinitions="*,Auto,Auto,Auto">
+
+                <!-- Hint text -->
+                <TextBlock Grid.Column="0"
+                           Text="Enter to send · Shift+Enter newline · / commands"
+                           FontSize="10"
+                           Opacity="0.35"
+                           Foreground="#CDD6F4"
+                           VerticalAlignment="Center" />
+
+                <!-- Model Selector -->
+                <ComboBox Grid.Column="1"
+                          x:Name="ModelComboBox"
+                          Classes="modelSelector"
+                          ItemsSource="{Binding AvailableModels}"
+                          SelectedItem="{Binding SelectedModel}"
+                          IsEnabled="{Binding !IsProcessing}"
+                          MinWidth="140"
+                          MaxWidth="220"
+                          Margin="0,0,6,0"
+                          VerticalAlignment="Center">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="models:ModelOption">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="{Binding ProviderName}"
+                                           FontSize="10"
+                                           Opacity="0.5"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding ShortLabel}"
+                                           FontSize="12"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <!-- Send button -->
+                <Button Grid.Column="2"
+                        Classes="accent"
+                        Content="▶"
+                        Command="{Binding Chat.SendMessageCommand}"
+                        IsVisible="{Binding !IsProcessing}"
+                        VerticalAlignment="Center"
+                        Padding="12,6"
+                        FontSize="12"
+                        ToolTip.Tip="Send (Enter)" />
+
+                <!-- Cancel button -->
+                <Button Grid.Column="3"
+                        Classes="danger"
+                        Content="■"
+                        Command="{Binding CancelOperationCommand}"
+                        IsVisible="{Binding IsProcessing}"
+                        VerticalAlignment="Center"
+                        Padding="12,6"
+                        FontSize="12"
+                        ToolTip.Tip="Cancel (Escape)" />
+            </Grid>
+
+            <!-- Center: Multi-line input TextBox -->
             <TextBox x:Name="InputBox"
-                     Grid.Column="0"
                      Classes="chatInput"
-                     Text="{Binding InputText, Mode=TwoWay}"
+                     Text="{Binding Chat.InputText, Mode=TwoWay}"
                      AcceptsReturn="True"
                      TextWrapping="Wrap"
-                     MaxHeight="120"
-                     Watermark="Type a message... (Enter to send, Shift+Enter for newline)"
+                     MinHeight="40"
+                     MaxHeight="150"
+                     Margin="8,4"
+                     Watermark="Type a message..."
                      IsEnabled="{Binding !IsProcessing}"
                      KeyDown="OnInputKeyDown" />
-
-            <!-- Send button (visible when not processing) -->
-            <Button Grid.Column="1"
-                    Content="Send"
-                    Command="{Binding SendMessageCommand}"
-                    IsVisible="{Binding !IsProcessing}"
-                    VerticalAlignment="Bottom"
-                    Margin="6,0,0,0"
-                    Padding="16,8" />
-
-            <!-- Cancel button (visible when processing) -->
-            <Button Grid.Column="2"
-                    Content="Cancel"
-                    IsVisible="{Binding IsProcessing}"
-                    VerticalAlignment="Bottom"
-                    Margin="6,0,0,0"
-                    Padding="16,8"
-                    Foreground="#F87171"
-                    Click="OnCancelClick" />
-        </Grid>
+        </DockPanel>
     </Border>
 </UserControl>

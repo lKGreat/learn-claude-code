@@ -85,7 +85,11 @@ public partial class ChatViewModel : ObservableObject
 
     public void AddAssistantMessage(string content)
     {
-        Messages.Add(new ChatMessage { Role = ChatMessageRole.Assistant, Content = content });
+        var msg = new ChatMessage { Role = ChatMessageRole.Assistant, Content = content };
+        // Auto-collapse long assistant messages
+        if (msg.IsCollapsible)
+            msg.IsExpanded = false;
+        Messages.Add(msg);
         ScrollToBottomRequested?.Invoke();
     }
 
@@ -140,13 +144,28 @@ public partial class ChatViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Update the streaming elapsed time display.
+    /// </summary>
+    public void UpdateStreamingElapsed(TimeSpan elapsed)
+    {
+        if (_streamingMessage != null)
+        {
+            _streamingMessage.StreamingElapsed = $"{elapsed.TotalSeconds:F1}s";
+        }
+    }
+
+    /// <summary>
     /// Finalize the streaming message.
     /// </summary>
-    public void EndStreaming()
+    public void EndStreaming(TimeSpan? finalElapsed = null)
     {
         if (_streamingMessage != null)
         {
             _streamingMessage.IsStreaming = false;
+            if (finalElapsed.HasValue)
+                _streamingMessage.StreamingElapsed = $"{finalElapsed.Value.TotalSeconds:F1}s";
+            else
+                _streamingMessage.StreamingElapsed = "";
             _streamingMessage = null;
         }
     }

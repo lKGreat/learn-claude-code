@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace MiniClaudeCode.Avalonia.Models;
 
@@ -16,6 +17,9 @@ public enum ChatMessageRole
 
 public partial class ChatMessage : ObservableObject
 {
+    private const int CollapseThreshold = 500;
+    private const int PreviewLength = 120;
+
     public ChatMessageRole Role { get; init; }
 
     [ObservableProperty]
@@ -24,7 +28,25 @@ public partial class ChatMessage : ObservableObject
     [ObservableProperty]
     private bool _isStreaming;
 
+    [ObservableProperty]
+    private bool _isExpanded = true;
+
+    [ObservableProperty]
+    private string _streamingElapsed = "";
+
     public DateTime Timestamp { get; init; } = DateTime.Now;
+
+    /// <summary>
+    /// Whether this message can be collapsed (assistant messages longer than threshold).
+    /// </summary>
+    public bool IsCollapsible => Role == ChatMessageRole.Assistant && Content.Length > CollapseThreshold;
+
+    /// <summary>
+    /// Short preview text shown when collapsed.
+    /// </summary>
+    public string Preview => Content.Length > PreviewLength
+        ? Content[..PreviewLength].TrimEnd() + "..."
+        : Content;
 
     public string RoleLabel => Role switch
     {
@@ -45,4 +67,19 @@ public partial class ChatMessage : ObservableObject
         ChatMessageRole.Warning => "#FBBF24",     // Yellow
         _ => "#9CA3AF"
     };
+
+    [RelayCommand]
+    private void ToggleExpanded()
+    {
+        IsExpanded = !IsExpanded;
+    }
+
+    /// <summary>
+    /// Notify that collapsible/preview may have changed after content update.
+    /// </summary>
+    partial void OnContentChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsCollapsible));
+        OnPropertyChanged(nameof(Preview));
+    }
 }

@@ -123,9 +123,8 @@
                                          IsVisible="{Binding IsVisible}"
                                          Height="250" />
 
-                    <!-- Input Area at bottom -->
+                    <!-- Input Area at bottom (uses MainWindowViewModel directly for model selector) -->
                     <views:InputView DockPanel.Dock="Bottom"
-                                     DataContext="{Binding Chat}"
                                      Margin="0" />
 
                     <!-- Chat Area fills remaining -->

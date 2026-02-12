@@ -11,6 +11,7 @@
         <conv:HexColorToBrushConverter x:Key="HexToBrush" />
         <conv:RoleToMarkdownVisibilityConverter x:Key="IsAssistantRole" />
         <conv:RoleToTextVisibilityConverter x:Key="IsNonAssistantRole" />
+        <conv:BoolToChevronConverter x:Key="BoolToChevron" />
     </UserControl.Resources>
 
     <Border Background="#181825" CornerRadius="0">
@@ -24,11 +25,36 @@
                         <Border Margin="0,4" Padding="10,8" CornerRadius="6"
                                 Background="#1E1E2E">
                             <StackPanel Spacing="4">
-                                <!-- Role label + timestamp -->
+                                <!-- Role label + collapse toggle + streaming timer + timestamp -->
                                 <DockPanel>
+                                    <!-- Collapse/Expand toggle (only for collapsible messages) -->
+                                    <Button DockPanel.Dock="Left"
+                                            Classes="chevronToggle"
+                                            Content="{Binding IsExpanded, Converter={StaticResource BoolToChevron}}"
+                                            Command="{Binding ToggleExpandedCommand}"
+                                            IsVisible="{Binding IsCollapsible}"
+                                            Padding="4,0"
+                                            Margin="0,0,4,0"
+                                            Background="Transparent"
+                                            Foreground="#9CA3AF"
+                                            FontSize="10"
+                                            VerticalAlignment="Center" />
+
                                     <TextBlock Classes="roleLabel"
                                                Text="{Binding RoleLabel}"
                                                Foreground="{Binding RoleColor, Converter={StaticResource HexToBrush}}" />
+
+                                    <!-- Streaming elapsed timer -->
+                                    <TextBlock DockPanel.Dock="Right"
+                                               Text="{Binding StreamingElapsed}"
+                                               IsVisible="{Binding IsStreaming}"
+                                               FontSize="10"
+                                               Foreground="#89B4FA"
+                                               Opacity="0.7"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,8,0" />
+
                                     <TextBlock DockPanel.Dock="Right"
                                                Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}"
                                                FontSize="10"
@@ -37,8 +63,26 @@
                                                VerticalAlignment="Center" />
                                 </DockPanel>
 
-                                <!-- Message content -->
-                                <Panel>
+                                <!-- Collapsed preview (single line, click to expand) -->
+                                <Button IsVisible="{Binding !IsExpanded}"
+                                        Command="{Binding ToggleExpandedCommand}"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Padding="0"
+                                        Cursor="Hand"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Left">
+                                    <TextBlock Text="{Binding Preview}"
+                                               TextWrapping="NoWrap"
+                                               TextTrimming="CharacterEllipsis"
+                                               FontSize="12"
+                                               Foreground="#9CA3AF"
+                                               Opacity="0.7"
+                                               MaxLines="1" />
+                                </Button>
+
+                                <!-- Expanded content -->
+                                <Panel IsVisible="{Binding IsExpanded}">
                                     <!-- Markdown rendered content for Assistant messages -->
                                     <md:MarkdownScrollViewer
                                         Markdown="{Binding Content}"
@@ -51,16 +95,16 @@
                                                FontSize="13"
                                                Foreground="#CDD6F4"
                                                FontFamily="Cascadia Code, Consolas, Menlo, monospace" />
+                                </Panel>
 
-                                    <!-- Streaming blinking cursor indicator -->
-                                    <TextBlock Text=" ..."
-                                               IsVisible="{Binding IsStreaming}"
-                                               FontSize="13"
+                                <!-- Streaming cursor indicator -->
+                                <StackPanel Orientation="Horizontal"
+                                            Spacing="6"
+                                            IsVisible="{Binding IsStreaming}">
+                                    <TextBlock Text="●"
+                                               FontSize="8"
                                                Foreground="#89B4FA"
-                                               FontFamily="Cascadia Code, Consolas, Menlo, monospace"
-                                               HorizontalAlignment="Left"
-                                               VerticalAlignment="Bottom"
-                                               Opacity="0.7">
+                                               VerticalAlignment="Center">
                                         <TextBlock.Styles>
                                             <Style Selector="TextBlock">
                                                 <Style.Animations>
@@ -68,7 +112,7 @@
                                                                IterationCount="INFINITE"
                                                                PlaybackDirection="Alternate">
                                                         <KeyFrame Cue="0%">
-                                                            <Setter Property="Opacity" Value="0.3" />
+                                                            <Setter Property="Opacity" Value="0.2" />
                                                         </KeyFrame>
                                                         <KeyFrame Cue="100%">
                                                             <Setter Property="Opacity" Value="1.0" />
@@ -78,7 +122,12 @@
                                             </Style>
                                         </TextBlock.Styles>
                                     </TextBlock>
-                                </Panel>
+                                    <TextBlock Text="Generating..."
+                                               FontSize="11"
+                                               Foreground="#89B4FA"
+                                               Opacity="0.6"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
                             </StackPanel>
                         </Border>
                     </DataTemplate>

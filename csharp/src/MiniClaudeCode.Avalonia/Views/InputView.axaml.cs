@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Interactivity;
 using MiniClaudeCode.Avalonia.ViewModels;
 
 namespace MiniClaudeCode.Avalonia.Views;
@@ -18,38 +17,28 @@ public partial class InputView : UserControl
         {
             // Enter without Shift = send message
             e.Handled = true;
-            if (DataContext is ChatViewModel vm)
+            if (DataContext is MainWindowViewModel mainVm)
             {
-                vm.SendMessageCommand.Execute(null);
+                mainVm.Chat.SendMessageCommand.Execute(null);
             }
         }
         else if (e.Key == Key.Up && e.KeyModifiers.HasFlag(KeyModifiers.Alt))
         {
             // Alt+Up = history up
             e.Handled = true;
-            if (DataContext is ChatViewModel vm)
+            if (DataContext is MainWindowViewModel mainVm)
             {
-                vm.NavigateHistoryUp();
+                mainVm.Chat.NavigateHistoryUp();
             }
         }
         else if (e.Key == Key.Down && e.KeyModifiers.HasFlag(KeyModifiers.Alt))
         {
             // Alt+Down = history down
             e.Handled = true;
-            if (DataContext is ChatViewModel vm)
+            if (DataContext is MainWindowViewModel mainVm)
             {
-                vm.NavigateHistoryDown();
+                mainVm.Chat.NavigateHistoryDown();
             }
-        }
-    }
-
-    private void OnCancelClick(object? sender, RoutedEventArgs e)
-    {
-        // Walk up to find the MainWindowViewModel for cancellation
-        var window = TopLevel.GetTopLevel(this);
-        if (window?.DataContext is MainWindowViewModel mainVm)
-        {
-            mainVm.CancelOperationCommand.Execute(null);
         }
     }
 }

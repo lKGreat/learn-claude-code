@@ -37,26 +37,87 @@
         <Setter Property="Padding" Value="6,2" />
     </Style>
 
-    <!-- Input area styling -->
+    <!-- ============================================================ -->
+    <!--  Composer / Input Area                                       -->
+    <!-- ============================================================ -->
+
     <Style Selector="TextBox.chatInput">
         <Setter Property="FontSize" Value="13" />
         <Setter Property="AcceptsReturn" Value="True" />
         <Setter Property="TextWrapping" Value="Wrap" />
-        <Setter Property="Watermark" Value="Type a message... (Enter to send, Shift+Enter for newline)" />
+        <Setter Property="Background" Value="#11111B" />
+        <Setter Property="BorderBrush" Value="#313244" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="10,8" />
+        <Setter Property="Foreground" Value="#CDD6F4" />
+        <Setter Property="FontFamily" Value="Cascadia Code, Consolas, Menlo, monospace" />
     </Style>
 
-    <!-- Tool call item styling -->
+    <Style Selector="TextBox.chatInput:focus">
+        <Setter Property="BorderBrush" Value="#45475A" />
+    </Style>
+
+    <!-- ============================================================ -->
+    <!--  Model Selector Dropdown                                     -->
+    <!-- ============================================================ -->
+
+    <Style Selector="ComboBox.modelSelector">
+        <Setter Property="Background" Value="#313244" />
+        <Setter Property="BorderBrush" Value="#45475A" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="#CDD6F4" />
+        <Setter Property="MinHeight" Value="28" />
+    </Style>
+
+    <Style Selector="ComboBox.modelSelector:pointerover">
+        <Setter Property="BorderBrush" Value="#585B70" />
+    </Style>
+
+    <!-- ============================================================ -->
+    <!--  Chevron Toggle Button (expand/collapse)                     -->
+    <!-- ============================================================ -->
+
+    <Style Selector="Button.chevronToggle">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="4,0" />
+        <Setter Property="MinWidth" Value="16" />
+        <Setter Property="MinHeight" Value="16" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="Foreground" Value="#6C7086" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <Style Selector="Button.chevronToggle:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="#CDD6F4" />
+    </Style>
+
+    <!-- ============================================================ -->
+    <!--  Tool call item styling                                      -->
+    <!-- ============================================================ -->
+
     <Style Selector="Border.toolCallItem">
         <Setter Property="CornerRadius" Value="4" />
         <Setter Property="Padding" Value="8,4" />
         <Setter Property="Margin" Value="0,1" />
     </Style>
 
-    <!-- Accent button style -->
+    <!-- ============================================================ -->
+    <!--  Buttons                                                     -->
+    <!-- ============================================================ -->
+
+    <!-- Accent button style (Send) -->
     <Style Selector="Button.accent">
         <Setter Property="Background" Value="#60A5FA" />
         <Setter Property="Foreground" Value="#11111B" />
         <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="MinHeight" Value="32" />
     </Style>
     <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="#93C5FD" />
@@ -67,10 +128,16 @@
         <Setter Property="Background" Value="#45475A" />
         <Setter Property="Foreground" Value="#F87171" />
         <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="MinHeight" Value="32" />
     </Style>
     <Style Selector="Button.danger:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="#585B70" />
     </Style>
+
+    <!-- ============================================================ -->
+    <!--  General                                                     -->
+    <!-- ============================================================ -->
 
     <!-- Separator line -->
     <Style Selector="Separator">

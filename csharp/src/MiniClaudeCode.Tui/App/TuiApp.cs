@@ -15,6 +15,8 @@ namespace MiniClaudeCode.Tui.App;
 /// </summary>
 public class TuiApp
 {
+    private bool _isProcessing;
+
     public async Task RunAsync(CliArgs cliArgs)
     {
         // --- Version ---
@@ -82,24 +84,34 @@ public class TuiApp
             // --- Resolve working directory ---
             var workDir = ResolveWorkingDirectory(cliArgs);
 
-            // --- Build TUI views first (needed for adapters) ---
-            // Create a temporary null-output engine to get the views set up,
-            // then rebuild with proper adapters.
+            // --- Print mode (no TUI needed) ---
+            if (cliArgs.Mode == CliMode.Print && !string.IsNullOrEmpty(cliArgs.Prompt))
+            {
+                Application.Shutdown();
+                var printEngine = new EngineBuilder()
+                    .WithProviders(providerConfigs, activeProvider)
+                    .WithAgentProviderOverrides(agentProviderOverrides)
+                    .WithWorkDir(workDir)
+                    .WithUserInteraction(new TuiUserInteraction())
+                    .Build();
+                await RunPrintMode(printEngine, cliArgs.Prompt);
+                return;
+            }
 
-            var tempMainWindow = new MainWindow(new EngineBuilder()
-                .WithProviders(providerConfigs, activeProvider)
-                .WithAgentProviderOverrides(agentProviderOverrides)
-                .WithWorkDir(workDir)
-                .WithUserInteraction(new TuiUserInteraction())
-                .Build());
+            // =====================================================
+            // Build views -> adapters -> engine (correct order!)
+            // =====================================================
 
-            // Create adapters wired to views
-            var outputSink = new TuiOutputSink(tempMainWindow.ChatView);
+            // Step 1: Create the MainWindow (views only, no engine yet)
+            var mainWindow = new MainWindow(activeConfig.DisplayName);
+
+            // Step 2: Create adapters wired to the REAL views
+            var outputSink = new TuiOutputSink(mainWindow.ChatView);
             var userInteraction = new TuiUserInteraction();
-            var progressReporter = new TuiAgentProgressReporter(tempMainWindow.AgentPanel, tempMainWindow.ChatView);
-            var toolCallObserver = new TuiToolCallObserver(tempMainWindow.ChatView, tempMainWindow.ToolCallPanel);
+            var progressReporter = new TuiAgentProgressReporter(mainWindow.AgentPanel, mainWindow.ChatView);
+            var toolCallObserver = new TuiToolCallObserver(mainWindow.ChatView, mainWindow.ToolCallPanel);
 
-            // --- Build engine with proper adapters ---
+            // Step 3: Build engine with the correct adapters
             var engine = new EngineBuilder()
                 .WithProviders(providerConfigs, activeProvider)
                 .WithAgentProviderOverrides(agentProviderOverrides)
@@ -109,25 +121,17 @@ public class TuiApp
                 .WithProgressReporter(progressReporter)
                 .Build();
 
-            // --- Build proper MainWindow ---
-            var mainWindow = new MainWindow(engine);
-
-            // Re-wire adapters to the real window's views
-            var realOutputSink = new TuiOutputSink(mainWindow.ChatView);
-            var realProgressReporter = new TuiAgentProgressReporter(mainWindow.AgentPanel, mainWindow.ChatView);
-            var realToolCallObserver = new TuiToolCallObserver(mainWindow.ChatView, mainWindow.ToolCallPanel);
+            // Step 4: Connect engine to MainWindow
+            mainWindow.Engine = engine;
 
             // Register tool call filter
-            var filter = new TuiToolCallFilter(realToolCallObserver, engine);
+            var filter = new TuiToolCallFilter(toolCallObserver, engine);
             engine.Kernel.AutoFunctionInvocationFilters.Add(filter);
 
             // --- Wire up input handling ---
-            mainWindow.InputSubmitted += async (input) =>
-            {
-                await ProcessUserInputAsync(engine, mainWindow, input);
-            };
+            mainWindow.InputSubmitted += input => OnInputSubmitted(engine, mainWindow, input);
 
-            // --- Create menu bar and status bar ---
+            // --- Create menu bar ---
             var menuBar = mainWindow.CreateMenuBar(
                 onNew: () =>
                 {
@@ -142,12 +146,7 @@ public class TuiApp
                 },
                 onStatus: () =>
                 {
-                    var msg = $"Provider: {engine.ActiveConfig.DisplayName}\n" +
-                              $"Workspace: {engine.WorkDir}\n" +
-                              $"Turns: {engine.TurnCount}\n" +
-                              $"Tool Calls: {engine.TotalToolCalls}\n" +
-                              $"Agents: {engine.AgentRegistry.Count} registered";
-                    MessageBox.Query("Session Status", msg, "OK");
+                    ShowStatus(engine, mainWindow);
                 },
                 onExit: () =>
                 {
@@ -159,28 +158,28 @@ public class TuiApp
             mainWindow.ChatView.AddSystemMessage(
                 $"MiniClaudeCode v{CliArgs.Version} | {engine.ActiveConfig.DisplayName}\n" +
                 $"Workspace: {engine.WorkDir}\n" +
-                $"Type your message below or use F-key shortcuts.");
+                $"Type your message or use /help for commands. (Enter=send, Shift+Enter=newline)");
 
-            // --- Print mode ---
-            if (cliArgs.Mode == CliMode.Print && !string.IsNullOrEmpty(cliArgs.Prompt))
+            // --- Build Toplevel ---
+            var top = new Toplevel();
+            top.Add(menuBar, mainWindow);
+
+            // --- Set focus AFTER the view hierarchy is ready ---
+            top.Ready += (_, _) =>
             {
-                Application.Shutdown();
-                await RunPrintMode(engine, cliArgs.Prompt);
-                return;
-            }
+                mainWindow.InputView.FocusInput();
+            };
 
             // --- Handle initial prompt ---
             if (!string.IsNullOrWhiteSpace(cliArgs.Prompt))
             {
-                _ = Task.Run(async () =>
+                top.Ready += (_, _) =>
                 {
-                    await ProcessUserInputAsync(engine, mainWindow, cliArgs.Prompt);
-                });
+                    OnInputSubmitted(engine, mainWindow, cliArgs.Prompt);
+                };
             }
 
-            // --- Run TUI ---
-            var top = new Toplevel();
-            top.Add(menuBar, mainWindow);
+            // --- Run TUI (blocks until exit) ---
             Application.Run(top);
             top.Dispose();
         }
@@ -190,15 +189,146 @@ public class TuiApp
         }
     }
 
-    private static async Task ProcessUserInputAsync(EngineContext engine, MainWindow mainWindow, string input)
+    /// <summary>
+    /// Handle user input - dispatch slash commands or send to agent.
+    /// </summary>
+    private void OnInputSubmitted(EngineContext engine, MainWindow mainWindow, string input)
+    {
+        if (_isProcessing)
+        {
+            mainWindow.ChatView.AddSystemMessage("Please wait - still processing...");
+            return;
+        }
+
+        // --- Slash commands ---
+        if (input.StartsWith('/'))
+        {
+            HandleSlashCommand(engine, mainWindow, input);
+            return;
+        }
+
+        // --- Agent message ---
+        _isProcessing = true;
+        mainWindow.ChatView.AddUserMessage(input);
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await ProcessAgentMessageAsync(engine, mainWindow, input);
+            }
+            finally
+            {
+                _isProcessing = false;
+            }
+        });
+    }
+
+    /// <summary>
+    /// Process slash commands.
+    /// </summary>
+    private static void HandleSlashCommand(EngineContext engine, MainWindow mainWindow, string input)
+    {
+        var parts = input.Split(' ', 2, StringSplitOptions.TrimEntries);
+        var command = parts[0].ToLowerInvariant();
+        var arg = parts.Length > 1 ? parts[1] : "";
+
+        switch (command)
+        {
+            case "/help" or "/h" or "/?":
+                mainWindow.ChatView.AddSystemMessage(
+                    "Available commands:\n" +
+                    "  /help       - Show this help\n" +
+                    "  /new        - Start new conversation (F5)\n" +
+                    "  /clear      - Clear chat display (F6)\n" +
+                    "  /status     - Show session status (F4)\n" +
+                    "  /model      - Show current model info\n" +
+                    "  /compact    - Summarize conversation (saves context)\n" +
+                    "  /exit       - Exit application (F10)\n" +
+                    "\n" +
+                    "Keyboard:\n" +
+                    "  Enter       - Send message\n" +
+                    "  Shift+Enter - New line\n" +
+                    "  Tab         - Switch focus between panels");
+                break;
+
+            case "/new" or "/reset":
+                engine.ResetThread();
+                mainWindow.ChatView.ClearChat();
+                mainWindow.ChatView.AddSystemMessage("Started a new conversation.");
+                mainWindow.UpdateTitle();
+                break;
+
+            case "/clear" or "/cls":
+                mainWindow.ChatView.ClearChat();
+                break;
+
+            case "/status" or "/stat":
+                ShowStatus(engine, mainWindow);
+                break;
+
+            case "/model":
+                mainWindow.ChatView.AddSystemMessage(
+                    $"Provider: {engine.ActiveConfig.Provider}\n" +
+                    $"Model: {engine.ActiveConfig.ModelId}\n" +
+                    $"Display: {engine.ActiveConfig.DisplayName}");
+                break;
+
+            case "/compact":
+                mainWindow.ChatView.AddSystemMessage("Compacting conversation...");
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var summary = await CompactConversationAsync(engine);
+                        Application.Invoke(() =>
+                        {
+                            mainWindow.ChatView.ClearChat();
+                            mainWindow.ChatView.AddSystemMessage($"Conversation compacted. Summary:\n{summary}");
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        Application.Invoke(() =>
+                        {
+                            mainWindow.ChatView.AddSystemMessage($"Compact failed: {ex.Message}");
+                        });
+                    }
+                });
+                break;
+
+            case "/exit" or "/quit" or "/q":
+                Application.RequestStop();
+                break;
+
+            default:
+                mainWindow.ChatView.AddSystemMessage($"Unknown command: {command}. Type /help for available commands.");
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Show status in a dialog.
+    /// </summary>
+    private static void ShowStatus(EngineContext engine, MainWindow mainWindow)
+    {
+        var msg = $"Provider: {engine.ActiveConfig.DisplayName}\n" +
+                  $"Model: {engine.ActiveConfig.ModelId}\n" +
+                  $"Workspace: {engine.WorkDir}\n" +
+                  $"Turns: {engine.TurnCount}\n" +
+                  $"Tool Calls: {engine.TotalToolCalls}\n" +
+                  $"Agents: {engine.AgentRegistry.Count} registered";
+        MessageBox.Query("Session Status", msg, "OK");
+    }
+
+    /// <summary>
+    /// Send a message to the agent and display the response.
+    /// </summary>
+    private static async Task ProcessAgentMessageAsync(EngineContext engine, MainWindow mainWindow, string input)
     {
         engine.TurnCount++;
 
-        Application.Invoke(() =>
-        {
-            mainWindow.ChatView.AddUserMessage(input);
-            mainWindow.UpdateTitle();
-        });
+        Application.Invoke(() => mainWindow.UpdateTitle());
 
         try
         {
@@ -217,6 +347,7 @@ public class TuiApp
                 {
                     mainWindow.ChatView.AddAssistantMessage(lastContent);
                     mainWindow.UpdateTitle();
+                    mainWindow.InputView.FocusInput();
                 });
             }
         }
@@ -234,6 +365,27 @@ public class TuiApp
                 mainWindow.ChatView.AddSystemMessage($"Error: {ex.Message}");
             });
         }
+    }
+
+    /// <summary>
+    /// Compact the conversation by summarizing it.
+    /// </summary>
+    private static async Task<string> CompactConversationAsync(EngineContext engine)
+    {
+        var compactMessage = new ChatMessageContent(AuthorRole.User,
+            "Please summarize our conversation so far in a concise paragraph. " +
+            "Include key decisions, code changes made, and any pending tasks.");
+
+        string summary = "";
+        await foreach (var response in engine.Agent.InvokeAsync(compactMessage, engine.Thread))
+        {
+            if (!string.IsNullOrEmpty(response.Message.Content))
+                summary = response.Message.Content;
+        }
+
+        // Reset thread and add the summary as context
+        engine.ResetThread();
+        return summary;
     }
 
     private static async Task RunPrintMode(EngineContext engine, string prompt)

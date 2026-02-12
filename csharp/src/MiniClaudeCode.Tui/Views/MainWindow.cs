@@ -14,12 +14,14 @@ public class MainWindow : Window
     public TodoPanel TodoPanel { get; }
     public ToolCallPanel ToolCallPanel { get; }
 
-    private readonly EngineContext _engine;
+    /// <summary>
+    /// Engine context - set after construction so adapters can be wired first.
+    /// </summary>
+    public EngineContext? Engine { get; set; }
 
-    public MainWindow(EngineContext engine)
+    public MainWindow(string displayName)
     {
-        _engine = engine;
-        Title = $"MiniClaudeCode v0.2.0 - {engine.ActiveConfig.DisplayName}";
+        Title = $"MiniClaudeCode v0.2.0 - {displayName}";
 
         // Left side: Chat + Input
         ChatView = new ChatView
@@ -67,9 +69,6 @@ public class MainWindow : Window
 
         // Bubble InputSubmitted from InputView
         InputView.InputSubmitted += text => InputSubmitted?.Invoke(text);
-
-        // Focus input by default
-        InputView.FocusInput();
     }
 
     /// <summary>
@@ -116,6 +115,7 @@ public class MainWindow : Window
     /// </summary>
     public void UpdateTitle()
     {
-        Title = $"MiniClaudeCode - {_engine.ActiveConfig.DisplayName} | Turn:{_engine.TurnCount} Tools:{_engine.TotalToolCalls}";
+        if (Engine is { } e)
+            Title = $"MiniClaudeCode - {e.ActiveConfig.DisplayName} | Turn:{e.TurnCount} Tools:{e.TotalToolCalls}";
     }
 }

@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.SemanticKernel;
 using MiniClaudeCode.Abstractions.UI;
+using MiniClaudeCode.Core.Logging;
 
 namespace MiniClaudeCode.Core.Plugins;
 
@@ -130,6 +131,7 @@ public class CodingPlugin
         }
         catch (Exception ex)
         {
+            LogHelper.Plugin.Error(ex, "bash 执行失败: {0}", command);
             return $"Error: {ex.Message}";
         }
     }
@@ -161,6 +163,7 @@ public class CodingPlugin
         }
         catch (Exception ex)
         {
+            LogHelper.Plugin.Error(ex, "read_file 失败: {0}", path);
             return $"Error: {ex.Message}";
         }
     }
@@ -187,6 +190,7 @@ public class CodingPlugin
         }
         catch (Exception ex)
         {
+            LogHelper.Plugin.Error(ex, "write_file 失败: {0}", path);
             return $"Error: {ex.Message}";
         }
     }
@@ -218,6 +222,7 @@ public class CodingPlugin
         }
         catch (Exception ex)
         {
+            LogHelper.Plugin.Error(ex, "edit_file 失败: {0}", path);
             return $"Error: {ex.Message}";
         }
     }
@@ -248,6 +253,7 @@ public class CodingPlugin
             }
             catch (RegexParseException ex)
             {
+                LogHelper.Plugin.Warn(ex, "grep 正则无效: {0}", pattern);
                 return $"Error: Invalid regex pattern: {ex.Message}";
             }
 
@@ -317,6 +323,7 @@ public class CodingPlugin
         }
         catch (Exception ex)
         {
+            LogHelper.Plugin.Error(ex, "grep 失败: pattern={0}, path={1}", pattern, path);
             return $"Error: {ex.Message}";
         }
     }

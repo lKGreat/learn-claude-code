@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using MiniClaudeCode.Avalonia.Services;
 
 namespace MiniClaudeCode.Avalonia.Models;
 
@@ -36,9 +37,14 @@ public partial class FileTreeNode : ObservableObject
     partial void OnIsExpandedChanged(bool value)
     {
         OnPropertyChanged(nameof(Icon));
+        DebugLogger.Log($"Node '{Name}' IsExpanded={value}, IsDirectory={IsDirectory}, IsLoaded={IsLoaded}");
+        
         // Trigger lazy loading when expanded and children not yet loaded
         if (value && IsDirectory && !IsLoaded)
+        {
+            DebugLogger.Log($"Triggering LoadChildrenCallback for '{Name}'");
             LoadChildrenCallback?.Invoke(this);
+        }
     }
 
     [ObservableProperty]

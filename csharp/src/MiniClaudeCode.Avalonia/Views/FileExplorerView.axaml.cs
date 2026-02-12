@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using MiniClaudeCode.Avalonia.Models;
 using MiniClaudeCode.Avalonia.ViewModels;
+using MiniClaudeCode.Avalonia.Services;
 
 namespace MiniClaudeCode.Avalonia.Views;
 
@@ -21,11 +22,14 @@ public partial class FileExplorerView : UserControl
 
         if (tree.SelectedItem is FileTreeNode node)
         {
+            DebugLogger.Log($"Selected: {node.Name} (IsDir={node.IsDirectory}, Path={node.FullPath})");
+            
             if (node.IsDirectory)
             {
                 // VS Code behavior: single-click on directory expands it
                 if (!node.IsExpanded)
                 {
+                    DebugLogger.Log($"Expanding directory: {node.Name}");
                     vm.ToggleNodeExpansion(node);
                     if (!node.IsLoaded)
                         vm.LoadChildren(node);
@@ -34,6 +38,7 @@ public partial class FileExplorerView : UserControl
             else if (node.FullPath.Length > 0)
             {
                 // Single-click on files: open in preview mode (italic tab, replaced by next preview)
+                DebugLogger.Log($"Preview file requested: {node.FullPath}");
                 vm.PreviewFileCommand.Execute(node);
             }
         }
@@ -46,6 +51,8 @@ public partial class FileExplorerView : UserControl
 
         if (tree.SelectedItem is FileTreeNode node)
         {
+            DebugLogger.Log($"Double-tapped: {node.Name} (IsDir={node.IsDirectory})");
+            
             if (node.IsDirectory)
             {
                 vm.ToggleNodeExpansion(node);
@@ -54,6 +61,7 @@ public partial class FileExplorerView : UserControl
             }
             else
             {
+                DebugLogger.Log($"Open file requested: {node.FullPath}");
                 vm.ViewFileCommand.Execute(node);
             }
         }

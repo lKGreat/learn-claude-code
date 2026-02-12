@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MiniClaudeCode.Avalonia.Models;
 using MiniClaudeCode.Avalonia.Services.Explorer;
+using MiniClaudeCode.Avalonia.Services;
 
 namespace MiniClaudeCode.Avalonia.ViewModels;
 
@@ -136,8 +137,13 @@ public partial class FileExplorerViewModel : ObservableObject
     {
         if (node is { IsDirectory: false, FullPath.Length: > 0 })
         {
+            DebugLogger.Log($"ViewFile: {node.FullPath}");
             _explorerService?.FireEvent(new ExplorerEvent(ExplorerEventType.NodeDoubleClick, node));
             FileViewRequested?.Invoke(node.FullPath);
+        }
+        else
+        {
+            DebugLogger.Log($"ViewFile called with invalid node (IsDir={node?.IsDirectory}, PathLen={node?.FullPath?.Length})");
         }
     }
 
@@ -146,8 +152,13 @@ public partial class FileExplorerViewModel : ObservableObject
     {
         if (node is { IsDirectory: false, FullPath.Length: > 0 })
         {
+            DebugLogger.Log($"PreviewFile: {node.FullPath}");
             _explorerService?.FireEvent(new ExplorerEvent(ExplorerEventType.NodeClick, node));
             FilePreviewRequested?.Invoke(node.FullPath);
+        }
+        else
+        {
+            DebugLogger.Log($"PreviewFile called with invalid node");
         }
     }
 

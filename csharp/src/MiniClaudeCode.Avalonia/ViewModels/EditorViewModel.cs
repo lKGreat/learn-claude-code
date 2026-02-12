@@ -308,45 +308,61 @@ public partial class EditorViewModel : ObservableObject
     /// </summary>
     private async Task<EditorTab> CreateTabAsync(string filePath, bool isPreview = false)
     {
+        DebugLogger.Log($"CreateTabAsync: {filePath}, isPreview={isPreview}");
+        
         string content;
         PieceTreeTextBuffer? textBuffer = null;
         TextFileModel? model = null;
 
-        if (_textFileService != null)
+        try
         {
-            // Use TextFileService for model caching (doc 6.3)
-            model = await _textFileService.ResolveAsync(filePath);
-            content = model.Content;
-            textBuffer = model.TextBuffer;
-        }
-        else
-        {
-            // Fallback: direct file read
-            try
+            if (_textFileService != null)
             {
-                var fileInfo = new FileInfo(filePath);
+                DebugLogger.Log($"Using TextFileService to resolve: {filePath}");
+                // Use TextFileService for model caching (doc 6.3)
+                model = await _textFileService.ResolveAsync(filePath);
+                content = model.Content;
+                textBuffer = model.TextBuffer;
+                DebugLogger.Log($"File resolved, length={content.Length}");
+            }
+            else
+            {
+                DebugLogger.Log($"Fallback: direct file read");
+                // Fallback: direct file read
+                try
+                {
+                    var fileInfo = new FileInfo(filePath);
 
-                if (fileInfo.Length > LargeFileConstants.LargeFileSizeThreshold)
-                {
-                    textBuffer = PieceTreeTextBufferBuilder.LoadFileAsync(filePath).GetAwaiter().GetResult();
-                    var viewportLines = 200;
-                    var sb = new System.Text.StringBuilder();
-                    for (int line = 1; line <= Math.Min(viewportLines, textBuffer.LineCount); line++)
+                    if (fileInfo.Length > LargeFileConstants.LargeFileSizeThreshold)
                     {
-                        if (line > 1) sb.Append('\n');
-                        sb.Append(textBuffer.GetLineContent(line));
+                        textBuffer = await PieceTreeTextBufferBuilder.LoadFileAsync(filePath);
+                        var viewportLines = 200;
+                        var sb = new System.Text.StringBuilder();
+                        for (int line = 1; line <= Math.Min(viewportLines, textBuffer.LineCount); line++)
+                        {
+                            if (line > 1) sb.Append('\n');
+                            sb.Append(textBuffer.GetLineContent(line));
+                        }
+                        content = sb.ToString();
+                        DebugLogger.Log($"Large file loaded via PieceTree, lineCount={textBuffer.LineCount}");
                     }
-                    content = sb.ToString();
+                    else
+                    {
+                        content = File.ReadAllText(filePath);
+                        DebugLogger.Log($"File read, length={content.Length}");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    content = File.ReadAllText(filePath);
+                    DebugLogger.LogError($"Error loading file content: {filePath}", ex);
+                    content = $"Error loading file: {ex.Message}";
                 }
             }
-            catch (Exception ex)
-            {
-                content = $"Error loading file: {ex.Message}";
-            }
+        }
+        catch (Exception ex)
+        {
+            DebugLogger.LogError($"Error loading file content: {filePath}", ex);
+            content = $"Error loading file: {ex.Message}";
         }
 
         var tab = new EditorTab
@@ -364,8 +380,12 @@ public partial class EditorViewModel : ObservableObject
             var fi = new FileInfo(filePath);
             tab.UpdateDiskMetadata(content, fi.LastWriteTimeUtc);
         }
-        catch { /* ignore */ }
+        catch (Exception ex)
+        {
+            DebugLogger.LogError($"Failed to update disk metadata for: {filePath}", ex);
+        }
 
+        DebugLogger.Log($"CreateTabAsync completed for: {filePath}");
         return tab;
     }
 
@@ -375,41 +395,56 @@ public partial class EditorViewModel : ObservableObject
     /// </summary>
     public async void OpenFile(string filePath)
     {
-        // Step 1: Check if already open (doc 6.2 step 1)
-        var existing = Tabs.FirstOrDefault(t => t.FilePath == filePath);
-        if (existing != null)
+        DebugLogger.Log($"OpenFile called: {filePath}");
+        
+        try
         {
-            // If it's a preview tab, pin it (make permanent)
-            if (existing.IsPreview)
-                existing.IsPreview = false;
-            ActivateTab(existing);
-            return;
-        }
-
-        // Step 2-5: Create tab with model (doc 6.2 steps 2-5)
-        var tab = await CreateTabAsync(filePath, isPreview: false);
-
-        // Step 6: Add to tab list
-        Tabs.Add(tab);
-        ActivateTab(tab);
-
-        // Step 7: Update large file warning
-        if (tab.IsLargeFile)
-        {
-            IsLargeFile = true;
-            try
+            // Step 1: Check if already open (doc 6.2 step 1)
+            var existing = Tabs.FirstOrDefault(t => t.FilePath == filePath);
+            if (existing != null)
             {
-                LargeFileWarning = $"Large file ({new FileInfo(filePath).Length / (1024 * 1024):F1} MB, {tab.TextBuffer!.LineCount:N0} lines) - Some features disabled for performance.";
+                DebugLogger.Log($"File already open, activating tab");
+                // If it's a preview tab, pin it (make permanent)
+                if (existing.IsPreview)
+                    existing.IsPreview = false;
+                ActivateTab(existing);
+                return;
             }
-            catch
+
+            DebugLogger.Log($"Creating new tab for: {filePath}");
+            // Step 2-5: Create tab with model (doc 6.2 steps 2-5)
+            var tab = await CreateTabAsync(filePath, isPreview: false);
+
+            DebugLogger.Log($"Tab created, adding to list");
+            // Step 6: Add to tab list
+            Tabs.Add(tab);
+            ActivateTab(tab);
+
+            // Step 7: Update large file warning
+            if (tab.IsLargeFile)
             {
-                LargeFileWarning = "Large file - Some features disabled for performance.";
+                IsLargeFile = true;
+                try
+                {
+                    LargeFileWarning = $"Large file ({new FileInfo(filePath).Length / (1024 * 1024):F1} MB, {tab.TextBuffer!.LineCount:N0} lines) - Some features disabled for performance.";
+                }
+                catch
+                {
+                    LargeFileWarning = "Large file - Some features disabled for performance.";
+                }
             }
+            else
+            {
+                IsLargeFile = false;
+                LargeFileWarning = "";
+            }
+            
+            DebugLogger.Log($"OpenFile completed successfully");
         }
-        else
+        catch (Exception ex)
         {
-            IsLargeFile = false;
-            LargeFileWarning = "";
+            DebugLogger.LogError($"Failed to open file: {filePath}", ex);
+            SaveError?.Invoke($"Failed to open file: {ex.Message}");
         }
     }
 
@@ -419,39 +454,54 @@ public partial class EditorViewModel : ObservableObject
     /// </summary>
     public async void PreviewFile(string filePath)
     {
-        // Check if already open (preview or permanent)
-        var existing = Tabs.FirstOrDefault(t => t.FilePath == filePath);
-        if (existing != null)
+        DebugLogger.Log($"PreviewFile called: {filePath}");
+        
+        try
         {
-            ActivateTab(existing);
-            return;
-        }
+            // Check if already open (preview or permanent)
+            var existing = Tabs.FirstOrDefault(t => t.FilePath == filePath);
+            if (existing != null)
+            {
+                DebugLogger.Log($"File already open, activating existing tab");
+                ActivateTab(existing);
+                return;
+            }
 
-        // Find and replace existing preview tab (doc 6.2 step 2 - preview mode)
-        var existingPreview = Tabs.FirstOrDefault(t => t.IsPreview);
-        if (existingPreview != null)
+            // Find and replace existing preview tab (doc 6.2 step 2 - preview mode)
+            var existingPreview = Tabs.FirstOrDefault(t => t.IsPreview);
+            if (existingPreview != null)
+            {
+                DebugLogger.Log($"Replacing existing preview tab");
+                var index = Tabs.IndexOf(existingPreview);
+
+                // Release model reference for old preview tab
+                if (_textFileService != null && existingPreview.Model != null)
+                    _textFileService.ReleaseModel(existingPreview.FilePath);
+
+                Tabs.Remove(existingPreview);
+
+                var tab = await CreateTabAsync(filePath, isPreview: true);
+                Tabs.Insert(index, tab);
+                ActivateTab(tab);
+            }
+            else
+            {
+                DebugLogger.Log($"Creating new preview tab");
+                var tab = await CreateTabAsync(filePath, isPreview: true);
+                Tabs.Add(tab);
+                ActivateTab(tab);
+            }
+
+            IsLargeFile = false;
+            LargeFileWarning = "";
+            
+            DebugLogger.Log($"PreviewFile completed successfully");
+        }
+        catch (Exception ex)
         {
-            var index = Tabs.IndexOf(existingPreview);
-
-            // Release model reference for old preview tab
-            if (_textFileService != null && existingPreview.Model != null)
-                _textFileService.ReleaseModel(existingPreview.FilePath);
-
-            Tabs.Remove(existingPreview);
-
-            var tab = await CreateTabAsync(filePath, isPreview: true);
-            Tabs.Insert(index, tab);
-            ActivateTab(tab);
+            DebugLogger.LogError($"Failed to preview file: {filePath}", ex);
+            SaveError?.Invoke($"Failed to preview file: {ex.Message}");
         }
-        else
-        {
-            var tab = await CreateTabAsync(filePath, isPreview: true);
-            Tabs.Add(tab);
-            ActivateTab(tab);
-        }
-
-        IsLargeFile = false;
-        LargeFileWarning = "";
     }
 
     public void ActivateTab(EditorTab tab)

@@ -7,6 +7,7 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 using MiniClaudeCode.Abstractions.Agents;
 using MiniClaudeCode.Abstractions.UI;
 using MiniClaudeCode.Core.Configuration;
+using MiniClaudeCode.Core.Logging;
 using MiniClaudeCode.Core.Plugins;
 using MiniClaudeCode.Core.Services.Providers;
 
@@ -186,6 +187,7 @@ public class SubAgentRunner
         catch (Exception ex)
         {
             sw.Stop();
+            LogHelper.Engine.Error(ex, "SubAgent Resume 失败, AgentId={0}", info.Id);
             _registry.UpdateStatus(info.Id, AgentStatus.Failed);
 
             var result = new AgentResult
@@ -386,6 +388,7 @@ public class SubAgentRunner
         catch (Exception ex)
         {
             sw.Stop();
+            LogHelper.Engine.Error(ex, "SubAgent Run 失败, Type={0}, AgentId={1}", task.AgentType, agentId);
             _registry.UpdateStatus(agentId, AgentStatus.Failed);
             _progressReporter.OnAgentFailed(agentInfo, ex.Message);
 

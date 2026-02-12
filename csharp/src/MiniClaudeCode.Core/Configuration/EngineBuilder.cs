@@ -7,6 +7,7 @@ using MiniClaudeCode.Abstractions.UI;
 using MiniClaudeCode.Core.Agents;
 using MiniClaudeCode.Core.AI;
 using MiniClaudeCode.Core.Indexing;
+using MiniClaudeCode.Core.Logging;
 using MiniClaudeCode.Core.Plugins;
 using MiniClaudeCode.Core.Services;
 using MiniClaudeCode.Core.Services.Providers;
@@ -69,8 +70,12 @@ public class EngineBuilder
     /// </summary>
     public EngineContext Build()
     {
+        LogHelper.Engine.Info("开始构建引擎, ActiveProvider={0}", _activeProvider);
         if (_interaction == null)
+        {
+            LogHelper.Engine.Error("IUserInteraction 未设置");
             throw new InvalidOperationException("IUserInteraction must be provided.");
+        }
 
         var activeConfig = _providerConfigs[_activeProvider];
 
@@ -130,6 +135,7 @@ public class EngineBuilder
             })
         };
 
+        LogHelper.Engine.Info("引擎构建完成");
         return new EngineContext
         {
             Kernel = kernel,

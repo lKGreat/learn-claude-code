@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using MiniClaudeCode.Avalonia.Models;
+using MiniClaudeCode.Avalonia.Services;
 
 namespace MiniClaudeCode.Avalonia.Services.Explorer;
 
@@ -91,8 +92,13 @@ public class ExplorerService : IExplorerService
     /// <inheritdoc />
     public void LoadChildren(FileTreeNode node)
     {
-        if (!node.IsDirectory || node.IsLoaded) return;
+        if (!node.IsDirectory || node.IsLoaded)
+        {
+            DebugLogger.Log($"Skipping LoadChildren for '{node.Name}' (IsDir={node.IsDirectory}, IsLoaded={node.IsLoaded})");
+            return;
+        }
 
+        DebugLogger.Log($"Loading children for '{node.Name}' at '{node.FullPath}'");
         node.ClearChildren();
 
         try
@@ -102,6 +108,7 @@ public class ExplorerService : IExplorerService
                 .Where(d => !SkipDirs.Contains(Path.GetFileName(d) ?? ""))
                 .OrderBy(d => Path.GetFileName(d), StringComparer.OrdinalIgnoreCase);
 
+            int dirCount = 0;
             foreach (var dir in dirs)
             {
                 var child = CreateDirectoryNode(dir, Path.GetFileName(dir) ?? dir, parent: node);
@@ -113,6 +120,7 @@ public class ExplorerService : IExplorerService
                     IsDirectory = false
                 });
                 node.AddChild(child);
+                dirCount++;
             }
 
             // Add files
@@ -120,6 +128,7 @@ public class ExplorerService : IExplorerService
                 .Where(f => !ShouldSkipFile(f))
                 .OrderBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase);
 
+            int fileCount = 0;
             foreach (var file in files)
             {
                 node.AddChild(new FileTreeNode
@@ -130,13 +139,17 @@ public class ExplorerService : IExplorerService
                     IsLoaded = true,
                     Parent = node
                 });
+                fileCount++;
             }
 
             node.IsLoaded = true;
+            DebugLogger.Log($"Loaded {dirCount} dirs, {fileCount} files for '{node.Name}'");
         }
-        catch
+        catch (Exception ex)
         {
-            // Permission errors, etc.
+            DebugLogger.LogError($"Failed to load children for '{node.Name}' at '{node.FullPath}'", ex);
+            // Don't throw - just mark as loaded to prevent retry loops
+            node.IsLoaded = true;
         }
     }
 

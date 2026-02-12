@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using MiniClaudeCode.Avalonia.Adapters;
+using MiniClaudeCode.Avalonia.Logging;
 using MiniClaudeCode.Avalonia.Models;
 using MiniClaudeCode.Avalonia.Services;
 using MiniClaudeCode.Avalonia.Services.Explorer;
@@ -280,6 +281,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LogHelper.UI.Error(ex, "InitializeAsync 初始化失败");
             DispatcherService.Post(() =>
             {
                 Chat.AddErrorMessage($"Initialization failed: {ex.Message}");
@@ -294,11 +296,13 @@ public partial class MainWindowViewModel : ObservableObject
 
     private async Task InitializeEngineAsync(string? workspacePath = null)
     {
+        LogHelper.UI.Info("开始引擎初始化, Workspace={0}", workspacePath ?? Directory.GetCurrentDirectory());
         // Load .env files
         LoadEnvFiles();
 
         // Load provider configs
         var providerConfigs = ModelProviderConfig.LoadAll();
+        LogHelper.UI.Debug("已加载 Provider 配置数: {0}", providerConfigs.Count);
 
         if (providerConfigs.Count == 0)
         {
@@ -367,6 +371,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         _engine = engine;
         _workspaceService.OpenFolder(workDir);
+        LogHelper.UI.Info("引擎初始化完成, Provider={0}, WorkDir={1}", activeConfig.DisplayName, workDir);
 
         // Wire up completion service and edit service to editor
         Editor.SetCompletionService(engine.CompletionService);

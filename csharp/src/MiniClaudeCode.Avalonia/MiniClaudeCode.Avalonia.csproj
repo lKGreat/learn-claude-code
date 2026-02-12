@@ -27,11 +27,14 @@
     <PackageReference Include="DotNetEnv" Version="3.*" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.*" />
     <PackageReference Include="TextMateSharp.Grammars" Version="2.0.2" />
+    <PackageReference Include="NLog" Version="5.*" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="5.*" />
   </ItemGroup>
 
   <!-- Copy .env to output directory if it exists -->
   <ItemGroup>
     <None Include="../../.env" Condition="Exists('../../.env')" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="nlog.config" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using MiniClaudeCode.Avalonia.Logging;
 using MiniClaudeCode.Avalonia.Models;
 using MiniClaudeCode.Avalonia.Services;
 
@@ -312,6 +313,8 @@ public class ExplorerService : IExplorerService
     /// </summary>
     public void FireEvent(ExplorerEvent evt)
     {
+        if (evt.Type == ExplorerEventType.NodeClick)
+            LogHelper.UI.Debug("[Preview链路] ExplorerService.FireEvent: NodeClick, Path={0}", evt.Node?.FullPath ?? "");
         EventFired?.Invoke(evt);
     }
 

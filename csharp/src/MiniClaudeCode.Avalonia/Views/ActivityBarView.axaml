@@ -7,16 +7,15 @@
              x:DataType="vm:ActivityBarViewModel"
              Width="48">
 
-    <Border Background="#181825">
+    <Border Background="{DynamicResource ThemeActivityBarBackground}">
         <DockPanel>
             <!-- Top: Main navigation icons -->
             <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding Items}" Margin="0,4">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="models:ActivityBarItem">
-                        <Button Command="{Binding $parent[ItemsControl].((vm:ActivityBarViewModel)DataContext).SelectItemCommand}"
+                        <Button Classes="activityBarButton"
+                            Command="{Binding $parent[ItemsControl].((vm:ActivityBarViewModel)DataContext).SelectItemCommand}"
                                 CommandParameter="{Binding}"
-                                Background="Transparent"
-                                BorderThickness="0"
                                 Padding="0"
                                 Width="48" Height="48"
                                 HorizontalContentAlignment="Center"
@@ -27,7 +26,7 @@
                                 <!-- Active indicator bar (left edge) -->
                                 <Border Width="2"
                                         HorizontalAlignment="Left"
-                                        Background="#60A5FA"
+                                    Background="{DynamicResource ThemeActivityBarActiveBorder}"
                                         IsVisible="{Binding IsActive}"
                                         CornerRadius="0,1,1,0" />
 
@@ -70,7 +69,7 @@
                     Cursor="Hand"
                     ToolTip.Tip="Settings"
                     Margin="0,0,0,4">
-                <TextBlock Text="&#x2699;" FontSize="20" Opacity="0.6" HorizontalAlignment="Center" />
+                <TextBlock Text="&#x2699;" FontSize="20" Opacity="0.6" Foreground="{DynamicResource ThemeActivityBarInactiveForeground}" HorizontalAlignment="Center" />
             </Button>
 
             <!-- Spacer -->

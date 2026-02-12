@@ -12,7 +12,8 @@
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="36"
         SystemDecorations="Full"
-        Background="#181825">
+        Classes="workbenchRoot"
+        Background="{DynamicResource ThemeWorkbenchBackground}">
 
     <Window.KeyBindings>
         <!-- File -->
@@ -47,11 +48,10 @@
             <!-- ============================================================ -->
             <!-- Custom Title Bar (replaces OS title bar)                     -->
             <!-- ============================================================ -->
-            <Border DockPanel.Dock="Top"
+                <Border DockPanel.Dock="Top"
+                    Classes="workbenchTitleBar"
                     Height="36"
-                    Background="#11111B"
-                    BorderBrush="#313244"
-                    BorderThickness="0,0,0,1">
+                    Background="{DynamicResource ThemeTitleBarBackground}">
                 <Grid ColumnDefinitions="Auto,*,Auto">
 
                     <!-- Left: App Logo + Menu -->
@@ -144,7 +144,7 @@
                                Text="{Binding WindowTitle}"
                                FontSize="12"
                                Opacity="0.5"
-                               Foreground="#CDD6F4"
+                               Foreground="{DynamicResource ThemeText}"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                IsHitTestVisible="False" />
@@ -206,14 +206,17 @@
 
                 <!-- Column 1: Sidebar (collapsible, 250px) -->
                 <Border Grid.Column="1"
+                        Classes="workbenchSidebar"
                         Width="{Binding Sidebar.Width}"
+                        MinWidth="{Binding Sidebar.MinWidth}"
+                        MaxWidth="{Binding Sidebar.MaxWidth}"
                         IsVisible="{Binding Sidebar.IsVisible}">
                     <Grid ColumnDefinitions="*,5">
                         <views:SidebarView Grid.Column="0" />
                         
                         <GridSplitter Grid.Column="1"
                                       ResizeDirection="Columns"
-                                      Background="#313244" />
+                                      Background="{DynamicResource ThemePanelBorder}" />
                     </Grid>
                 </Border>
 
@@ -222,12 +225,13 @@
 
                     <!-- Bottom Panel (Terminal, Problems, etc.) - collapsible -->
                     <Border DockPanel.Dock="Bottom"
+                            Classes="workbenchPanel"
                             Height="{Binding BottomPanel.Height}"
                             IsVisible="{Binding BottomPanel.IsVisible}">
                         <Grid RowDefinitions="5,*">
                             <GridSplitter Grid.Row="0"
                                           ResizeDirection="Rows"
-                                          Background="#313244"
+                                          Background="{DynamicResource ThemePanelBorder}"
                                           HorizontalAlignment="Stretch" />
                             
                             <views:BottomPanelView Grid.Row="1" />
@@ -243,15 +247,16 @@
 
                             <!-- AI Chat Header -->
                             <Border DockPanel.Dock="Top"
-                                    Background="#181825"
-                                    BorderBrush="#313244"
+                                    Classes="workbenchPanel"
+                                    Background="{DynamicResource ThemePanelBackground}"
+                                    BorderBrush="{DynamicResource ThemePanelBorder}"
                                     BorderThickness="0,0,0,1"
                                     Padding="16,10">
                                 <DockPanel>
                                     <TextBlock Text="New Chat"
                                                FontSize="16"
                                                FontWeight="SemiBold"
-                                               Foreground="#CDD6F4"
+                                               Foreground="{DynamicResource ThemeText}"
                                                VerticalAlignment="Center" />
 
                                     <!-- Right side: action buttons -->
@@ -268,7 +273,7 @@
                                                 Command="{Binding NewConversationCommand}">
                                             <TextBlock Text="+"
                                                        FontSize="16"
-                                                       Foreground="#9CA3AF" />
+                                                       Foreground="{DynamicResource ThemeMutedForeground}" />
                                         </Button>
                                         <!-- History -->
                                         <Button Background="Transparent"
@@ -278,7 +283,7 @@
                                                 ToolTip.Tip="Chat History">
                                             <TextBlock Text="&#x23F0;"
                                                        FontSize="13"
-                                                       Foreground="#9CA3AF" />
+                                                       Foreground="{DynamicResource ThemeMutedForeground}" />
                                         </Button>
                                         <!-- More -->
                                         <Button Background="Transparent"
@@ -288,7 +293,7 @@
                                                 ToolTip.Tip="More Options">
                                             <TextBlock Text="&#x22EF;"
                                                        FontSize="16"
-                                                       Foreground="#9CA3AF" />
+                                                       Foreground="{DynamicResource ThemeMutedForeground}" />
                                         </Button>
                                     </StackPanel>
                                 </DockPanel>
@@ -320,30 +325,39 @@
                 </DockPanel>
 
                 <!-- Column 3: Auxiliary Bar + Composer Panel (right sidebar) -->
-                <Panel Grid.Column="3">
+                <Grid Grid.Column="3">
                     <!-- Auxiliary Bar (toggled with Ctrl+Alt+B) -->
-                    <Border Width="{Binding AuxiliaryBar.Width}"
+                    <Border Classes="workbenchSidebar"
+                            Width="{Binding AuxiliaryBar.Width}"
+                            MinWidth="{Binding AuxiliaryBar.MinWidth}"
+                            MaxWidth="{Binding AuxiliaryBar.MaxWidth}"
                             IsVisible="{Binding AuxiliaryBar.IsVisible}"
-                            Background="#181825"
-                            BorderBrush="#313244"
+                            Background="{DynamicResource ThemeSideBarBackground}"
+                            BorderBrush="{DynamicResource ThemeSideBarBorder}"
                             BorderThickness="1,0,0,0">
-                        <DockPanel>
-                            <Border DockPanel.Dock="Top" Padding="8,6" Background="#1E1E2E"
-                                    BorderBrush="#313244" BorderThickness="0,0,0,1">
-                                <DockPanel>
-                                    <TextBlock Text="Secondary Sidebar"
-                                               FontSize="12" FontWeight="Bold"
-                                               Foreground="#CDD6F4" VerticalAlignment="Center" />
-                                    <Button DockPanel.Dock="Right"
-                                            Content="&#x2715;"
-                                            Command="{Binding AuxiliaryBar.ToggleCommand}"
-                                            FontSize="10" Padding="4,2"
-                                            Background="Transparent" Foreground="#6C7086"
-                                            HorizontalAlignment="Right" />
-                                </DockPanel>
-                            </Border>
-                            <views:ChatView DataContext="{Binding Chat}" />
-                        </DockPanel>
+                        <Grid ColumnDefinitions="5,*">
+                            <GridSplitter Grid.Column="0"
+                                          ResizeDirection="Columns"
+                                          Background="{DynamicResource ThemePanelBorder}" />
+
+                            <DockPanel Grid.Column="1">
+                                <Border DockPanel.Dock="Top"
+                                        Classes="sidebarSectionHeader"
+                                        Padding="8,6">
+                                    <DockPanel>
+                                        <TextBlock Text="Secondary Sidebar"
+                                                   Classes="sidebarSectionTitle" />
+                                        <Button Classes="panelIconAction"
+                                                DockPanel.Dock="Right"
+                                                Content="&#x2715;"
+                                                Command="{Binding AuxiliaryBar.ToggleCommand}"
+                                                FontSize="10" Padding="4,2"
+                                                HorizontalAlignment="Right" />
+                                    </DockPanel>
+                                </Border>
+                                <views:ChatView DataContext="{Binding Chat}" />
+                            </DockPanel>
+                        </Grid>
                     </Border>
 
                     <!-- Composer Panel (overlay when visible) -->
@@ -351,7 +365,7 @@
                                               IsVisible="{Binding IsVisible}"
                                               IsHitTestVisible="{Binding IsVisible}"
                                               HorizontalAlignment="Right" />
-                </Panel>
+                </Grid>
             </Grid>
         </DockPanel>
 

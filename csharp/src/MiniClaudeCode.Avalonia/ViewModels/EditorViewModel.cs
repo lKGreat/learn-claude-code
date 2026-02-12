@@ -310,7 +310,8 @@ public partial class EditorViewModel : ObservableObject
     /// </summary>
     private async Task<EditorTab> CreateTabAsync(string filePath, bool isPreview = false)
     {
-        LogHelper.UI.Info("CreateTabAsync 开始: {0}, isPreview={1}", filePath, isPreview);
+        var pre = isPreview ? "[Preview链路] " : "";
+        LogHelper.UI.Info("{0}CreateTabAsync 开始: Path={1}, isPreview={2}", pre, filePath, isPreview);
         
         string content;
         PieceTreeTextBuffer? textBuffer = null;
@@ -325,6 +326,17 @@ public partial class EditorViewModel : ObservableObject
                 model = await _textFileService.ResolveAsync(filePath);
                 content = model.Content;
                 textBuffer = model.TextBuffer;
+                // Safety net: if file has bytes but resolved content is empty, re-read from disk.
+                if (string.IsNullOrEmpty(content) && File.Exists(filePath))
+                {
+                    var fi = new FileInfo(filePath);
+                    if (fi.Length > 0)
+                    {
+                        LogHelper.UI.Warn("ResolveAsync 返回空内容，尝试直接读取文件: {0}", filePath);
+                        content = await File.ReadAllTextAsync(filePath);
+                        model.Content = content;
+                    }
+                }
                 LogHelper.UI.Debug("文件已解析, length={0}", content.Length);
             }
             else
@@ -388,7 +400,7 @@ public partial class EditorViewModel : ObservableObject
             LogHelper.UI.Warn(ex, "无法更新磁盘元数据: {0}", filePath);
         }
 
-        LogHelper.UI.Info("CreateTabAsync 完成: {0}, contentLength={1}", filePath, content.Length);
+        LogHelper.UI.Info("{0}CreateTabAsync 完成: Path={1}, contentLength={2}", pre, filePath, content.Length);
         return tab;
     }
 
@@ -462,8 +474,7 @@ public partial class EditorViewModel : ObservableObject
     /// </summary>
     public async void PreviewFile(string filePath)
     {
-        LogHelper.UI.Info("===== PreviewFile 开始 =====");
-        LogHelper.UI.Info("文件路径: {0}", filePath);
+        LogHelper.UI.Info("[Preview链路] EditorViewModel.PreviewFile: 开始, Path={0}", filePath);
         
         try
         {
@@ -471,7 +482,7 @@ public partial class EditorViewModel : ObservableObject
             var existing = Tabs.FirstOrDefault(t => t.FilePath == filePath);
             if (existing != null)
             {
-                LogHelper.UI.Debug("文件已打开，激活现有 tab");
+                LogHelper.UI.Info("[Preview链路] EditorViewModel.PreviewFile: 文件已打开，激活现有 tab");
                 ActivateTab(existing);
                 return;
             }
@@ -480,7 +491,7 @@ public partial class EditorViewModel : ObservableObject
             var existingPreview = Tabs.FirstOrDefault(t => t.IsPreview);
             if (existingPreview != null)
             {
-                LogHelper.UI.Debug("替换现有预览 tab");
+                LogHelper.UI.Info("[Preview链路] EditorViewModel.PreviewFile: 替换现有预览 tab, Index={0}", Tabs.IndexOf(existingPreview));
                 var index = Tabs.IndexOf(existingPreview);
 
                 // Release model reference for old preview tab
@@ -490,63 +501,56 @@ public partial class EditorViewModel : ObservableObject
                 Tabs.Remove(existingPreview);
 
                 var tab = await CreateTabAsync(filePath, isPreview: true);
-                LogHelper.UI.Debug("新预览 tab 已创建, Content.Length={0}", tab.Content.Length);
+                LogHelper.UI.Info("[Preview链路] EditorViewModel.PreviewFile: 替换模式-新 tab 已创建, ContentLength={0}", tab.Content.Length);
                 
                 Tabs.Insert(index, tab);
-                LogHelper.UI.Debug("新 tab 已插入到位置 {0}", index);
-                
                 ActivateTab(tab);
             }
             else
             {
-                LogHelper.UI.Debug("创建新的预览 tab");
+                LogHelper.UI.Info("[Preview链路] EditorViewModel.PreviewFile: 创建新的预览 tab");
                 var tab = await CreateTabAsync(filePath, isPreview: true);
-                LogHelper.UI.Debug("新预览 tab 已创建, Content.Length={0}", tab.Content.Length);
+                LogHelper.UI.Info("[Preview链路] EditorViewModel.PreviewFile: 新建模式-tab 已添加, ContentLength={0}, TabsCount={1}", tab.Content.Length, Tabs.Count);
                 
                 Tabs.Add(tab);
-                LogHelper.UI.Debug("Tabs 总数: {0}", Tabs.Count);
-                
                 ActivateTab(tab);
             }
 
             IsLargeFile = false;
             LargeFileWarning = "";
             
-            LogHelper.UI.Info("===== PreviewFile 完成 =====");
+            LogHelper.UI.Info("[Preview链路] EditorViewModel.PreviewFile: 完成");
         }
         catch (Exception ex)
         {
-            LogHelper.UI.Error(ex, "预览文件失败: {0}", filePath);
+            LogHelper.UI.Error(ex, "[Preview链路] EditorViewModel.PreviewFile: 失败, Path={0}", filePath);
             SaveError?.Invoke($"Failed to preview file: {ex.Message}");
         }
     }
 
     public void ActivateTab(EditorTab tab)
     {
-        LogHelper.UI.Info("===== ActivateTab 开始 =====");
-        LogHelper.UI.Info("Tab: {0}, IsPreview={1}, ContentLength={2}", 
-            tab.FilePath, tab.IsPreview, tab.Content.Length);
+        var prefix = tab.IsPreview ? "[Preview链路] " : "";
+        LogHelper.UI.Info("{0}EditorViewModel.ActivateTab: Path={1}, IsPreview={2}, ContentLength={3}", 
+            prefix, tab.FilePath, tab.IsPreview, tab.Content.Length);
         
         if (ActiveTab != null)
         {
-            LogHelper.UI.Debug("取消激活前一个 tab: {0}", ActiveTab.FilePath);
+            LogHelper.UI.Debug("{0}EditorViewModel.ActivateTab: 取消激活前 tab: {1}", prefix, ActiveTab.FilePath);
             ActiveTab.IsActive = false;
         }
         
         tab.IsActive = true;
         ActiveTab = tab;
         
-        LogHelper.UI.Debug("设置 CurrentContent, length={0}", tab.Content.Length);
         CurrentContent = tab.Content;
-        LogHelper.UI.Debug("CurrentContent 已设置");
         
         HasOpenFiles = true;
         UpdateBreadcrumb(tab);
 
-        LogHelper.UI.Info("触发 ActiveFileChanged 事件");
+        LogHelper.UI.Info("{0}EditorViewModel.ActivateTab: 触发 ActiveFileChanged", prefix);
         // Step 8: Fire events (doc 6.1 step 8)
         ActiveFileChanged?.Invoke(tab);
-        LogHelper.UI.Info("===== ActivateTab 完成 =====");
     }
 
     // =========================================================================

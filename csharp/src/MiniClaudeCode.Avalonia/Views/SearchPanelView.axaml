@@ -4,61 +4,65 @@
              x:Class="MiniClaudeCode.Avalonia.Views.SearchPanelView"
              x:DataType="vm:SearchPanelViewModel">
 
-    <Border Background="#181825" Padding="4">
+    <Border Classes="sidebarSectionRoot"
+            Background="{DynamicResource ThemeSideBarBackground}">
         <DockPanel>
             <!-- Header -->
-            <Border DockPanel.Dock="Top" Padding="8,6" Background="#1E1E2E" CornerRadius="4,4,0,0">
+            <Border DockPanel.Dock="Top"
+                    Classes="sidebarSectionHeader">
                 <TextBlock Text="Search"
-                           FontWeight="Bold"
-                           FontSize="12"
-                           Foreground="#CDD6F4" />
+                           Classes="sidebarSectionTitle" />
             </Border>
 
             <!-- Search inputs -->
-            <Border DockPanel.Dock="Top" Padding="8,6" Background="#1E1E2E">
+            <Border DockPanel.Dock="Top"
+                    Classes="sidebarSectionBody">
                 <StackPanel Spacing="4">
                     <!-- Search text -->
                     <DockPanel>
-                        <Button DockPanel.Dock="Right"
+                        <Button Classes="panelIconAction"
+                                DockPanel.Dock="Right"
                                 Content="Aa"
                                 ToolTip.Tip="Match Case"
-                                FontSize="10" Padding="4,2"
-                                Background="Transparent" />
+                                FontSize="10" Padding="4,2" />
                         <TextBox Text="{Binding SearchText}"
                                  Watermark="Search"
                                  FontSize="12"
-                                 Background="#11111B"
-                                 BorderBrush="#313244" />
+                                 Background="{DynamicResource ThemeInputBackground}"
+                                 BorderBrush="{DynamicResource ThemeInputBorder}" />
                     </DockPanel>
 
                     <!-- Replace text (collapsible) -->
                     <TextBox Text="{Binding ReplaceText}"
                              Watermark="Replace"
                              FontSize="12"
-                             Background="#11111B"
-                             BorderBrush="#313244"
+                             Background="{DynamicResource ThemeInputBackground}"
+                             BorderBrush="{DynamicResource ThemeInputBorder}"
                              IsVisible="{Binding ShowReplace}" />
 
                     <!-- Toggle options -->
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                        <Button Content="\u21C5"
+                        <Button Classes="panelIconAction"
+                            Content="\u21C5"
                                 Command="{Binding ToggleReplaceCommand}"
                                 ToolTip.Tip="Toggle Replace"
-                                FontSize="10" Padding="4,2" Background="Transparent" />
-                        <Button Content=".*"
+                            FontSize="10" Padding="4,2" />
+                        <Button Classes="panelIconAction"
+                            Content=".*"
                                 ToolTip.Tip="Use Regex"
-                                FontSize="10" Padding="4,2" Background="Transparent" />
-                        <Button Content="|W|"
+                            FontSize="10" Padding="4,2" />
+                        <Button Classes="panelIconAction"
+                            Content="|W|"
                                 ToolTip.Tip="Whole Word"
-                                FontSize="10" Padding="4,2" Background="Transparent" />
+                            FontSize="10" Padding="4,2" />
                     </StackPanel>
 
                     <!-- File filters -->
                     <TextBox Text="{Binding IncludePattern}"
                              Watermark="files to include (e.g. *.cs)"
                              FontSize="10"
-                             Background="#11111B"
-                             BorderBrush="#313244" />
+                             Background="{DynamicResource ThemeInputBackground}"
+                             BorderBrush="{DynamicResource ThemeInputBorder}" />
 
                     <!-- Search button -->
                     <Button Content="Search"
@@ -96,10 +100,10 @@
                                     <TextBlock Text="{Binding FileName}"
                                                FontSize="11"
                                                FontWeight="SemiBold"
-                                               Foreground="#CDD6F4" />
+                                               Foreground="{DynamicResource ThemeText}" />
                                     <TextBlock Text="{Binding MatchPreview}"
                                                FontSize="10"
-                                               Foreground="#9CA3AF"
+                                               Foreground="{DynamicResource ThemeMutedForeground}"
                                                TextTrimming="CharacterEllipsis"
                                                MaxLines="1"
                                                FontFamily="Cascadia Code, Consolas, monospace" />

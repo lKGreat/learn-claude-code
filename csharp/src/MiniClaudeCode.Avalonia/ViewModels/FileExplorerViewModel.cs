@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MiniClaudeCode.Avalonia.Logging;
 using MiniClaudeCode.Avalonia.Models;
 using MiniClaudeCode.Avalonia.Services.Explorer;
 using MiniClaudeCode.Avalonia.Services;
@@ -152,12 +153,16 @@ public partial class FileExplorerViewModel : ObservableObject
     {
         if (node is { IsDirectory: false, FullPath.Length: > 0 })
         {
+            LogHelper.UI.Info("[Preview链路] FileExplorerViewModel.PreviewFile: 开始, Path={0}", node.FullPath);
             DebugLogger.Log($"PreviewFile: {node.FullPath}");
             _explorerService?.FireEvent(new ExplorerEvent(ExplorerEventType.NodeClick, node));
+            LogHelper.UI.Info("[Preview链路] FileExplorerViewModel.PreviewFile: 触发 FilePreviewRequested");
             FilePreviewRequested?.Invoke(node.FullPath);
         }
         else
         {
+            LogHelper.UI.Warn("[Preview链路] FileExplorerViewModel.PreviewFile: 无效节点 (IsDir={0}, PathLen={1})",
+                node?.IsDirectory, node?.FullPath?.Length ?? 0);
             DebugLogger.Log($"PreviewFile called with invalid node");
         }
     }

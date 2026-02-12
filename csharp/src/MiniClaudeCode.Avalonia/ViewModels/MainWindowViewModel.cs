@@ -201,7 +201,11 @@ public partial class MainWindowViewModel : ObservableObject
         };
 
         // Wire preview: single-click in explorer -> preview tab
-        FileExplorer.FilePreviewRequested += (path) => Editor.PreviewFile(path);
+        FileExplorer.FilePreviewRequested += (path) =>
+        {
+            LogHelper.UI.Info("[Preview链路] MainWindowViewModel: 收到 FilePreviewRequested, 转发至 Editor.PreviewFile, Path={0}", path);
+            Editor.PreviewFile(path);
+        };
 
         // Wire save confirmation dialog for dirty tabs
         Editor.SaveConfirmRequested += async (tab) =>

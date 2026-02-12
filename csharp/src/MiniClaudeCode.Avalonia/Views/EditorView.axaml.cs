@@ -67,8 +67,9 @@ public partial class EditorView : UserControl
             _viewModel.GoToLineRequested += OnGoToLineRequested;
             _viewModel.InlineEditAccepted += OnInlineEditAccepted;
 
-            // Install TextMate on the editor
-            _textMateInstallation = CodeEditor.InstallTextMate(_registryOptions);
+            // Temporarily disable TextMate theming to ensure text remains visible.
+            // We can re-enable after resolving style/theme compatibility issues.
+            _textMateInstallation = null;
 
             // Install ghost text renderer
             _ghostTextRenderer = new GhostTextRenderer(_viewModel);
@@ -202,8 +203,32 @@ public partial class EditorView : UserControl
             return;
         }
 
-        LogHelper.UI.Debug("OnActiveFileChanged: {0}, Language={1}", tab.FilePath, tab.Language);
-        LoadContent();
+        var contentToShow = tab.Content ?? string.Empty;
+        LogHelper.UI.Info("[Preview链路] EditorView.OnActiveFileChanged: Path={0}, IsPreview={1}, Language={2}, ContentLength={3}",
+            tab.FilePath, tab.IsPreview, tab.Language, contentToShow.Length);
+
+        // Final fallback: if tab content is unexpectedly empty but file has bytes on disk,
+        // read directly and force the editor to show it.
+        if (string.IsNullOrEmpty(contentToShow) && File.Exists(tab.FilePath))
+        {
+            try
+            {
+                var fi = new FileInfo(tab.FilePath);
+                if (fi.Length > 0)
+                {
+                    contentToShow = File.ReadAllText(tab.FilePath);
+                    tab.Content = contentToShow;
+                    LogHelper.UI.Warn("OnActiveFileChanged 回退磁盘读取成功: {0}, len={1}",
+                        tab.FilePath, contentToShow.Length);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.UI.Error(ex, "OnActiveFileChanged 回退磁盘读取失败: {0}", tab.FilePath);
+            }
+        }
+
+        LoadContent(contentToShow);
         ApplyLanguageGrammar(tab.Language);
         UpdateFoldings();
     }
@@ -223,20 +248,23 @@ public partial class EditorView : UserControl
         }
     }
 
-    private void LoadContent()
+    private void LoadContent(string content)
     {
         if (_viewModel == null) return;
-        if (CodeEditor.Text == _viewModel.CurrentContent)
+        if (CodeEditor.Text == content)
         {
             LogHelper.UI.Debug("LoadContent: 内容未变化，跳过");
             return;
         }
 
-        LogHelper.UI.Debug("LoadContent: 加载内容, length={0}", _viewModel.CurrentContent.Length);
+        LogHelper.UI.Debug("LoadContent: 加载内容, length={0}", content.Length);
         _isLoadingContent = true;
         try
         {
-            CodeEditor.Text = _viewModel.CurrentContent;
+            CodeEditor.Text = content;
+            // Keep ViewModel and editor text synchronized explicitly.
+            if (_viewModel.CurrentContent != content)
+                _viewModel.CurrentContent = content;
             LogHelper.UI.Debug("LoadContent: 内容已加载到编辑器");
         }
         catch (Exception ex)

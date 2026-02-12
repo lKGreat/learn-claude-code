@@ -45,17 +45,17 @@
         <Setter Property="FontSize" Value="13" />
         <Setter Property="AcceptsReturn" Value="True" />
         <Setter Property="TextWrapping" Value="Wrap" />
-        <Setter Property="Background" Value="#11111B" />
-        <Setter Property="BorderBrush" Value="#313244" />
+        <Setter Property="Background" Value="{DynamicResource ThemeInputBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ThemeInputBorder}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Padding" Value="10,8" />
-        <Setter Property="Foreground" Value="#CDD6F4" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeInputForeground}" />
         <Setter Property="FontFamily" Value="Cascadia Code, Consolas, Menlo, monospace" />
     </Style>
 
     <Style Selector="TextBox.chatInput:focus">
-        <Setter Property="BorderBrush" Value="#45475A" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ThemeInputFocusBorder}" />
     </Style>
 
     <!-- ============================================================ -->
@@ -63,18 +63,18 @@
     <!-- ============================================================ -->
 
     <Style Selector="ComboBox.modelSelector">
-        <Setter Property="Background" Value="#313244" />
-        <Setter Property="BorderBrush" Value="#45475A" />
+        <Setter Property="Background" Value="{DynamicResource ThemeInputBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ThemeInputBorder}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="4" />
         <Setter Property="Padding" Value="8,4" />
         <Setter Property="FontSize" Value="12" />
-        <Setter Property="Foreground" Value="#CDD6F4" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeInputForeground}" />
         <Setter Property="MinHeight" Value="28" />
     </Style>
 
     <Style Selector="ComboBox.modelSelector:pointerover">
-        <Setter Property="BorderBrush" Value="#585B70" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ThemeInputFocusBorder}" />
     </Style>
 
     <!-- ============================================================ -->
@@ -88,13 +88,13 @@
         <Setter Property="MinWidth" Value="16" />
         <Setter Property="MinHeight" Value="16" />
         <Setter Property="FontSize" Value="10" />
-        <Setter Property="Foreground" Value="#6C7086" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeMutedForeground}" />
         <Setter Property="Cursor" Value="Hand" />
     </Style>
 
     <Style Selector="Button.chevronToggle:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="#CDD6F4" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeInputForeground}" />
     </Style>
 
     <!-- ============================================================ -->
@@ -113,26 +113,26 @@
 
     <!-- Accent button style (Send) -->
     <Style Selector="Button.accent">
-        <Setter Property="Background" Value="#60A5FA" />
-        <Setter Property="Foreground" Value="#11111B" />
+        <Setter Property="Background" Value="{DynamicResource ThemeAccent}" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeAccentForeground}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="CornerRadius" Value="6" />
         <Setter Property="MinHeight" Value="32" />
     </Style>
     <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="#93C5FD" />
+        <Setter Property="Background" Value="{DynamicResource ThemeButtonHoverBackground}" />
     </Style>
 
     <!-- Cancel / danger button style -->
     <Style Selector="Button.danger">
-        <Setter Property="Background" Value="#45475A" />
-        <Setter Property="Foreground" Value="#F87171" />
+        <Setter Property="Background" Value="{DynamicResource ThemeDanger}" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeDangerForeground}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="CornerRadius" Value="6" />
         <Setter Property="MinHeight" Value="32" />
     </Style>
     <Style Selector="Button.danger:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="#585B70" />
+        <Setter Property="Background" Value="{DynamicResource ThemeButtonHoverBackground}" />
     </Style>
 
     <!-- ============================================================ -->
@@ -142,7 +142,7 @@
     <!-- Separator line -->
     <Style Selector="Separator">
         <Setter Property="Margin" Value="0,4" />
-        <Setter Property="Background" Value="#313244" />
+        <Setter Property="Background" Value="{DynamicResource ThemePanelBorder}" />
     </Style>
 
     <!-- Scrollbar tweaks for dark theme -->
@@ -177,17 +177,17 @@
         <Setter Property="Height" Value="36" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
-        <Setter Property="Foreground" Value="#9CA3AF" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeMutedForeground}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="CornerRadius" Value="0" />
         <Setter Property="Padding" Value="0" />
     </Style>
     <Style Selector="Button.windowControl:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="#313244" />
-        <Setter Property="Foreground" Value="#CDD6F4" />
+        <Setter Property="Background" Value="{DynamicResource ThemeButtonHoverBackground}" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeButtonForeground}" />
     </Style>
     <Style Selector="Button.windowControl:pressed /template/ ContentPresenter">
-        <Setter Property="Background" Value="#45475A" />
+        <Setter Property="Background" Value="{DynamicResource ThemeListActiveBackground}" />
     </Style>
 
     <!-- Close button (red hover) -->
@@ -198,7 +198,7 @@
         <Setter Property="Height" Value="36" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
-        <Setter Property="Foreground" Value="#9CA3AF" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeMutedForeground}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="CornerRadius" Value="0" />
         <Setter Property="Padding" Value="0" />
@@ -224,7 +224,7 @@
         <Setter Property="CornerRadius" Value="4" />
     </Style>
     <Style Selector="Button.chatHeaderAction:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="#313244" />
+        <Setter Property="Background" Value="{DynamicResource ThemeListHoverBackground}" />
     </Style>
 
     <!-- ============================================================ -->
@@ -237,16 +237,109 @@
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="Padding" Value="4,2" />
         <Setter Property="FontSize" Value="10" />
-        <Setter Property="Foreground" Value="#9CA3AF" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeMutedForeground}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="CornerRadius" Value="2" />
     </Style>
     <Style Selector="Button.findToggle:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="#313244" />
+        <Setter Property="Background" Value="{DynamicResource ThemeListHoverBackground}" />
     </Style>
     <Style Selector="Button.findToggleActive">
-        <Setter Property="Background" Value="#45475A" />
-        <Setter Property="BorderBrush" Value="#585B70" />
+        <Setter Property="Background" Value="{DynamicResource ThemeListActiveBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ThemeInputFocusBorder}" />
+    </Style>
+
+    <!-- ============================================================ -->
+    <!--  Workbench primitives                                        -->
+    <!-- ============================================================ -->
+
+    <Style Selector="Window.workbenchRoot">
+        <Setter Property="Background" Value="{DynamicResource ThemeWorkbenchBackground}" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeText}" />
+    </Style>
+
+    <Style Selector="Border.workbenchTitleBar">
+        <Setter Property="Background" Value="{DynamicResource ThemeTitleBarBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ThemeTitleBarBorder}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+
+    <Style Selector="Border.workbenchSidebar">
+        <Setter Property="Background" Value="{DynamicResource ThemeSideBarBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ThemeSideBarBorder}" />
+        <Setter Property="BorderThickness" Value="0,0,1,0" />
+    </Style>
+
+    <Style Selector="Border.workbenchPanel">
+        <Setter Property="Background" Value="{DynamicResource ThemePanelBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ThemePanelBorder}" />
+    </Style>
+
+    <Style Selector="Border.sidebarSectionRoot">
+        <Setter Property="Background" Value="{DynamicResource ThemeSideBarBackground}" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style Selector="Border.sidebarSectionHeader">
+        <Setter Property="Background" Value="{DynamicResource ThemePanelBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ThemePanelBorder}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="MinHeight" Value="32" />
+    </Style>
+
+    <Style Selector="TextBlock.sidebarSectionTitle">
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeText}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="Border.sidebarSectionBody">
+        <Setter Property="Background" Value="{DynamicResource ThemePanelBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ThemePanelBorder}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Padding" Value="8,6" />
+    </Style>
+
+    <Style Selector="Button.panelIconAction">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="4,2" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeMutedForeground}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="CornerRadius" Value="2" />
+    </Style>
+
+    <Style Selector="Button.panelIconAction:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ThemeListHoverBackground}" />
+    </Style>
+
+    <Style Selector="Button.activityBarButton">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeActivityBarInactiveForeground}" />
+    </Style>
+
+    <Style Selector="Button.activityBarButton:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ThemeListHoverBackground}" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeActivityBarForeground}" />
+    </Style>
+
+    <Style Selector="Button.statusBarItem">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeStatusBarForeground}" />
+        <Setter Property="CornerRadius" Value="2" />
+    </Style>
+
+    <Style Selector="Button.statusBarItem:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ThemeStatusBarHoverBackground}" />
+    </Style>
+
+    <Style Selector="TextBox:focus">
+        <Setter Property="BorderBrush" Value="{DynamicResource ThemeInputFocusBorder}" />
     </Style>
 
 </Styles>

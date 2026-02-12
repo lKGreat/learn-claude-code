@@ -5,7 +5,7 @@
              x:DataType="vm:StatusBarViewModel"
              Height="24">
 
-    <Border Background="#181825">
+    <Border Background="{DynamicResource ThemeStatusBarBackground}">
         <Grid ColumnDefinitions="Auto,*,Auto">
             <!-- Left side items -->
             <StackPanel Grid.Column="0"
@@ -13,8 +13,7 @@
                         Spacing="12"
                         Margin="8,0">
                 <!-- Git branch -->
-                <Button Background="Transparent"
-                        BorderThickness="0"
+                <Button Classes="statusBarItem"
                         Padding="4,0"
                         Command="{Binding ClickBranchCommand}"
                         IsVisible="{Binding HasBranch}"
@@ -23,7 +22,7 @@
                         <TextBlock Text="\U0001F500" FontSize="10" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding BranchName}"
                                    FontSize="11"
-                                   Foreground="#60A5FA"
+                                   Foreground="{DynamicResource ThemeStatusBarForeground}"
                                    VerticalAlignment="Center" />
                         <TextBlock Text="{Binding SyncStatus}"
                                    FontSize="10"
@@ -33,14 +32,13 @@
                 </Button>
 
                 <!-- Problems -->
-                <Button Background="Transparent"
-                        BorderThickness="0"
+                <Button Classes="statusBarItem"
                         Padding="4,0"
                         Command="{Binding ClickProblemsCommand}"
                         Cursor="Hand">
                     <TextBlock Text="{Binding ProblemsDisplay}"
                                FontSize="11"
-                               Foreground="#F87171"
+                               Foreground="{DynamicResource ThemeDanger}"
                                VerticalAlignment="Center" />
                 </Button>
 
@@ -48,6 +46,7 @@
                 <TextBlock Text="{Binding WorkspaceName}"
                            FontSize="11"
                            Opacity="0.6"
+                           Foreground="{DynamicResource ThemeStatusBarForeground}"
                            VerticalAlignment="Center" />
             </StackPanel>
 
@@ -60,6 +59,7 @@
                 <TextBlock Text="{Binding CursorPosition}"
                            FontSize="11"
                            Opacity="0.6"
+                           Foreground="{DynamicResource ThemeStatusBarForeground}"
                            VerticalAlignment="Center"
                            FontFamily="Cascadia Code, Consolas, monospace" />
 
@@ -67,40 +67,44 @@
                 <TextBlock Text="{Binding Encoding}"
                            FontSize="11"
                            Opacity="0.6"
+                           Foreground="{DynamicResource ThemeStatusBarForeground}"
                            VerticalAlignment="Center" />
 
                 <!-- Line ending -->
                 <TextBlock Text="{Binding LineEnding}"
                            FontSize="11"
                            Opacity="0.6"
+                           Foreground="{DynamicResource ThemeStatusBarForeground}"
                            VerticalAlignment="Center" />
 
                 <!-- Language mode -->
                 <TextBlock Text="{Binding LanguageMode}"
                            FontSize="11"
                            Opacity="0.6"
+                           Foreground="{DynamicResource ThemeStatusBarForeground}"
                            VerticalAlignment="Center" />
 
                 <!-- Plan mode badge -->
                 <Border IsVisible="{Binding IsPlanMode}"
-                        Background="#45475A"
+                        Background="{DynamicResource ThemeListActiveBackground}"
                         CornerRadius="3"
                         Padding="4,1">
                     <TextBlock Text="PLAN"
                                FontSize="9"
                                FontWeight="Bold"
-                               Foreground="#F9E2AF" />
+                               Foreground="{DynamicResource ThemeStatusBarForeground}" />
                 </Border>
 
                 <!-- AI model -->
                 <TextBlock Text="{Binding ProviderDisplay}"
                            FontSize="11"
-                           Foreground="#60A5FA"
+                           Foreground="{DynamicResource ThemeStatusBarForeground}"
                            VerticalAlignment="Center" />
 
                 <!-- Turn/Tool count -->
                 <TextBlock FontSize="11"
                            Opacity="0.5"
+                           Foreground="{DynamicResource ThemeStatusBarForeground}"
                            VerticalAlignment="Center"
                            FontFamily="Cascadia Code, Consolas, monospace">
                     <TextBlock.Text>
@@ -112,8 +116,7 @@
                 </TextBlock>
 
                 <!-- Notifications bell -->
-                <Button Background="Transparent"
-                        BorderThickness="0"
+                <Button Classes="statusBarItem"
                         Padding="4,0"
                         Command="{Binding ClickNotificationsCommand}"
                         IsVisible="{Binding HasNotifications}"
@@ -122,7 +125,7 @@
                         <TextBlock Text="\U0001F514"
                                    FontSize="12"
                                    VerticalAlignment="Center" />
-                        <Border Background="#F87171"
+                        <Border Background="{DynamicResource ThemeBadgeBackground}"
                                 CornerRadius="6"
                                 MinWidth="14" Height="14"
                                 Padding="2,0"
@@ -132,7 +135,7 @@
                             <TextBlock Text="{Binding NotificationCount}"
                                        FontSize="8"
                                        FontWeight="Bold"
-                                       Foreground="White"
+                                       Foreground="{DynamicResource ThemeBadgeForeground}"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center" />
                         </Border>

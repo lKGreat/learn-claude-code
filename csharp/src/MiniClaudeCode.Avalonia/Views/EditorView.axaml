@@ -46,16 +46,17 @@
                                     <DockPanel>
                                         <!-- Close button -->
                                         <Button DockPanel.Dock="Right"
-                                                Content="\u2715"
+                                                Content="x"
                                                 Background="Transparent"
                                                 BorderThickness="0"
-                                                FontSize="9"
+                                                FontSize="11"
                                                 Padding="4,0,6,0"
                                                 Foreground="#6C7086"
                                                 Command="{Binding $parent[ItemsControl].((vm:EditorViewModel)DataContext).CloseTabCommand}"
                                                 CommandParameter="{Binding}"
                                                 VerticalAlignment="Center"
-                                                Cursor="Hand">
+                                                Cursor="Hand"
+                                                ToolTip.Tip="Close">
                                             <Button.Styles>
                                                 <Style Selector="Button:pointerover">
                                                     <Setter Property="Foreground" Value="#CDD6F4" />

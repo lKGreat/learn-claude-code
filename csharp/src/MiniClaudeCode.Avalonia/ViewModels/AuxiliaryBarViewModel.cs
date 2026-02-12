@@ -10,11 +10,18 @@ namespace MiniClaudeCode.Avalonia.ViewModels;
 /// </summary>
 public partial class AuxiliaryBarViewModel : ObservableObject
 {
+    public const double DefaultWidth = 280;
+    public const double MinAllowedWidth = 220;
+    public const double MaxAllowedWidth = 420;
+
     [ObservableProperty]
     private bool _isVisible;
 
     [ObservableProperty]
-    private double _width = 300;
+    private double _width = DefaultWidth;
+
+    public double MinWidth => MinAllowedWidth;
+    public double MaxWidth => MaxAllowedWidth;
 
     [ObservableProperty]
     private string _activePanel = "chat";
@@ -28,6 +35,15 @@ public partial class AuxiliaryBarViewModel : ObservableObject
         OnPropertyChanged(nameof(IsChatPanel));
         OnPropertyChanged(nameof(IsOutlinePanel));
         OnPropertyChanged(nameof(IsTimelinePanel));
+    }
+
+    partial void OnWidthChanged(double value)
+    {
+        var clamped = Math.Clamp(value, MinAllowedWidth, MaxAllowedWidth);
+        if (Math.Abs(clamped - value) > 0.01)
+        {
+            Width = clamped;
+        }
     }
 
     [RelayCommand]

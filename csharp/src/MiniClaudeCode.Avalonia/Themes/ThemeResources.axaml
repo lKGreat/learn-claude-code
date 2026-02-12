@@ -19,4 +19,49 @@
     <SolidColorBrush x:Key="ThemePeach" Color="#FAB387" />
     <SolidColorBrush x:Key="ThemeMauve" Color="#CBA6F7" />
     <SolidColorBrush x:Key="ThemeTeal" Color="#94E2D5" />
+
+    <!-- VSCode-style semantic tokens -->
+    <SolidColorBrush x:Key="ThemeWorkbenchBackground" Color="#1E1E2E" />
+    <SolidColorBrush x:Key="ThemeTitleBarBackground" Color="#181825" />
+    <SolidColorBrush x:Key="ThemeTitleBarBorder" Color="#313244" />
+
+    <SolidColorBrush x:Key="ThemeActivityBarBackground" Color="#181825" />
+    <SolidColorBrush x:Key="ThemeActivityBarForeground" Color="#CDD6F4" />
+    <SolidColorBrush x:Key="ThemeActivityBarInactiveForeground" Color="#7F849C" />
+    <SolidColorBrush x:Key="ThemeActivityBarActiveBorder" Color="#89B4FA" />
+
+    <SolidColorBrush x:Key="ThemeSideBarBackground" Color="#181825" />
+    <SolidColorBrush x:Key="ThemeSideBarBorder" Color="#313244" />
+
+    <SolidColorBrush x:Key="ThemeEditorBackground" Color="#1E1E2E" />
+    <SolidColorBrush x:Key="ThemePanelBackground" Color="#181825" />
+    <SolidColorBrush x:Key="ThemePanelBorder" Color="#313244" />
+
+    <SolidColorBrush x:Key="ThemeStatusBarBackground" Color="#313244" />
+    <SolidColorBrush x:Key="ThemeStatusBarForeground" Color="#CDD6F4" />
+    <SolidColorBrush x:Key="ThemeStatusBarHoverBackground" Color="#45475A" />
+
+    <SolidColorBrush x:Key="ThemeInputBackground" Color="#11111B" />
+    <SolidColorBrush x:Key="ThemeInputForeground" Color="#CDD6F4" />
+    <SolidColorBrush x:Key="ThemeInputBorder" Color="#313244" />
+    <SolidColorBrush x:Key="ThemeInputFocusBorder" Color="#89B4FA" />
+
+    <SolidColorBrush x:Key="ThemeButtonBackground" Color="#313244" />
+    <SolidColorBrush x:Key="ThemeButtonForeground" Color="#CDD6F4" />
+    <SolidColorBrush x:Key="ThemeButtonHoverBackground" Color="#45475A" />
+
+    <SolidColorBrush x:Key="ThemeAccent" Color="#89B4FA" />
+    <SolidColorBrush x:Key="ThemeAccentForeground" Color="#11111B" />
+    <SolidColorBrush x:Key="ThemeDanger" Color="#F38BA8" />
+    <SolidColorBrush x:Key="ThemeDangerForeground" Color="#11111B" />
+
+    <SolidColorBrush x:Key="ThemeListHoverBackground" Color="#313244" />
+    <SolidColorBrush x:Key="ThemeListActiveBackground" Color="#45475A" />
+    <SolidColorBrush x:Key="ThemeListActiveForeground" Color="#CDD6F4" />
+
+    <SolidColorBrush x:Key="ThemeBadgeBackground" Color="#F38BA8" />
+    <SolidColorBrush x:Key="ThemeBadgeForeground" Color="#11111B" />
+
+    <SolidColorBrush x:Key="ThemeMutedForeground" Color="#A6ADC8" />
+    <SolidColorBrush x:Key="ThemeFocusBorder" Color="#89B4FA" />
 </ResourceDictionary>

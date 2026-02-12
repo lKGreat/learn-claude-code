@@ -8,6 +8,10 @@ namespace MiniClaudeCode.Avalonia.ViewModels;
 /// </summary>
 public partial class SidebarViewModel : ObservableObject
 {
+    public const double DefaultWidth = 280;
+    public const double MinAllowedWidth = 220;
+    public const double MaxAllowedWidth = 420;
+
     [ObservableProperty]
     private string? _activePanelId = "explorer";
 
@@ -15,7 +19,10 @@ public partial class SidebarViewModel : ObservableObject
     private bool _isVisible = true;
 
     [ObservableProperty]
-    private double _width = 250;
+    private double _width = DefaultWidth;
+
+    public double MinWidth => MinAllowedWidth;
+    public double MaxWidth => MaxAllowedWidth;
 
     /// <summary>Show/hide individual panels based on ActivePanelId.</summary>
     public bool IsExplorerVisible => ActivePanelId == "explorer";
@@ -32,6 +39,15 @@ public partial class SidebarViewModel : ObservableObject
         OnPropertyChanged(nameof(IsScmVisible));
         OnPropertyChanged(nameof(IsExtensionsVisible));
         OnPropertyChanged(nameof(IsChatVisible));
+    }
+
+    partial void OnWidthChanged(double value)
+    {
+        var clamped = Math.Clamp(value, MinAllowedWidth, MaxAllowedWidth);
+        if (Math.Abs(clamped - value) > 0.01)
+        {
+            Width = clamped;
+        }
     }
 
     /// <summary>

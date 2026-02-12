@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using MiniClaudeCode.Avalonia.Editor;
 using MiniClaudeCode.Avalonia.Editor.TextBuffer;
+using MiniClaudeCode.Avalonia.Logging;
 using MiniClaudeCode.Avalonia.Models;
 
 namespace MiniClaudeCode.Avalonia.Services.Explorer;
@@ -46,13 +47,17 @@ public class TextFileService : ITextFileService
     /// <inheritdoc />
     public async Task<TextFileModel> ResolveAsync(string filePath)
     {
+        LogHelper.UI.Info("[Preview链路] TextFileService.ResolveAsync: 开始, Path={0}", filePath);
+
         // Check cache first (doc 6.3 step 1)
         if (_modelCache.TryGetValue(filePath, out var existing))
         {
             existing.ReferenceCount++;
+            LogHelper.UI.Debug("[Preview链路] TextFileService.ResolveAsync: 缓存命中, RefCount={0}", existing.ReferenceCount);
             return existing;
         }
 
+        LogHelper.UI.Debug("[Preview链路] TextFileService.ResolveAsync: 缓存未命中, 从磁盘加载");
         // Create new model
         var model = new TextFileModel(filePath);
 
@@ -91,6 +96,7 @@ public class TextFileService : ITextFileService
         }
         catch (Exception ex)
         {
+            LogHelper.UI.Error(ex, "[Preview链路] TextFileService.ResolveAsync: 加载失败, Path={0}", filePath);
             model.Content = $"Error loading file: {ex.Message}";
             model.IsResolved = false;
             content = model.Content;
@@ -111,6 +117,7 @@ public class TextFileService : ITextFileService
         // Fire load event
         OnDidLoad?.Invoke(new TextFileLoadEvent(filePath, content));
 
+        LogHelper.UI.Info("[Preview链路] TextFileService.ResolveAsync: 完成, Path={0}, ContentLength={1}", filePath, content.Length);
         return model;
     }
 

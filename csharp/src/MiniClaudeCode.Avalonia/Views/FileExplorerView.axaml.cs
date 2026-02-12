@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using MiniClaudeCode.Avalonia.Logging;
 using MiniClaudeCode.Avalonia.Models;
 using MiniClaudeCode.Avalonia.ViewModels;
 using MiniClaudeCode.Avalonia.Services;
@@ -38,6 +39,7 @@ public partial class FileExplorerView : UserControl
             else if (node.FullPath.Length > 0)
             {
                 // Single-click on files: open in preview mode (italic tab, replaced by next preview)
+                LogHelper.UI.Info("[Preview链路] FileExplorerView.OnTreeSelectionChanged: 单点文件触发预览, Path={0}", node.FullPath);
                 DebugLogger.Log($"Preview file requested: {node.FullPath}");
                 vm.PreviewFileCommand.Execute(node);
             }

@@ -5,50 +5,54 @@
              x:Class="MiniClaudeCode.Avalonia.Views.ScmPanelView"
              x:DataType="vm:ScmViewModel">
 
-    <Border Background="#181825" Padding="4">
+            <Border Classes="sidebarSectionRoot"
+                Background="{DynamicResource ThemeSideBarBackground}">
         <DockPanel>
             <!-- Header with actions -->
-            <Border DockPanel.Dock="Top" Padding="8,6" Background="#1E1E2E" CornerRadius="4,4,0,0">
+                <Border DockPanel.Dock="Top"
+                    Classes="sidebarSectionHeader">
                 <DockPanel>
                     <TextBlock Text="Source Control"
-                               FontWeight="Bold"
-                               FontSize="12"
-                               Foreground="#CDD6F4" />
+                           Classes="sidebarSectionTitle" />
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2"
                                 HorizontalAlignment="Right">
-                        <Button Content="\u21BB"
+                    <Button Classes="panelIconAction"
+                        Content="\u21BB"
                                 Command="{Binding RefreshCommand}"
                                 ToolTip.Tip="Refresh"
-                                FontSize="12" Padding="4,2"
-                                Background="Transparent" Foreground="#CDD6F4" />
-                        <Button Content="\u2193"
+                        FontSize="12" Padding="4,2" />
+                    <Button Classes="panelIconAction"
+                        Content="\u2193"
                                 Command="{Binding PullCommand}"
                                 ToolTip.Tip="Pull"
-                                FontSize="12" Padding="4,2"
-                                Background="Transparent" Foreground="#A6E3A1" />
-                        <Button Content="\u2191"
+                        FontSize="12" Padding="4,2"
+                        Foreground="{DynamicResource ThemeGreen}" />
+                    <Button Classes="panelIconAction"
+                        Content="\u2191"
                                 Command="{Binding PushCommand}"
                                 ToolTip.Tip="Push"
-                                FontSize="12" Padding="4,2"
-                                Background="Transparent" Foreground="#60A5FA" />
-                        <Button Content="\u2261"
+                        FontSize="12" Padding="4,2"
+                        Foreground="{DynamicResource ThemeAccent}" />
+                    <Button Classes="panelIconAction"
+                        Content="\u2261"
                                 Command="{Binding FetchCommand}"
                                 ToolTip.Tip="Fetch"
-                                FontSize="10" Padding="4,2"
-                                Background="Transparent" Foreground="#6C7086" />
+                        FontSize="10" Padding="4,2" />
                     </StackPanel>
                 </DockPanel>
             </Border>
 
             <!-- Commit input -->
-            <Border DockPanel.Dock="Top" Padding="8,4" Background="#1E1E2E">
+                <Border DockPanel.Dock="Top"
+                    Classes="sidebarSectionBody"
+                    Padding="8,4">
                 <StackPanel Spacing="4">
                     <TextBox Text="{Binding CommitMessage}"
                              Watermark="Message (press Enter to commit)"
                              FontSize="12"
                              AcceptsReturn="False"
-                             Background="#11111B"
-                             BorderBrush="#313244" />
+                         Background="{DynamicResource ThemeInputBackground}"
+                         BorderBrush="{DynamicResource ThemeInputBorder}" />
                     <DockPanel>
                         <Button Content="\u2713 Commit"
                                 Command="{Binding CommitCommand}"
@@ -62,13 +66,15 @@
             </Border>
 
             <!-- Branch info + repo kind -->
-            <Border DockPanel.Dock="Top" Padding="8,4">
+                <Border DockPanel.Dock="Top"
+                    Classes="sidebarSectionBody"
+                    Padding="8,4">
                 <DockPanel>
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <TextBlock Text="\U0001F500" FontSize="12" />
                         <TextBlock Text="{Binding BranchName}"
                                    FontSize="11"
-                                   Foreground="#60A5FA"
+                                   Foreground="{DynamicResource ThemeAccent}"
                                    VerticalAlignment="Center" />
                         <TextBlock Text="{Binding SyncStatus}"
                                    FontSize="10"
@@ -78,7 +84,7 @@
                     <TextBlock DockPanel.Dock="Right"
                                Text="{Binding RepositoryKind}"
                                FontSize="9"
-                               Foreground="#6C7086"
+                               Foreground="{DynamicResource ThemeMutedForeground}"
                                Opacity="0.6"
                                VerticalAlignment="Center"
                                HorizontalAlignment="Right" />
@@ -86,7 +92,9 @@
             </Border>
 
             <!-- Stash buttons -->
-            <Border DockPanel.Dock="Top" Padding="8,2">
+            <Border DockPanel.Dock="Top"
+                    Classes="sidebarSectionBody"
+                    Padding="8,2">
                 <StackPanel Orientation="Horizontal" Spacing="4">
                     <Button Content="Stash"
                             Command="{Binding StashCommand}"
@@ -96,7 +104,7 @@
                     <Button Content="Stash Pop"
                             Command="{Binding StashPopCommand}"
                             FontSize="10" Padding="6,2"
-                            Background="#313244" Foreground="#CDD6F4"
+                            Background="{DynamicResource ThemeButtonBackground}" Foreground="{DynamicResource ThemeButtonForeground}"
                             ToolTip.Tip="Pop Latest Stash" />
                 </StackPanel>
             </Border>
@@ -128,7 +136,7 @@
                                                        VerticalAlignment="Center" />
                                             <TextBlock Text="{Binding FileName}"
                                                        FontSize="11"
-                                                       Foreground="#CDD6F4"
+                                                       Foreground="{DynamicResource ThemeText}"
                                                        TextTrimming="CharacterEllipsis"
                                                        VerticalAlignment="Center"
                                                        ToolTip.Tip="{Binding RelativePath}" />
@@ -174,7 +182,7 @@
                                                        VerticalAlignment="Center" />
                                             <TextBlock Text="{Binding FileName}"
                                                        FontSize="11"
-                                                       Foreground="#CDD6F4"
+                                                       Foreground="{DynamicResource ThemeText}"
                                                        TextTrimming="CharacterEllipsis"
                                                        VerticalAlignment="Center"
                                                        ToolTip.Tip="{Binding RelativePath}" />
@@ -217,18 +225,18 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="git:Worktree">
                                     <Border Padding="4,2" Margin="0,1"
-                                            Background="#11111B" CornerRadius="3">
+                                            Background="{DynamicResource ThemeInputBackground}" CornerRadius="3">
                                         <DockPanel>
                                             <StackPanel Orientation="Horizontal" Spacing="6">
                                                 <TextBlock Text="{Binding Ref}"
                                                            FontSize="11"
-                                                           Foreground="#60A5FA"
+                                                           Foreground="{DynamicResource ThemeAccent}"
                                                            VerticalAlignment="Center" />
                                             </StackPanel>
                                             <TextBlock DockPanel.Dock="Right"
                                                        Text="{Binding Path}"
                                                        FontSize="9"
-                                                       Foreground="#6C7086"
+                                                       Foreground="{DynamicResource ThemeMutedForeground}"
                                                        TextTrimming="CharacterEllipsis"
                                                        MaxWidth="180"
                                                        VerticalAlignment="Center"

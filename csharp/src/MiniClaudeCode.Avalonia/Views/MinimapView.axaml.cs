@@ -96,28 +96,19 @@ public partial class MinimapView : UserControl
                     new Rect(xStart, yPos, textWidth, Math.Max(scale - 0.5, 0.5)));
             }
 
-            // Draw viewport indicator - with safe access to VisualLines
-            try
-            {
-                var visualLines = _editor.TextArea.TextView.VisualLines;
-                if (visualLines != null && visualLines.Count > 0)
-                {
-                    var firstVisibleLine = visualLines[0].FirstDocumentLine.LineNumber;
-                    var lastVisibleLine = visualLines[^1].LastDocumentLine.LineNumber;
+            // Draw viewport indicator without touching TextView.VisualLines.
+            // This avoids VisualLinesInvalidException during layout/render transitions.
+            var textView = _editor.TextArea.TextView;
+            var lineHeight = Math.Max(textView.DefaultLineHeight, 1.0);
+            var firstVisibleLine = Math.Max(1, (int)(textView.ScrollOffset.Y / lineHeight) + 1);
+            var visibleLineCount = Math.Max(1, (int)Math.Ceiling(_editor.Bounds.Height / lineHeight));
+            var lastVisibleLine = Math.Min(totalLines, firstVisibleLine + visibleLineCount - 1);
 
-                    var viewportTop = (firstVisibleLine - 1) * scale;
-                    var viewportHeight = (lastVisibleLine - firstVisibleLine + 1) * scale;
-                    viewportHeight = Math.Max(viewportHeight, 10); // Minimum visible height
+            var viewportTop = (firstVisibleLine - 1) * scale;
+            var viewportHeight = Math.Max((lastVisibleLine - firstVisibleLine + 1) * scale, 10);
 
-                    context.DrawRectangle(ViewportBrush, ViewportBorderPen,
-                        new Rect(0, viewportTop, canvasWidth, viewportHeight));
-                }
-            }
-            catch (AvaloniaEdit.Rendering.VisualLinesInvalidException ex)
-            {
-                LogHelper.UI.Debug(ex, "MinimapView VisualLines 未就绪，跳过 viewport 绘制");
-                // Visual lines not ready yet; skip viewport rendering
-            }
+            context.DrawRectangle(ViewportBrush, ViewportBorderPen,
+                new Rect(0, viewportTop, canvasWidth, viewportHeight));
         }
         catch (Exception ex)
         {

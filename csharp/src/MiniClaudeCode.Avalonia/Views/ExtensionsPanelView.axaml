@@ -4,32 +4,34 @@
              x:Class="MiniClaudeCode.Avalonia.Views.ExtensionsPanelView"
              x:DataType="vm:ExtensionsViewModel">
 
-    <Border Background="#181825" Padding="4">
+    <Border Classes="sidebarSectionRoot"
+            Background="{DynamicResource ThemeSideBarBackground}">
         <DockPanel>
             <!-- Header -->
-            <Border DockPanel.Dock="Top" Padding="8,6" Background="#1E1E2E" CornerRadius="4,4,0,0">
+            <Border DockPanel.Dock="Top"
+                    Classes="sidebarSectionHeader">
                 <DockPanel>
                     <TextBlock Text="Extensions"
-                               FontWeight="Bold"
-                               FontSize="12"
-                               Foreground="#CDD6F4" />
-                    <Button DockPanel.Dock="Right"
+                               Classes="sidebarSectionTitle" />
+                    <Button Classes="panelIconAction"
+                            DockPanel.Dock="Right"
                             Content="\u21BB"
                             Command="{Binding DiscoverExtensionsCommand}"
                             ToolTip.Tip="Refresh Extensions"
                             FontSize="12" Padding="4,2"
-                            Background="Transparent" Foreground="#CDD6F4"
                             HorizontalAlignment="Right" />
                 </DockPanel>
             </Border>
 
             <!-- Search -->
-            <Border DockPanel.Dock="Top" Padding="8,4" Background="#1E1E2E">
+            <Border DockPanel.Dock="Top"
+                    Classes="sidebarSectionBody"
+                    Padding="8,4">
                 <TextBox Text="{Binding SearchQuery}"
                          Watermark="Search Extensions..."
                          FontSize="12"
-                         Background="#11111B"
-                         BorderBrush="#313244" />
+                         Background="{DynamicResource ThemeInputBackground}"
+                         BorderBrush="{DynamicResource ThemeInputBorder}" />
             </Border>
 
             <!-- Extension list -->
@@ -43,12 +45,12 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:ExtensionListItem">
                                     <Border Padding="8,6" Margin="0,1"
-                                            Background="#11111B" CornerRadius="4">
+                                            Background="{DynamicResource ThemeInputBackground}" CornerRadius="4">
                                         <DockPanel>
                                             <!-- Extension icon placeholder -->
                                             <Border DockPanel.Dock="Left"
                                                     Width="32" Height="32"
-                                                    Background="#313244"
+                                                    Background="{DynamicResource ThemeButtonBackground}"
                                                     CornerRadius="4"
                                                     Margin="0,0,8,0">
                                                 <TextBlock Text="\U0001F9E9"
@@ -63,8 +65,8 @@
                                                         Margin="4,0,0,0">
                                                 <Button Content="{Binding StateDisplay}"
                                                         FontSize="9" Padding="6,2"
-                                                        Background="#313244"
-                                                        Foreground="#A6E3A1" />
+                                                    Background="{DynamicResource ThemeButtonBackground}"
+                                                    Foreground="{DynamicResource ThemeGreen}" />
                                             </StackPanel>
 
                                             <!-- Extension details -->
@@ -72,19 +74,19 @@
                                                 <TextBlock Text="{Binding Name}"
                                                            FontSize="12"
                                                            FontWeight="SemiBold"
-                                                           Foreground="#CDD6F4" />
+                                                           Foreground="{DynamicResource ThemeText}" />
                                                 <TextBlock Text="{Binding Description}"
                                                            FontSize="10"
-                                                           Foreground="#9CA3AF"
+                                                           Foreground="{DynamicResource ThemeMutedForeground}"
                                                            TextTrimming="CharacterEllipsis"
                                                            MaxLines="1" />
                                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                                     <TextBlock Text="{Binding Publisher}"
                                                                FontSize="9"
-                                                               Foreground="#6C7086" />
+                                                               Foreground="{DynamicResource ThemeMutedForeground}" />
                                                     <TextBlock Text="{Binding Version}"
                                                                FontSize="9"
-                                                               Foreground="#6C7086"
+                                                               Foreground="{DynamicResource ThemeMutedForeground}"
                                                                Opacity="0.5" />
                                                 </StackPanel>
                                             </StackPanel>
@@ -107,12 +109,12 @@
                                    Opacity="0.3" />
                         <TextBlock Text="No extensions installed"
                                    FontSize="13"
-                                   Foreground="#CDD6F4"
+                                   Foreground="{DynamicResource ThemeText}"
                                    HorizontalAlignment="Center"
                                    Opacity="0.5" />
                         <TextBlock Text="Place extensions in the extensions directory to get started."
                                    FontSize="11"
-                                   Foreground="#9CA3AF"
+                                   Foreground="{DynamicResource ThemeMutedForeground}"
                                    HorizontalAlignment="Center"
                                    TextWrapping="Wrap"
                                    TextAlignment="Center"

@@ -5,7 +5,8 @@
              x:Class="MiniClaudeCode.Avalonia.Views.SidebarView"
              x:DataType="vm:MainWindowViewModel">
 
-    <Border Background="#181825">
+    <Border Classes="workbenchSidebar"
+            Background="{DynamicResource ThemeSideBarBackground}">
         <Panel>
             <!-- File Explorer panel -->
             <views:FileExplorerView DataContext="{Binding FileExplorer}"

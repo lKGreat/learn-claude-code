@@ -5,16 +5,15 @@
              x:Class="MiniClaudeCode.Avalonia.Views.FileExplorerView"
              x:DataType="vm:FileExplorerViewModel">
 
-    <Border Background="#181825" Padding="4">
+    <Border Classes="sidebarSectionRoot"
+            Background="{DynamicResource ThemeSideBarBackground}">
         <DockPanel>
             <!-- Header + Toolbar -->
-            <Border DockPanel.Dock="Top" Padding="8,6" Background="#1E1E2E" CornerRadius="4,4,0,0">
+            <Border DockPanel.Dock="Top"
+                    Classes="sidebarSectionHeader">
                 <DockPanel>
                     <TextBlock Text="Explorer"
-                               FontWeight="Bold"
-                               FontSize="12"
-                               Foreground="#CDD6F4"
-                               VerticalAlignment="Center" />
+                               Classes="sidebarSectionTitle" />
 
                     <!-- Toolbar buttons -->
                     <StackPanel DockPanel.Dock="Right"
@@ -23,54 +22,34 @@
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
                         <!-- New File -->
-                        <Button ToolTip.Tip="New File"
+                        <Button Classes="panelIconAction"
+                                ToolTip.Tip="New File"
                                 Command="{Binding FileOperations.StartNewFileCommand}"
                                 CommandParameter="{Binding SelectedNode}"
-                                Background="Transparent" BorderThickness="0"
-                                Padding="4,2" Cursor="Hand" FontSize="12" Foreground="#6C7086">
+                                FontSize="12">
                             <TextBlock Text="&#x1F4C4;" FontSize="12" />
-                            <Button.Styles>
-                                <Style Selector="Button:pointerover /template/ ContentPresenter">
-                                    <Setter Property="Background" Value="#313244" />
-                                </Style>
-                            </Button.Styles>
                         </Button>
                         <!-- New Folder -->
-                        <Button ToolTip.Tip="New Folder"
+                        <Button Classes="panelIconAction"
+                                ToolTip.Tip="New Folder"
                                 Command="{Binding FileOperations.StartNewFolderCommand}"
                                 CommandParameter="{Binding SelectedNode}"
-                                Background="Transparent" BorderThickness="0"
-                                Padding="4,2" Cursor="Hand" FontSize="12" Foreground="#6C7086">
+                                FontSize="12">
                             <TextBlock Text="&#x1F4C1;" FontSize="12" />
-                            <Button.Styles>
-                                <Style Selector="Button:pointerover /template/ ContentPresenter">
-                                    <Setter Property="Background" Value="#313244" />
-                                </Style>
-                            </Button.Styles>
                         </Button>
                         <!-- Refresh -->
-                        <Button ToolTip.Tip="Refresh"
+                        <Button Classes="panelIconAction"
+                                ToolTip.Tip="Refresh"
                                 Command="{Binding RefreshCommand}"
-                                Background="Transparent" BorderThickness="0"
-                                Padding="4,2" Cursor="Hand" FontSize="12" Foreground="#6C7086">
+                                FontSize="12">
                             <TextBlock Text="&#x21BB;" FontSize="12" />
-                            <Button.Styles>
-                                <Style Selector="Button:pointerover /template/ ContentPresenter">
-                                    <Setter Property="Background" Value="#313244" />
-                                </Style>
-                            </Button.Styles>
                         </Button>
                         <!-- Collapse All -->
-                        <Button ToolTip.Tip="Collapse All"
+                        <Button Classes="panelIconAction"
+                                ToolTip.Tip="Collapse All"
                                 Command="{Binding CollapseAllCommand}"
-                                Background="Transparent" BorderThickness="0"
-                                Padding="4,2" Cursor="Hand" FontSize="12" Foreground="#6C7086">
+                                FontSize="12">
                             <TextBlock Text="&#x2B73;" FontSize="12" />
-                            <Button.Styles>
-                                <Style Selector="Button:pointerover /template/ ContentPresenter">
-                                    <Setter Property="Background" Value="#313244" />
-                                </Style>
-                            </Button.Styles>
                         </Button>
                     </StackPanel>
                 </DockPanel>
@@ -79,16 +58,20 @@
             <!-- Inline create box (when creating new file/folder) -->
             <Border DockPanel.Dock="Top"
                     IsVisible="{Binding FileOperations.IsCreating}"
-                    Padding="8,4" Background="#1E1E2E">
+                    Classes="sidebarSectionBody"
+                    Padding="8,4">
                 <DockPanel>
                     <Button DockPanel.Dock="Right" Content="&#x2715;"
+                        Classes="panelIconAction"
                             Command="{Binding FileOperations.CancelCreateCommand}"
-                            Background="Transparent" BorderThickness="0"
-                            FontSize="10" Padding="4,2" Foreground="#6C7086" Cursor="Hand" />
+                        FontSize="10" />
                     <TextBox Text="{Binding FileOperations.NewItemName, Mode=TwoWay}"
                              Watermark="Enter name"
-                             FontSize="12" Background="#11111B" Foreground="#CDD6F4"
-                             BorderBrush="#45475A" BorderThickness="1" Padding="4,2"
+                         FontSize="12"
+                         Background="{DynamicResource ThemeInputBackground}"
+                         Foreground="{DynamicResource ThemeInputForeground}"
+                         BorderBrush="{DynamicResource ThemeInputFocusBorder}"
+                         BorderThickness="1" Padding="4,2"
                              KeyDown="OnCreateBoxKeyDown" />
                 </DockPanel>
             </Border>
@@ -115,7 +98,7 @@
                                 <TextBlock Text="{Binding Icon}" FontSize="14" VerticalAlignment="Center" />
                                 <TextBlock Text="{Binding Name}"
                                            FontSize="12"
-                                           Foreground="#CDD6F4"
+                                           Foreground="{DynamicResource ThemeText}"
                                            VerticalAlignment="Center" />
                             </StackPanel>
                             <!-- Rename mode -->
@@ -123,8 +106,10 @@
                                         IsVisible="{Binding IsRenaming}">
                                 <TextBlock Text="{Binding Icon}" FontSize="14" VerticalAlignment="Center" />
                                 <TextBox Text="{Binding EditName, Mode=TwoWay}"
-                                         FontSize="12" Background="#11111B" Foreground="#CDD6F4"
-                                         BorderBrush="#89B4FA" BorderThickness="1" Padding="2,0"
+                                         FontSize="12"
+                                         Background="{DynamicResource ThemeInputBackground}"
+                                         Foreground="{DynamicResource ThemeInputForeground}"
+                                         BorderBrush="{DynamicResource ThemeInputFocusBorder}" BorderThickness="1" Padding="2,0"
                                          MinWidth="120"
                                          KeyDown="OnRenameBoxKeyDown" />
                             </StackPanel>

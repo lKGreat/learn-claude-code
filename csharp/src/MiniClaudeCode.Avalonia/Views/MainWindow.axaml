@@ -102,7 +102,7 @@
                                 <MenuItem Header="_Source Control" InputGesture="Ctrl+Shift+G" />
                                 <MenuItem Header="E_xtensions" InputGesture="Ctrl+Shift+X" />
                                 <Separator />
-                                <MenuItem Header="_Terminal" InputGesture="Ctrl+`" Command="{Binding BottomPanel.ToggleVisibilityCommand}" />
+                                <MenuItem Header="_Terminal" InputGesture="Ctrl+OemTilde" Command="{Binding BottomPanel.ToggleVisibilityCommand}" />
                                 <MenuItem Header="_Plan Mode" Command="{Binding TogglePlanModeCommand}" />
                             </MenuItem>
                             <MenuItem Header="_Help">

@@ -298,6 +298,10 @@ public partial class MainWindowViewModel : ObservableObject
         _engine = engine;
         _workspaceService.OpenFolder(workDir);
 
+        // Wire up completion service and edit service to editor
+        Editor.SetCompletionService(engine.CompletionService);
+        Editor.InlineEdit.SetEditService(engine.EditService);
+
         DispatcherService.Post(() =>
         {
             ProviderDisplay = activeConfig.DisplayName;
@@ -423,6 +427,10 @@ public partial class MainWindowViewModel : ObservableObject
             engine.Kernel.AutoFunctionInvocationFilters.Add(filter);
 
             _engine = engine;
+
+            // Wire up completion service and edit service to editor
+            Editor.SetCompletionService(engine.CompletionService);
+            Editor.InlineEdit.SetEditService(engine.EditService);
 
             DispatcherService.Post(() =>
             {
@@ -1139,6 +1147,7 @@ public partial class MainWindowViewModel : ObservableObject
             new() { Id = "split_editor", Label = "Split Editor Right", Category = "Editor", Shortcut = @"Ctrl+\", Execute = () => Editor.SplitEditorCommand.Execute(null) },
             new() { Id = "unsplit_editor", Label = "Close Split Editor", Category = "Editor", Execute = () => Editor.UnsplitEditorCommand.Execute(null) },
             new() { Id = "save_file", Label = "Save File", Category = "File", Shortcut = "Ctrl+S", Execute = () => Editor.SaveFileCommand.Execute(null) },
+            new() { Id = "inline_edit", Label = "Inline Edit (AI)", Category = "Editor", Shortcut = "Ctrl+K", Execute = () => { /* Handled by EditorView directly */ } },
             new() { Id = "git_commit", Label = "Git: Commit", Category = "Git", Execute = () => _ = Scm.CommitCommand.ExecuteAsync(null) },
             new() { Id = "git_pull", Label = "Git: Pull", Category = "Git", Execute = () => _ = Scm.PullCommand.ExecuteAsync(null) },
             new() { Id = "git_push", Label = "Git: Push", Category = "Git", Execute = () => _ = Scm.PushCommand.ExecuteAsync(null) },

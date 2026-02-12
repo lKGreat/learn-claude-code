@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using MiniClaudeCode.Avalonia.Editor;
 using MiniClaudeCode.Avalonia.Editor.TextBuffer;
 using MiniClaudeCode.Avalonia.Models;
+using MiniClaudeCode.Core.AI;
 
 namespace MiniClaudeCode.Avalonia.ViewModels;
 
@@ -53,6 +54,182 @@ public partial class EditorViewModel : ObservableObject
 
     /// <summary>Fired when the active file changes (for status bar language).</summary>
     public event Action<EditorTab?>? ActiveFileChanged;
+
+    // =========================================================================
+    // Inline Completion Support
+    // =========================================================================
+
+    private InlineCompletionService? _completionService;
+    private CancellationTokenSource? _completionCts;
+    private const int CompletionDebounceMs = 800;
+
+    /// <summary>Ghost text to display as inline completion suggestion.</summary>
+    [ObservableProperty]
+    private string? _ghostText;
+
+    /// <summary>Loading indicator for completion requests.</summary>
+    [ObservableProperty]
+    private bool _isCompletionLoading;
+
+    /// <summary>The offset in the current line where ghost text should be displayed.</summary>
+    [ObservableProperty]
+    private int _ghostTextColumn;
+
+    // =========================================================================
+    // Inline Edit Support (Ctrl+K)
+    // =========================================================================
+
+    /// <summary>Inline edit panel ViewModel.</summary>
+    public InlineEditViewModel InlineEdit { get; } = new();
+
+    /// <summary>Fired when inline edit is accepted (for applying changes).</summary>
+    public event Action<string, string>? InlineEditAccepted; // (filePath, modifiedCode)
+
+    public EditorViewModel()
+    {
+        // Wire up inline edit events
+        InlineEdit.EditAccepted += OnInlineEditAccepted;
+    }
+
+    private void OnInlineEditAccepted(string filePath, string modifiedCode)
+    {
+        // Notify the view to apply the edit
+        InlineEditAccepted?.Invoke(filePath, modifiedCode);
+    }
+
+    /// <summary>Set the completion service instance (called from MainWindowViewModel).</summary>
+    public void SetCompletionService(InlineCompletionService? service)
+    {
+        _completionService = service;
+    }
+
+    /// <summary>
+    /// Request an inline completion at the current cursor position.
+    /// Implements debouncing: waits CompletionDebounceMs before sending request.
+    /// </summary>
+    public async Task RequestCompletionAsync(string text, int line, int column)
+    {
+        // Cancel any pending completion request
+        _completionCts?.Cancel();
+        _completionCts = new CancellationTokenSource();
+
+        // Clear any existing ghost text
+        DismissCompletion();
+
+        // Don't request completion if service is not available or file is not open
+        if (_completionService == null || ActiveTab == null)
+            return;
+
+        // Don't request completion for large files (performance)
+        if (IsLargeFile)
+            return;
+
+        try
+        {
+            // Debounce: wait for typing to settle
+            await Task.Delay(CompletionDebounceMs, _completionCts.Token);
+
+            IsCompletionLoading = true;
+
+            // Build completion request
+            var lines = text.Split('\n');
+            var beforeCursor = string.Join('\n', lines.Take(line));
+            var afterCursor = line < lines.Length
+                ? string.Join('\n', lines.Skip(line))
+                : "";
+
+            var request = new CompletionRequest
+            {
+                FilePath = ActiveTab.FilePath,
+                Language = ActiveTab.Language,
+                Line = line,
+                Column = column,
+                CodeBefore = beforeCursor,
+                CodeAfter = afterCursor
+            };
+
+            // Request completion from service
+            var result = await _completionService.GetCompletionAsync(request, _completionCts.Token);
+
+            // If we got a result, show ghost text
+            if (result != null && !string.IsNullOrWhiteSpace(result.Text))
+            {
+                GhostText = result.Text;
+                GhostTextColumn = column;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Request was cancelled (user continued typing)
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't crash the editor
+            System.Diagnostics.Debug.WriteLine($"Completion error: {ex.Message}");
+        }
+        finally
+        {
+            IsCompletionLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Accept the current ghost text completion.
+    /// Returns the ghost text to be inserted, or null if no completion is active.
+    /// </summary>
+    public string? AcceptCompletion()
+    {
+        if (string.IsNullOrEmpty(GhostText))
+            return null;
+
+        var text = GhostText;
+        DismissCompletion();
+        return text;
+    }
+
+    /// <summary>
+    /// Dismiss the current ghost text completion.
+    /// </summary>
+    public void DismissCompletion()
+    {
+        GhostText = null;
+        GhostTextColumn = 0;
+    }
+
+    /// <summary>
+    /// Cancel any pending completion request.
+    /// Called when user types a character or moves cursor.
+    /// </summary>
+    public void CancelPendingCompletion()
+    {
+        _completionCts?.Cancel();
+        _completionCts = null;
+        DismissCompletion();
+    }
+
+    /// <summary>
+    /// Show the inline edit panel for the selected code.
+    /// Called from EditorView when Ctrl+K is pressed.
+    /// </summary>
+    public void ShowInlineEdit(
+        string selectedCode,
+        int startLine,
+        int endLine,
+        string contextBefore,
+        string contextAfter)
+    {
+        if (ActiveTab == null || string.IsNullOrWhiteSpace(selectedCode))
+            return;
+
+        InlineEdit.Show(
+            ActiveTab.FilePath,
+            ActiveTab.Language,
+            selectedCode,
+            startLine,
+            endLine,
+            contextBefore,
+            contextAfter);
+    }
 
     public void OpenFile(string filePath)
     {

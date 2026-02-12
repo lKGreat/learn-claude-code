@@ -4,6 +4,7 @@
              xmlns:models="using:MiniClaudeCode.Avalonia.Models"
              xmlns:ae="using:AvaloniaEdit"
              xmlns:conv="using:MiniClaudeCode.Avalonia.Converters"
+             xmlns:local="using:MiniClaudeCode.Avalonia.Views"
              x:Class="MiniClaudeCode.Avalonia.Views.EditorView"
              x:DataType="vm:EditorViewModel">
 
@@ -127,6 +128,9 @@
                         <TextBlock Text="Ctrl+`         Toggle Terminal"
                                    FontSize="12" Foreground="#6C7086"
                                    FontFamily="Cascadia Code, Consolas, monospace" />
+                        <TextBlock Text="Ctrl+K         Inline Edit"
+                                   FontSize="12" Foreground="#6C7086"
+                                   FontFamily="Cascadia Code, Consolas, monospace" />
                     </StackPanel>
                 </StackPanel>
 
@@ -141,6 +145,9 @@
                                WordWrap="False"
                                HorizontalScrollBarVisibility="Auto"
                                VerticalScrollBarVisibility="Auto" />
+
+                <!-- Inline Edit Panel (overlay) -->
+                <local:InlineEditView DataContext="{Binding InlineEdit}" />
             </Panel>
         </DockPanel>
     </Border>

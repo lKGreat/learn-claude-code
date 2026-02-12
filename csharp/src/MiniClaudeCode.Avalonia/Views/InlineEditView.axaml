@@ -1,0 +1,210 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             x:Class="MiniClaudeCode.Avalonia.Views.InlineEditView"
+             x:DataType="vm:InlineEditViewModel"
+             IsVisible="{Binding IsVisible}"
+             MaxWidth="600"
+             HorizontalAlignment="Right"
+             VerticalAlignment="Bottom"
+             Margin="0,0,20,20">
+
+    <!-- Floating panel with Catppuccin Mocha colors -->
+    <Border Background="#1E1E2E"
+            BorderBrush="#89B4FA"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="0"
+            BoxShadow="0 8 24 0 #000000AA">
+
+        <DockPanel>
+            <!-- Header -->
+            <Border DockPanel.Dock="Top"
+                    Background="#313244"
+                    Padding="12,8"
+                    CornerRadius="8 8 0 0">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right"
+                            Content="✕"
+                            FontSize="14"
+                            Foreground="#6C7086"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Padding="4"
+                            Cursor="Hand"
+                            Command="{Binding CancelCommand}"
+                            VerticalAlignment="Center">
+                        <Button.Styles>
+                            <Style Selector="Button:pointerover">
+                                <Setter Property="Foreground" Value="#F38BA8" />
+                            </Style>
+                        </Button.Styles>
+                    </Button>
+
+                    <TextBlock Text="Inline Edit"
+                               FontSize="13"
+                               FontWeight="SemiBold"
+                               Foreground="#CDD6F4"
+                               VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
+
+            <!-- Content area -->
+            <Border Padding="16">
+                <StackPanel Spacing="12">
+                <!-- Instruction input -->
+                <StackPanel Spacing="6"
+                            IsVisible="{Binding !HasResult}">
+                    <TextBox x:Name="InstructionTextBox"
+                             Text="{Binding Instruction}"
+                             Watermark="Describe the change..."
+                             MinHeight="36"
+                             MaxHeight="120"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             FontSize="13"
+                             Foreground="#CDD6F4"
+                             Background="#181825"
+                             BorderBrush="#313244"
+                             BorderThickness="1"
+                             CornerRadius="4"
+                             Padding="8">
+                        <TextBox.Styles>
+                            <Style Selector="TextBox:focus">
+                                <Setter Property="BorderBrush" Value="#89B4FA" />
+                            </Style>
+                        </TextBox.Styles>
+                    </TextBox>
+
+                    <!-- Error message -->
+                    <TextBlock Text="{Binding ErrorMessage}"
+                               IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                               Foreground="#F38BA8"
+                               FontSize="11"
+                               TextWrapping="Wrap" />
+
+                    <!-- Action buttons -->
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Submit"
+                                Command="{Binding SubmitCommand}"
+                                IsEnabled="{Binding !IsProcessing}"
+                                Background="#89B4FA"
+                                Foreground="#1E1E2E"
+                                BorderThickness="0"
+                                Padding="16,6"
+                                CornerRadius="4"
+                                FontSize="12"
+                                FontWeight="SemiBold"
+                                Cursor="Hand">
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="#74C7EC" />
+                                </Style>
+                                <Style Selector="Button:disabled">
+                                    <Setter Property="Opacity" Value="0.5" />
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+
+                        <Button Content="Cancel"
+                                Command="{Binding CancelCommand}"
+                                Background="#313244"
+                                Foreground="#CDD6F4"
+                                BorderThickness="0"
+                                Padding="16,6"
+                                CornerRadius="4"
+                                FontSize="12"
+                                Cursor="Hand">
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="#45475A" />
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+
+                        <!-- Loading spinner -->
+                        <TextBlock Text="Processing..."
+                                   IsVisible="{Binding IsProcessing}"
+                                   Foreground="#6C7086"
+                                   FontSize="11"
+                                   FontStyle="Italic"
+                                   VerticalAlignment="Center"
+                                   Margin="8,0,0,0" />
+                    </StackPanel>
+
+                    <TextBlock Text="Press Enter to submit, Esc to cancel"
+                               Foreground="#6C7086"
+                               FontSize="10"
+                               Opacity="0.7" />
+                </StackPanel>
+
+                <!-- Diff preview (when result available) -->
+                <StackPanel Spacing="8"
+                            IsVisible="{Binding HasResult}">
+                    <TextBlock Text="Preview Changes:"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="#CDD6F4" />
+
+                    <Border Background="#181825"
+                            BorderBrush="#313244"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            MaxHeight="300"
+                            Padding="8">
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Auto">
+                            <TextBlock Text="{Binding DiffText}"
+                                       FontFamily="Cascadia Code, Consolas, monospace"
+                                       FontSize="11"
+                                       Foreground="#CDD6F4"
+                                       TextWrapping="NoWrap" />
+                        </ScrollViewer>
+                    </Border>
+
+                    <!-- Accept/Reject buttons -->
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Accept"
+                                Command="{Binding AcceptCommand}"
+                                Background="#A6E3A1"
+                                Foreground="#1E1E2E"
+                                BorderThickness="0"
+                                Padding="16,6"
+                                CornerRadius="4"
+                                FontSize="12"
+                                FontWeight="SemiBold"
+                                Cursor="Hand">
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="#94E2D5" />
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+
+                        <Button Content="Reject"
+                                Command="{Binding RejectCommand}"
+                                Background="#313244"
+                                Foreground="#CDD6F4"
+                                BorderThickness="0"
+                                Padding="16,6"
+                                CornerRadius="4"
+                                FontSize="12"
+                                Cursor="Hand">
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="#45475A" />
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+                    </StackPanel>
+
+                    <TextBlock Text="Press Ctrl+Enter to accept, Esc to reject"
+                               Foreground="#6C7086"
+                               FontSize="10"
+                               Opacity="0.7" />
+                </StackPanel>
+            </StackPanel>
+            </Border>
+        </DockPanel>
+    </Border>
+</UserControl>

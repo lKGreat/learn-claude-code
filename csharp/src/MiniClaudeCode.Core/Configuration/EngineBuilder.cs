@@ -5,6 +5,7 @@ using MiniClaudeCode.Abstractions.Agents;
 using MiniClaudeCode.Abstractions.Services;
 using MiniClaudeCode.Abstractions.UI;
 using MiniClaudeCode.Core.Agents;
+using MiniClaudeCode.Core.AI;
 using MiniClaudeCode.Core.Plugins;
 using MiniClaudeCode.Core.Services;
 using MiniClaudeCode.Core.Services.Providers;
@@ -85,6 +86,15 @@ public class EngineBuilder
         var parallelExecutor = new ParallelAgentExecutor(subAgentRunner);
         var agentTeam = new AgentTeam(subAgentRunner, parallelExecutor, _output);
 
+        // AI services
+        var completionService = new InlineCompletionService(
+            _providerConfigs, _activeProvider);
+        var editService = new InlineEditService(
+            _providerConfigs, _activeProvider);
+        var composerService = new ComposerService(
+            _providerConfigs, _activeProvider, _workDir, _output, agentRegistry);
+        var contextBuilder = new ContextBuilder(_workDir);
+
         // Build kernel with all plugins
         var builder = Kernel.CreateBuilder();
         builder.AddProviderChatCompletion(activeConfig);
@@ -131,6 +141,10 @@ public class EngineBuilder
             SubAgentRunner = subAgentRunner,
             ParallelExecutor = parallelExecutor,
             AgentTeam = agentTeam,
+            CompletionService = completionService,
+            EditService = editService,
+            ComposerService = composerService,
+            ContextBuilder = contextBuilder,
             Output = _output,
             ProgressReporter = _progressReporter
         };
@@ -202,6 +216,10 @@ public class EngineContext
     public required SubAgentRunner SubAgentRunner { get; init; }
     public required ParallelAgentExecutor ParallelExecutor { get; init; }
     public required AgentTeam AgentTeam { get; init; }
+    public required InlineCompletionService CompletionService { get; init; }
+    public required InlineEditService EditService { get; init; }
+    public required ComposerService ComposerService { get; init; }
+    public required ContextBuilder ContextBuilder { get; init; }
     public required IOutputSink Output { get; init; }
     public required IAgentProgressReporter ProgressReporter { get; init; }
 

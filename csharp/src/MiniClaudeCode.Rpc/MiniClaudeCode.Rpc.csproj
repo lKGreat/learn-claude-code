@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>MiniClaudeCode.Rpc</RootNamespace>
+    <Description>RPC service layer stub for future WinForms/Web integration</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MiniClaudeCode.Core\MiniClaudeCode.Core.csproj" />
+    <ProjectReference Include="..\MiniClaudeCode.Abstractions\MiniClaudeCode.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>MiniClaudeCode.Tui</RootNamespace>
+    <Description>Terminal.Gui TUI frontend for MiniClaudeCode</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MiniClaudeCode.Core\MiniClaudeCode.Core.csproj" />
+    <ProjectReference Include="..\MiniClaudeCode.Abstractions\MiniClaudeCode.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Terminal.Gui" Version="2.*" />
+    <PackageReference Include="DotNetEnv" Version="3.*" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.*" />
+  </ItemGroup>
+
+  <!-- Copy .env to output directory if it exists -->
+  <ItemGroup>
+    <None Include="../../.env" Condition="Exists('../../.env')" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

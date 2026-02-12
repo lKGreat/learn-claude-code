@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MiniClaudeCode.Abstractions/MiniClaudeCode.Abstractions.csproj" />
+    <Project Path="src/MiniClaudeCode.Core/MiniClaudeCode.Core.csproj" />
+    <Project Path="src/MiniClaudeCode.Rpc/MiniClaudeCode.Rpc.csproj" />
+    <Project Path="src/MiniClaudeCode.Tui/MiniClaudeCode.Tui.csproj" />
+  </Folder>
+</Solution>

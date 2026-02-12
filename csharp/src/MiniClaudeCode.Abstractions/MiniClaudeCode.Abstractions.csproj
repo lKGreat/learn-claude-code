@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>MiniClaudeCode.Abstractions</RootNamespace>
+    <Description>Shared interfaces and DTOs for MiniClaudeCode multi-architecture platform</Description>
+  </PropertyGroup>
+
+</Project>

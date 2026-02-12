@@ -1,0 +1,84 @@
+// MiniClaudeCode Agent Service Protocol Buffer Definition
+// This is scaffolding for future gRPC implementation.
+
+syntax = "proto3";
+
+option csharp_namespace = "MiniClaudeCode.Rpc.Protos";
+
+package miniclaudecode;
+
+// The agent service definition.
+service AgentService {
+  // Send a message and get a single response.
+  rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);
+
+  // Send a message and stream the response.
+  rpc StreamMessage (SendMessageRequest) returns (stream StreamChunk);
+
+  // Spawn a sub-agent task.
+  rpc SpawnAgent (SpawnAgentRequest) returns (AgentResultResponse);
+
+  // Get running agents status.
+  rpc GetRunningAgents (Empty) returns (AgentListResponse);
+
+  // Reset conversation.
+  rpc ResetConversation (Empty) returns (Empty);
+
+  // Get todo list.
+  rpc GetTodos (Empty) returns (TodoResponse);
+}
+
+message Empty {}
+
+message SendMessageRequest {
+  string message = 1;
+}
+
+message SendMessageResponse {
+  string content = 1;
+  int32 tool_call_count = 2;
+}
+
+message StreamChunk {
+  // Type: "text", "tool_call_start", "tool_call_end", "done", "error"
+  string type = 1;
+  string content = 2;
+  string function_name = 3;
+  string argument_summary = 4;
+  double elapsed_seconds = 5;
+}
+
+message SpawnAgentRequest {
+  string description = 1;
+  string prompt = 2;
+  string agent_type = 3;
+  string model_tier = 4;
+  string resume_agent_id = 5;
+  bool read_only = 6;
+  repeated string attachments = 7;
+}
+
+message AgentResultResponse {
+  string agent_id = 1;
+  string output = 2;
+  int32 tool_call_count = 3;
+  double elapsed_seconds = 4;
+  bool is_error = 5;
+  string error_message = 6;
+}
+
+message AgentListResponse {
+  repeated AgentInfo agents = 1;
+}
+
+message AgentInfo {
+  string id = 1;
+  string agent_type = 2;
+  string description = 3;
+  string status = 4;
+  int32 tool_call_count = 5;
+}
+
+message TodoResponse {
+  string rendered = 1;
+}

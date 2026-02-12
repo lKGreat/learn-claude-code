@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             x:Class="MiniClaudeCode.Avalonia.Views.InputView"
+             x:DataType="vm:ChatViewModel">
+
+    <Border Background="#1E1E2E"
+            BorderBrush="#313244"
+            BorderThickness="0,1,0,0"
+            Padding="8,6">
+        <Grid ColumnDefinitions="*,Auto">
+            <TextBox x:Name="InputBox"
+                     Grid.Column="0"
+                     Classes="chatInput"
+                     Text="{Binding InputText, Mode=TwoWay}"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     MaxHeight="120"
+                     Watermark="Type a message... (Enter to send, Shift+Enter for newline)"
+                     IsEnabled="{Binding !IsProcessing}"
+                     KeyDown="OnInputKeyDown" />
+            <Button Grid.Column="1"
+                    Content="Send"
+                    Command="{Binding SendMessageCommand}"
+                    IsEnabled="{Binding !IsProcessing}"
+                    VerticalAlignment="Bottom"
+                    Margin="6,0,0,0"
+                    Padding="16,8" />
+        </Grid>
+    </Border>
+</UserControl>

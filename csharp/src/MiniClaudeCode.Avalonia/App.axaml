@@ -1,0 +1,12 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:semi="https://irihi.tech/semi"
+             x:Class="MiniClaudeCode.Avalonia.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.Styles>
+        <semi:SemiTheme />
+        <StyleInclude Source="avares://MiniClaudeCode.Avalonia/Themes/AppTheme.axaml" />
+    </Application.Styles>
+
+</Application>

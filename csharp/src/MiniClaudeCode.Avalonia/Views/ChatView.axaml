@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:models="using:MiniClaudeCode.Avalonia.Models"
+             xmlns:conv="using:MiniClaudeCode.Avalonia.Converters"
+             x:Class="MiniClaudeCode.Avalonia.Views.ChatView"
+             x:DataType="vm:ChatViewModel">
+
+    <UserControl.Resources>
+        <conv:HexColorToBrushConverter x:Key="HexToBrush" />
+    </UserControl.Resources>
+
+    <Border Background="#181825" CornerRadius="0">
+        <ScrollViewer x:Name="ChatScroller"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Padding="12,8">
+            <ItemsControl ItemsSource="{Binding Messages}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:ChatMessage">
+                        <Border Margin="0,4" Padding="10,8" CornerRadius="6"
+                                Background="#1E1E2E">
+                            <StackPanel Spacing="4">
+                                <!-- Role label + timestamp -->
+                                <DockPanel>
+                                    <TextBlock Classes="roleLabel"
+                                               Text="{Binding RoleLabel}"
+                                               Foreground="{Binding RoleColor, Converter={StaticResource HexToBrush}}" />
+                                    <TextBlock DockPanel.Dock="Right"
+                                               Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}"
+                                               FontSize="10"
+                                               Opacity="0.5"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center" />
+                                </DockPanel>
+                                <!-- Message content -->
+                                <TextBlock Text="{Binding Content}"
+                                           TextWrapping="Wrap"
+                                           FontSize="13"
+                                           Foreground="#CDD6F4"
+                                           FontFamily="Cascadia Code, Consolas, Menlo, monospace" />
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Border>
+</UserControl>

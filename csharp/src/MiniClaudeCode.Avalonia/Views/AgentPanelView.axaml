@@ -1,0 +1,90 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:models="using:MiniClaudeCode.Avalonia.Models"
+             xmlns:conv="using:MiniClaudeCode.Avalonia.Converters"
+             x:Class="MiniClaudeCode.Avalonia.Views.AgentPanelView"
+             x:DataType="vm:AgentPanelViewModel">
+
+    <UserControl.Resources>
+        <conv:HexColorToBrushConverter x:Key="HexToBrush" />
+    </UserControl.Resources>
+
+    <Border Background="#181825" BorderBrush="#313244" BorderThickness="1,0,0,1" CornerRadius="0">
+        <DockPanel>
+            <!-- Header -->
+            <Border DockPanel.Dock="Top" Background="#1E1E2E" Padding="10,6">
+                <DockPanel>
+                    <TextBlock Classes="panelHeader" Text="Agents" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" 
+                                HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="8">
+                        <Border Classes="badge" Background="#313244" IsVisible="{Binding !!RunningCount}">
+                            <TextBlock FontSize="11" Foreground="#60A5FA">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0} running">
+                                        <Binding Path="RunningCount" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </Border>
+                        <TextBlock FontSize="11" Opacity="0.5" VerticalAlignment="Center">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} total">
+                                    <Binding Path="TotalCount" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Agent List -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Agents}" Padding="4">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:AgentItem">
+                            <Border Margin="2" Padding="8,6" CornerRadius="4"
+                                    Background="#1E1E2E"
+                                    Cursor="Hand"
+                                    PointerPressed="OnAgentClick">
+                                <StackPanel Spacing="3">
+                                    <!-- Top row: status icon + type badge + elapsed -->
+                                    <DockPanel>
+                                        <TextBlock Text="{Binding StatusIcon}"
+                                                   Foreground="{Binding StatusColor, Converter={StaticResource HexToBrush}}"
+                                                   FontSize="12" VerticalAlignment="Center"
+                                                   Margin="0,0,6,0" />
+                                        <Border Classes="badge"
+                                                Background="{Binding TypeBadgeColor, Converter={StaticResource HexToBrush}}"
+                                                Opacity="0.8">
+                                            <TextBlock Text="{Binding AgentType}" FontSize="10"
+                                                       Foreground="White" />
+                                        </Border>
+                                        <TextBlock DockPanel.Dock="Right"
+                                                   Text="{Binding Elapsed}"
+                                                   FontSize="11" Opacity="0.5"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center"
+                                                   FontFamily="Cascadia Code, Consolas, monospace" />
+                                    </DockPanel>
+                                    <!-- Description -->
+                                    <TextBlock Text="{Binding Description}"
+                                               FontSize="11" Opacity="0.7"
+                                               TextTrimming="CharacterEllipsis"
+                                               MaxLines="1" />
+                                    <!-- Expanded result -->
+                                    <TextBlock Text="{Binding Result}"
+                                               FontSize="11" Opacity="0.6"
+                                               TextWrapping="Wrap"
+                                               MaxLines="5"
+                                               IsVisible="{Binding IsExpanded}"
+                                               FontFamily="Cascadia Code, Consolas, monospace" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</UserControl>

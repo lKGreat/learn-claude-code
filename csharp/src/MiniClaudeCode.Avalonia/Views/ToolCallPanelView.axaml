@@ -1,0 +1,111 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:models="using:MiniClaudeCode.Avalonia.Models"
+             xmlns:conv="using:MiniClaudeCode.Avalonia.Converters"
+             x:Class="MiniClaudeCode.Avalonia.Views.ToolCallPanelView"
+             x:DataType="vm:ToolCallPanelViewModel">
+
+    <UserControl.Resources>
+        <conv:HexColorToBrushConverter x:Key="HexToBrush" />
+        <conv:StringNotEmptyConverter x:Key="StringNotEmpty" />
+    </UserControl.Resources>
+
+    <Border Background="#181825" BorderBrush="#313244" BorderThickness="1,0,0,0" CornerRadius="0">
+        <DockPanel>
+            <!-- Header -->
+            <Border DockPanel.Dock="Top" Background="#1E1E2E" Padding="10,6">
+                <DockPanel>
+                    <TextBlock Classes="panelHeader" Text="Tool Calls" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" 
+                                HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="8">
+                        <Border Classes="badge" Background="#313244" IsVisible="{Binding !!RunningCount}">
+                            <TextBlock FontSize="11" Foreground="#FBBF24">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{}{0} active">
+                                        <Binding Path="RunningCount" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </Border>
+                        <TextBlock FontSize="11" Opacity="0.5" VerticalAlignment="Center">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} total">
+                                    <Binding Path="TotalCount" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Tool Call List -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding ToolCalls}" Padding="4">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:ToolCallItem">
+                            <Border Classes="toolCallItem" Background="#1E1E2E"
+                                    Cursor="Hand"
+                                    PointerPressed="OnToolCallClick">
+                                <StackPanel Spacing="2">
+                                    <!-- Top row: status + name + duration -->
+                                    <DockPanel>
+                                        <TextBlock Text="{Binding StatusIcon}"
+                                                   Foreground="{Binding StatusColor, Converter={StaticResource HexToBrush}}"
+                                                   FontSize="11" VerticalAlignment="Center"
+                                                   Margin="0,0,6,0" />
+                                        <TextBlock Text="{Binding ToolName}"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#CDD6F4"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock DockPanel.Dock="Right"
+                                                   Text="{Binding Duration}"
+                                                   FontSize="10" Opacity="0.5"
+                                                   HorizontalAlignment="Right"
+                                                   VerticalAlignment="Center"
+                                                   FontFamily="Cascadia Code, Consolas, monospace" />
+                                    </DockPanel>
+                                    <!-- Arguments preview -->
+                                    <TextBlock Text="{Binding ArgumentsPreview}"
+                                               FontSize="10" Opacity="0.5"
+                                               TextTrimming="CharacterEllipsis"
+                                               MaxLines="1"
+                                               FontFamily="Cascadia Code, Consolas, monospace" />
+                                    <!-- Expanded details -->
+                                    <StackPanel IsVisible="{Binding IsExpanded}" Spacing="2" Margin="0,4,0,0">
+                                        <!-- Full arguments -->
+                                        <TextBlock Text="Arguments:" FontSize="10" Opacity="0.4" />
+                                        <Border Background="#11111B" CornerRadius="3" Padding="6,4">
+                                            <TextBlock Text="{Binding FullArguments}"
+                                                       FontSize="10" Opacity="0.7"
+                                                       TextWrapping="Wrap"
+                                                       MaxLines="8"
+                                                       FontFamily="Cascadia Code, Consolas, monospace" />
+                                        </Border>
+                                        <!-- Result -->
+                                        <TextBlock Text="Result:" FontSize="10" Opacity="0.4"
+                                                   IsVisible="{Binding Result, Converter={StaticResource StringNotEmpty}}" />
+                                        <Border Background="#11111B" CornerRadius="3" Padding="6,4"
+                                                IsVisible="{Binding Result, Converter={StaticResource StringNotEmpty}}">
+                                            <TextBlock Text="{Binding Result}"
+                                                       FontSize="10" Opacity="0.7"
+                                                       TextWrapping="Wrap"
+                                                       MaxLines="8"
+                                                       FontFamily="Cascadia Code, Consolas, monospace" />
+                                        </Border>
+                                        <!-- Error -->
+                                        <TextBlock Text="{Binding Error}"
+                                                   FontSize="10" Foreground="#F87171"
+                                                   TextWrapping="Wrap"
+                                                   IsVisible="{Binding Error, Converter={StaticResource StringNotEmpty}}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</UserControl>

@@ -1,0 +1,106 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:conv="using:MiniClaudeCode.Avalonia.Converters"
+             x:Class="MiniClaudeCode.Avalonia.Views.QuestionDialog"
+             x:DataType="vm:QuestionDialogViewModel">
+
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
+    </UserControl.Resources>
+
+    <!-- Full-screen overlay backdrop -->
+    <Grid>
+        <!-- Semi-transparent backdrop -->
+        <Border Background="#80000000" />
+
+        <!-- Dialog card -->
+        <Border Background="#1E1E2E"
+                CornerRadius="12"
+                Padding="28,20"
+                Width="440"
+                MaxHeight="480"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                BoxShadow="0 8 32 0 #40000000">
+            <StackPanel Spacing="14">
+                <!-- Title -->
+                <TextBlock Text="{Binding Title}"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           Foreground="#CDD6F4" />
+
+                <!-- Prompt -->
+                <TextBlock Text="{Binding Prompt}"
+                           FontSize="13"
+                           TextWrapping="Wrap"
+                           Foreground="#BAC2DE" />
+
+                <Separator />
+
+                <!-- Free text input mode -->
+                <TextBox Text="{Binding FreeTextInput}"
+                         IsVisible="{Binding IsFreeTextMode}"
+                         Watermark="Type your answer..."
+                         AcceptsReturn="True"
+                         TextWrapping="Wrap"
+                         MaxHeight="120"
+                         Margin="0,4" />
+
+                <!-- Selection mode -->
+                <ScrollViewer MaxHeight="240"
+                              IsVisible="{Binding !IsFreeTextMode}"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Options}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:QuestionOption">
+                                <Border Margin="0,2"
+                                        Padding="10,8"
+                                        CornerRadius="6"
+                                        Background="{Binding IsSelected, Converter={x:Static conv:SelectedToBgConverter.Instance}}"
+                                        Cursor="Hand"
+                                        PointerPressed="OnOptionClick">
+                                    <DockPanel>
+                                        <!-- Radio/check indicator -->
+                                        <Border Width="18" Height="18"
+                                                CornerRadius="9"
+                                                BorderBrush="#585B70"
+                                                BorderThickness="2"
+                                                Background="{Binding IsSelected, Converter={x:Static conv:SelectedToIndicatorConverter.Instance}}"
+                                                VerticalAlignment="Center"
+                                                Margin="0,0,10,0">
+                                            <TextBlock Text="\u2713"
+                                                       FontSize="11"
+                                                       Foreground="White"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       IsVisible="{Binding IsSelected}" />
+                                        </Border>
+                                        <TextBlock Text="{Binding Label}"
+                                                   FontSize="13"
+                                                   Foreground="#CDD6F4"
+                                                   VerticalAlignment="Center" />
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- Buttons -->
+                <DockPanel Margin="0,6,0,0">
+                    <Button Content="Cancel"
+                            Command="{Binding CancelDialogCommand}"
+                            HorizontalAlignment="Left"
+                            Padding="20,8" />
+                    <Button Content="Confirm"
+                            Command="{Binding ConfirmCommand}"
+                            DockPanel.Dock="Right"
+                            HorizontalAlignment="Right"
+                            Padding="20,8"
+                            Classes="accent" />
+                </DockPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:models="using:MiniClaudeCode.Avalonia.Models"
+             xmlns:conv="using:MiniClaudeCode.Avalonia.Converters"
+             x:Class="MiniClaudeCode.Avalonia.Views.TodoPanelView"
+             x:DataType="vm:TodoPanelViewModel">
+
+    <UserControl.Resources>
+        <conv:HexColorToBrushConverter x:Key="HexToBrush" />
+    </UserControl.Resources>
+
+    <Border Background="#181825" BorderBrush="#313244" BorderThickness="1,0,0,1" CornerRadius="0">
+        <DockPanel>
+            <!-- Header -->
+            <Border DockPanel.Dock="Top" Background="#1E1E2E" Padding="10,6">
+                <DockPanel>
+                    <TextBlock Classes="panelHeader" Text="Todos" />
+                    <TextBlock DockPanel.Dock="Right" FontSize="11" Opacity="0.5"
+                               HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0}/{1}">
+                                <Binding Path="CompletedCount" />
+                                <Binding Path="TotalCount" />
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </DockPanel>
+            </Border>
+
+            <!-- Progress Bar -->
+            <ProgressBar DockPanel.Dock="Bottom"
+                         Value="{Binding ProgressPercent}"
+                         Maximum="100"
+                         Height="3"
+                         Foreground="#34D399"
+                         Background="#313244"
+                         IsVisible="{Binding !!TotalCount}" />
+
+            <!-- Todo List -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Todos}" Padding="4">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:TodoItem">
+                            <Border Margin="2,1" Padding="8,5" CornerRadius="3"
+                                    Background="#1E1E2E">
+                                <DockPanel>
+                                    <!-- Status icon -->
+                                    <TextBlock Text="{Binding StatusIcon}"
+                                               Foreground="{Binding StatusColor, Converter={StaticResource HexToBrush}}"
+                                               FontSize="13"
+                                               VerticalAlignment="Top"
+                                               Margin="0,0,8,0"
+                                               Width="16" />
+                                    <!-- Content -->
+                                    <TextBlock Text="{Binding Content}"
+                                               FontSize="12"
+                                               TextWrapping="Wrap"
+                                               Foreground="#CDD6F4"
+                                               Opacity="{Binding Status, Converter={x:Static conv:StatusToOpacityConverter.Instance}}" />
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</UserControl>

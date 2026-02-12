@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MiniClaudeCode.Avalonia.Editor;
+using MiniClaudeCode.Avalonia.Editor.TextBuffer;
 using MiniClaudeCode.Avalonia.Models;
 
 namespace MiniClaudeCode.Avalonia.ViewModels;
@@ -23,6 +25,12 @@ public partial class EditorViewModel : ObservableObject
 
     [ObservableProperty]
     private string _breadcrumb = "";
+
+    [ObservableProperty]
+    private bool _isLargeFile;
+
+    [ObservableProperty]
+    private string _largeFileWarning = "";
 
     // Cursor tracking for status bar
     [ObservableProperty]
@@ -47,25 +55,19 @@ public partial class EditorViewModel : ObservableObject
             return;
         }
 
-        // Load file content
+        // Load file content using chunked reading for large file support
         string content;
+        bool isLarge = false;
         try
         {
             var fileInfo = new FileInfo(filePath);
-            // Large file check: if > 20 MB, load with warning
-            if (fileInfo.Length > 20 * 1024 * 1024)
+            
+            if (fileInfo.Length > LargeFileConstants.LargeFileSizeThreshold)
             {
-                content = $"[Large file: {fileInfo.Length / (1024 * 1024):F1} MB - Some features disabled for performance]\n\n";
-                // Read in chunks for large files
-                using var reader = new StreamReader(filePath);
-                var buffer = new char[65535];
-                int read;
-                var sb = new System.Text.StringBuilder(content);
-                while ((read = reader.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    sb.Append(buffer, 0, read);
-                }
-                content = sb.ToString();
+                // Load via PieceTreeTextBuffer for large files
+                isLarge = true;
+                var buffer = PieceTreeTextBufferBuilder.LoadFileAsync(filePath).GetAwaiter().GetResult();
+                content = buffer.GetAllText();
             }
             else
             {
@@ -85,6 +87,17 @@ public partial class EditorViewModel : ObservableObject
 
         Tabs.Add(tab);
         ActivateTab(tab);
+        
+        if (isLarge)
+        {
+            IsLargeFile = true;
+            LargeFileWarning = $"Large file ({new FileInfo(filePath).Length / (1024 * 1024):F1} MB) - Some features disabled for performance.";
+        }
+        else
+        {
+            IsLargeFile = false;
+            LargeFileWarning = "";
+        }
     }
 
     public void ActivateTab(EditorTab tab)

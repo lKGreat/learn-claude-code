@@ -272,7 +272,7 @@ public partial class MainWindowViewModel : ObservableObject
         engine.Kernel.AutoFunctionInvocationFilters.Add(filter);
 
         _engine = engine;
-        _workspaceService.SetCurrentWorkspace(workDir);
+        _workspaceService.OpenFolder(workDir);
 
         DispatcherService.Post(() =>
         {
@@ -458,17 +458,23 @@ public partial class MainWindowViewModel : ObservableObject
 
     private void LoadRecentWorkspacesList()
     {
-        var recent = _workspaceService.LoadRecentWorkspaces();
+        var recent = WorkspaceService.GetRecentWorkspaces();
 
         RecentWorkspaces.Clear();
         RecentWorkspaceMenuItems.Clear();
 
         foreach (var ws in recent)
         {
-            RecentWorkspaces.Add(ws);
+            var info = new WorkspaceInfo
+            {
+                Path = ws.Path,
+                Name = ws.Name,
+                LastOpened = ws.LastOpened
+            };
+            RecentWorkspaces.Add(info);
             RecentWorkspaceMenuItems.Add(new RecentWorkspaceMenuItem
             {
-                DisplayName = $"{ws.DisplayName} - {ws.Path}",
+                DisplayName = $"{info.DisplayName} - {ws.Path}",
                 Path = ws.Path,
                 OpenAction = p => _ = OpenRecent(p)
             });

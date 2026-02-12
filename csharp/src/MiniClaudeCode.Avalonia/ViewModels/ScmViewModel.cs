@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MiniClaudeCode.Avalonia.Services.Git;
 
 namespace MiniClaudeCode.Avalonia.ViewModels;
 
@@ -49,9 +50,13 @@ public enum ScmFileStatus
 
 /// <summary>
 /// ViewModel for the Source Control Management panel.
+/// Integrates with GitService and GitWorktreeService.
 /// </summary>
 public partial class ScmViewModel : ObservableObject
 {
+    private readonly GitService _gitService;
+    private readonly GitWorktreeService _worktreeService;
+
     [ObservableProperty]
     private string _branchName = "";
 
@@ -64,22 +69,45 @@ public partial class ScmViewModel : ObservableObject
     [ObservableProperty]
     private bool _isRefreshing;
 
+    [ObservableProperty]
+    private bool _isGitRepo;
+
+    [ObservableProperty]
+    private string _repositoryKind = "repository";
+
+    [ObservableProperty]
+    private int _aheadCount;
+
+    [ObservableProperty]
+    private int _behindCount;
+
     public ObservableCollection<ScmFileItem> StagedChanges { get; } = [];
     public ObservableCollection<ScmFileItem> UnstagedChanges { get; } = [];
+    public ObservableCollection<Worktree> Worktrees { get; } = [];
 
     public string StagedHeader => $"Staged Changes ({StagedChanges.Count})";
     public string ChangesHeader => $"Changes ({UnstagedChanges.Count})";
+    public string WorktreesHeader => $"Worktrees ({Worktrees.Count})";
 
     public int TotalChanges => StagedChanges.Count + UnstagedChanges.Count;
+    public bool HasWorktrees => Worktrees.Count > 0;
 
     private string? _workspacePath;
 
     /// <summary>Fired when user clicks a file to see diff.</summary>
     public event Action<string>? DiffRequested;
 
+    public ScmViewModel()
+    {
+        _gitService = new GitService();
+        _worktreeService = new GitWorktreeService(_gitService);
+    }
+
     public void SetWorkspace(string path)
     {
         _workspacePath = path;
+        _gitService.SetWorkDirectory(path);
+        _worktreeService.SetWorkDirectory(path);
         _ = RefreshAsync();
     }
 
@@ -96,7 +124,32 @@ public partial class ScmViewModel : ObservableObject
         IsRefreshing = true;
         try
         {
+            // Check if this is a git repo
+            IsGitRepo = await _gitService.IsGitRepoAsync();
+            if (!IsGitRepo) return;
+
+            // Detect repository kind (normal, worktree, submodule)
+            RepositoryKind = await _worktreeService.DetectRepositoryKindAsync();
+
+            // Get branch name and sync info
+            BranchName = await _gitService.GetBranchNameAsync();
+            var (ahead, behind) = await _gitService.GetAheadBehindAsync();
+            AheadCount = ahead;
+            BehindCount = behind;
+            SyncStatus = FormatSyncStatus(ahead, behind);
+
+            // Load file statuses
             await Task.Run(() => LoadGitStatus(_workspacePath));
+
+            // Load worktrees
+            var worktrees = await _worktreeService.GetWorktreesAsync();
+            Services.DispatcherService.Post(() =>
+            {
+                Worktrees.Clear();
+                foreach (var wt in worktrees) Worktrees.Add(wt);
+                OnPropertyChanged(nameof(WorktreesHeader));
+                OnPropertyChanged(nameof(HasWorktrees));
+            });
         }
         catch
         {
@@ -111,21 +164,18 @@ public partial class ScmViewModel : ObservableObject
         }
     }
 
+    private static string FormatSyncStatus(int ahead, int behind)
+    {
+        if (ahead == 0 && behind == 0) return "";
+        if (ahead > 0 && behind > 0) return $"\u2191{ahead} \u2193{behind}";
+        if (ahead > 0) return $"\u2191{ahead}";
+        return $"\u2193{behind}";
+    }
+
     private void LoadGitStatus(string workspacePath)
     {
         try
         {
-            // Try to get branch name
-            var headFile = Path.Combine(workspacePath, ".git", "HEAD");
-            if (File.Exists(headFile))
-            {
-                var head = File.ReadAllText(headFile).Trim();
-                if (head.StartsWith("ref: refs/heads/"))
-                    BranchName = head["ref: refs/heads/".Length..];
-                else
-                    BranchName = head[..7]; // detached HEAD, show short hash
-            }
-
             // Use git status --porcelain for file statuses
             var psi = new System.Diagnostics.ProcessStartInfo
             {
@@ -203,31 +253,11 @@ public partial class ScmViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(CommitMessage) || string.IsNullOrEmpty(_workspacePath))
             return;
 
-        try
+        var success = await _gitService.CommitAsync(CommitMessage);
+        if (success)
         {
-            await Task.Run(() =>
-            {
-                var psi = new System.Diagnostics.ProcessStartInfo
-                {
-                    FileName = "git",
-                    Arguments = $"commit -m \"{CommitMessage.Replace("\"", "\\\"")}\"",
-                    WorkingDirectory = _workspacePath,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                using var process = System.Diagnostics.Process.Start(psi);
-                process?.WaitForExit(30000);
-            });
-
             CommitMessage = "";
             await RefreshAsync();
-        }
-        catch
-        {
-            // Commit failed
         }
     }
 
@@ -235,8 +265,7 @@ public partial class ScmViewModel : ObservableObject
     private async Task StageFile(ScmFileItem? item)
     {
         if (item == null || string.IsNullOrEmpty(_workspacePath)) return;
-
-        await RunGitCommand($"add \"{item.RelativePath}\"");
+        await _gitService.StageAsync(item.RelativePath);
         await RefreshAsync();
     }
 
@@ -244,8 +273,7 @@ public partial class ScmViewModel : ObservableObject
     private async Task UnstageFile(ScmFileItem? item)
     {
         if (item == null || string.IsNullOrEmpty(_workspacePath)) return;
-
-        await RunGitCommand($"reset HEAD \"{item.RelativePath}\"");
+        await _gitService.UnstageAsync(item.RelativePath);
         await RefreshAsync();
     }
 
@@ -253,8 +281,7 @@ public partial class ScmViewModel : ObservableObject
     private async Task DiscardFile(ScmFileItem? item)
     {
         if (item == null || string.IsNullOrEmpty(_workspacePath)) return;
-
-        await RunGitCommand($"checkout -- \"{item.RelativePath}\"");
+        await _gitService.DiscardAsync(item.RelativePath);
         await RefreshAsync();
     }
 
@@ -262,7 +289,7 @@ public partial class ScmViewModel : ObservableObject
     private async Task StageAll()
     {
         if (string.IsNullOrEmpty(_workspacePath)) return;
-        await RunGitCommand("add -A");
+        await _gitService.StageAllAsync();
         await RefreshAsync();
     }
 
@@ -270,30 +297,50 @@ public partial class ScmViewModel : ObservableObject
     private async Task UnstageAll()
     {
         if (string.IsNullOrEmpty(_workspacePath)) return;
-        await RunGitCommand("reset HEAD");
+        await _gitService.UnstageAllAsync();
         await RefreshAsync();
     }
 
-    private async Task RunGitCommand(string arguments)
+    [RelayCommand]
+    private async Task Fetch()
     {
-        if (string.IsNullOrEmpty(_workspacePath)) return;
+        await _gitService.FetchAsync();
+        await RefreshAsync();
+    }
 
-        await Task.Run(() =>
-        {
-            var psi = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = "git",
-                Arguments = arguments,
-                WorkingDirectory = _workspacePath,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+    [RelayCommand]
+    private async Task Pull()
+    {
+        await _gitService.PullAsync();
+        await RefreshAsync();
+    }
 
-            using var process = System.Diagnostics.Process.Start(psi);
-            process?.WaitForExit(10000);
-        });
+    [RelayCommand]
+    private async Task Push()
+    {
+        await _gitService.PushAsync();
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task Stash()
+    {
+        await _gitService.StashAsync();
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private async Task StashPop()
+    {
+        await _gitService.StashPopAsync();
+        await RefreshAsync();
+    }
+
+    [RelayCommand]
+    private void ViewDiff(ScmFileItem? item)
+    {
+        if (item == null) return;
+        DiffRequested?.Invoke(item.RelativePath);
     }
 
     private static ScmFileStatus ParseStatus(char c) => c switch

@@ -1,25 +1,41 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:git="using:MiniClaudeCode.Avalonia.Services.Git"
              x:Class="MiniClaudeCode.Avalonia.Views.ScmPanelView"
              x:DataType="vm:ScmViewModel">
 
     <Border Background="#181825" Padding="4">
         <DockPanel>
-            <!-- Header -->
+            <!-- Header with actions -->
             <Border DockPanel.Dock="Top" Padding="8,6" Background="#1E1E2E" CornerRadius="4,4,0,0">
                 <DockPanel>
                     <TextBlock Text="Source Control"
                                FontWeight="Bold"
                                FontSize="12"
                                Foreground="#CDD6F4" />
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4"
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2"
                                 HorizontalAlignment="Right">
                         <Button Content="\u21BB"
                                 Command="{Binding RefreshCommand}"
                                 ToolTip.Tip="Refresh"
                                 FontSize="12" Padding="4,2"
                                 Background="Transparent" Foreground="#CDD6F4" />
+                        <Button Content="\u2193"
+                                Command="{Binding PullCommand}"
+                                ToolTip.Tip="Pull"
+                                FontSize="12" Padding="4,2"
+                                Background="Transparent" Foreground="#A6E3A1" />
+                        <Button Content="\u2191"
+                                Command="{Binding PushCommand}"
+                                ToolTip.Tip="Push"
+                                FontSize="12" Padding="4,2"
+                                Background="Transparent" Foreground="#60A5FA" />
+                        <Button Content="\u2261"
+                                Command="{Binding FetchCommand}"
+                                ToolTip.Tip="Fetch"
+                                FontSize="10" Padding="4,2"
+                                Background="Transparent" Foreground="#6C7086" />
                     </StackPanel>
                 </DockPanel>
             </Border>
@@ -33,28 +49,55 @@
                              AcceptsReturn="False"
                              Background="#11111B"
                              BorderBrush="#313244" />
-                    <Button Content="\u2713 Commit"
-                            Command="{Binding CommitCommand}"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            Padding="6,3"
-                            FontSize="11"
-                            Foreground="#A6E3A1" />
+                    <DockPanel>
+                        <Button Content="\u2713 Commit"
+                                Command="{Binding CommitCommand}"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Padding="6,3"
+                                FontSize="11"
+                                Foreground="#A6E3A1" />
+                    </DockPanel>
                 </StackPanel>
             </Border>
 
-            <!-- Branch info -->
+            <!-- Branch info + repo kind -->
             <Border DockPanel.Dock="Top" Padding="8,4">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="\U0001F500" FontSize="12" />
-                    <TextBlock Text="{Binding BranchName}"
-                               FontSize="11"
-                               Foreground="#60A5FA"
-                               VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding SyncStatus}"
-                               FontSize="10"
-                               Opacity="0.5"
-                               VerticalAlignment="Center" />
+                <DockPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="\U0001F500" FontSize="12" />
+                        <TextBlock Text="{Binding BranchName}"
+                                   FontSize="11"
+                                   Foreground="#60A5FA"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding SyncStatus}"
+                                   FontSize="10"
+                                   Opacity="0.5"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock DockPanel.Dock="Right"
+                               Text="{Binding RepositoryKind}"
+                               FontSize="9"
+                               Foreground="#6C7086"
+                               Opacity="0.6"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Right" />
+                </DockPanel>
+            </Border>
+
+            <!-- Stash buttons -->
+            <Border DockPanel.Dock="Top" Padding="8,2">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Button Content="Stash"
+                            Command="{Binding StashCommand}"
+                            FontSize="10" Padding="6,2"
+                            Background="#313244" Foreground="#CDD6F4"
+                            ToolTip.Tip="Stash Changes" />
+                    <Button Content="Stash Pop"
+                            Command="{Binding StashPopCommand}"
+                            FontSize="10" Padding="6,2"
+                            Background="#313244" Foreground="#CDD6F4"
+                            ToolTip.Tip="Pop Latest Stash" />
                 </StackPanel>
             </Border>
 
@@ -65,73 +108,134 @@
                     <Expander Header="{Binding StagedHeader}"
                               IsExpanded="True"
                               Padding="0">
-                        <ItemsControl ItemsSource="{Binding StagedChanges}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:ScmFileItem">
-                                    <DockPanel Margin="4,1">
-                                        <TextBlock Text="{Binding StatusIcon}"
-                                                   FontSize="11"
-                                                   Foreground="{Binding StatusColor}"
-                                                   Width="18"
-                                                   VerticalAlignment="Center" />
-                                        <TextBlock Text="{Binding FileName}"
-                                                   FontSize="11"
-                                                   Foreground="#CDD6F4"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   VerticalAlignment="Center" />
-                                        <StackPanel DockPanel.Dock="Right"
-                                                    Orientation="Horizontal"
-                                                    HorizontalAlignment="Right"
-                                                    Spacing="2">
-                                            <Button Content="-"
-                                                    Command="{Binding $parent[ItemsControl].((vm:ScmViewModel)DataContext).UnstageFileCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    ToolTip.Tip="Unstage"
-                                                    FontSize="10" Padding="3,1"
-                                                    Background="Transparent" Foreground="#F87171" />
-                                        </StackPanel>
-                                    </DockPanel>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <StackPanel>
+                            <DockPanel Margin="4,1">
+                                <Button Content="Unstage All"
+                                        Command="{Binding UnstageAllCommand}"
+                                        FontSize="9" Padding="4,1"
+                                        Background="Transparent" Foreground="#F87171"
+                                        HorizontalAlignment="Right"
+                                        DockPanel.Dock="Right" />
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding StagedChanges}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ScmFileItem">
+                                        <DockPanel Margin="4,1">
+                                            <TextBlock Text="{Binding StatusIcon}"
+                                                       FontSize="11"
+                                                       Foreground="{Binding StatusColor}"
+                                                       Width="18"
+                                                       VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding FileName}"
+                                                       FontSize="11"
+                                                       Foreground="#CDD6F4"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       VerticalAlignment="Center"
+                                                       ToolTip.Tip="{Binding RelativePath}" />
+                                            <StackPanel DockPanel.Dock="Right"
+                                                        Orientation="Horizontal"
+                                                        HorizontalAlignment="Right"
+                                                        Spacing="2">
+                                                <Button Content="-"
+                                                        Command="{Binding $parent[ItemsControl].((vm:ScmViewModel)DataContext).UnstageFileCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip.Tip="Unstage"
+                                                        FontSize="10" Padding="3,1"
+                                                        Background="Transparent" Foreground="#F87171" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
                     </Expander>
 
                     <!-- Unstaged Changes -->
                     <Expander Header="{Binding ChangesHeader}"
                               IsExpanded="True"
                               Padding="0">
-                        <ItemsControl ItemsSource="{Binding UnstagedChanges}">
+                        <StackPanel>
+                            <DockPanel Margin="4,1">
+                                <Button Content="Stage All"
+                                        Command="{Binding StageAllCommand}"
+                                        FontSize="9" Padding="4,1"
+                                        Background="Transparent" Foreground="#A6E3A1"
+                                        HorizontalAlignment="Right"
+                                        DockPanel.Dock="Right" />
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding UnstagedChanges}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ScmFileItem">
+                                        <DockPanel Margin="4,1">
+                                            <TextBlock Text="{Binding StatusIcon}"
+                                                       FontSize="11"
+                                                       Foreground="{Binding StatusColor}"
+                                                       Width="18"
+                                                       VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding FileName}"
+                                                       FontSize="11"
+                                                       Foreground="#CDD6F4"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       VerticalAlignment="Center"
+                                                       ToolTip.Tip="{Binding RelativePath}" />
+                                            <StackPanel DockPanel.Dock="Right"
+                                                        Orientation="Horizontal"
+                                                        HorizontalAlignment="Right"
+                                                        Spacing="2">
+                                                <Button Content="D"
+                                                        Command="{Binding $parent[ItemsControl].((vm:ScmViewModel)DataContext).ViewDiffCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip.Tip="View Diff"
+                                                        FontSize="10" Padding="3,1"
+                                                        Background="Transparent" Foreground="#60A5FA" />
+                                                <Button Content="+"
+                                                        Command="{Binding $parent[ItemsControl].((vm:ScmViewModel)DataContext).StageFileCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip.Tip="Stage"
+                                                        FontSize="10" Padding="3,1"
+                                                        Background="Transparent" Foreground="#A6E3A1" />
+                                                <Button Content="\u21A9"
+                                                        Command="{Binding $parent[ItemsControl].((vm:ScmViewModel)DataContext).DiscardFileCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip.Tip="Discard Changes"
+                                                        FontSize="10" Padding="3,1"
+                                                        Background="Transparent" Foreground="#FBBF24" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Expander>
+
+                    <!-- Worktrees section -->
+                    <Expander Header="{Binding WorktreesHeader}"
+                              IsExpanded="True"
+                              IsVisible="{Binding HasWorktrees}"
+                              Padding="0">
+                        <ItemsControl ItemsSource="{Binding Worktrees}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:ScmFileItem">
-                                    <DockPanel Margin="4,1">
-                                        <TextBlock Text="{Binding StatusIcon}"
-                                                   FontSize="11"
-                                                   Foreground="{Binding StatusColor}"
-                                                   Width="18"
-                                                   VerticalAlignment="Center" />
-                                        <TextBlock Text="{Binding FileName}"
-                                                   FontSize="11"
-                                                   Foreground="#CDD6F4"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   VerticalAlignment="Center" />
-                                        <StackPanel DockPanel.Dock="Right"
-                                                    Orientation="Horizontal"
-                                                    HorizontalAlignment="Right"
-                                                    Spacing="2">
-                                            <Button Content="+"
-                                                    Command="{Binding $parent[ItemsControl].((vm:ScmViewModel)DataContext).StageFileCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    ToolTip.Tip="Stage"
-                                                    FontSize="10" Padding="3,1"
-                                                    Background="Transparent" Foreground="#A6E3A1" />
-                                            <Button Content="\u21A9"
-                                                    Command="{Binding $parent[ItemsControl].((vm:ScmViewModel)DataContext).DiscardFileCommand}"
-                                                    CommandParameter="{Binding}"
-                                                    ToolTip.Tip="Discard Changes"
-                                                    FontSize="10" Padding="3,1"
-                                                    Background="Transparent" Foreground="#FBBF24" />
-                                        </StackPanel>
-                                    </DockPanel>
+                                <DataTemplate x:DataType="git:Worktree">
+                                    <Border Padding="4,2" Margin="0,1"
+                                            Background="#11111B" CornerRadius="3">
+                                        <DockPanel>
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Text="{Binding Ref}"
+                                                           FontSize="11"
+                                                           Foreground="#60A5FA"
+                                                           VerticalAlignment="Center" />
+                                            </StackPanel>
+                                            <TextBlock DockPanel.Dock="Right"
+                                                       Text="{Binding Path}"
+                                                       FontSize="9"
+                                                       Foreground="#6C7086"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       MaxWidth="180"
+                                                       VerticalAlignment="Center"
+                                                       HorizontalAlignment="Right"
+                                                       ToolTip.Tip="{Binding Path}" />
+                                        </DockPanel>
+                                    </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>

@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="MiniClaudeCode.Avalonia.Views.ExtensionsPanelView">
+
+    <Border Background="#181825" Padding="4">
+        <DockPanel>
+            <!-- Header -->
+            <Border DockPanel.Dock="Top" Padding="8,6" Background="#1E1E2E" CornerRadius="4,4,0,0">
+                <TextBlock Text="Extensions"
+                           FontWeight="Bold"
+                           FontSize="12"
+                           Foreground="#CDD6F4" />
+            </Border>
+
+            <!-- Search -->
+            <Border DockPanel.Dock="Top" Padding="8,4" Background="#1E1E2E">
+                <TextBox Watermark="Search Extensions in Marketplace"
+                         FontSize="12"
+                         Background="#11111B"
+                         BorderBrush="#313244" />
+            </Border>
+
+            <!-- Placeholder content -->
+            <StackPanel VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Spacing="8"
+                        Margin="16">
+                <TextBlock Text="\U0001F9E9"
+                           FontSize="32"
+                           HorizontalAlignment="Center"
+                           Opacity="0.3" />
+                <TextBlock Text="Extension system"
+                           FontSize="13"
+                           Foreground="#CDD6F4"
+                           HorizontalAlignment="Center"
+                           Opacity="0.5" />
+                <TextBlock Text="Install extensions to add languages, themes, and more."
+                           FontSize="11"
+                           Foreground="#9CA3AF"
+                           HorizontalAlignment="Center"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           Opacity="0.4" />
+            </StackPanel>
+        </DockPanel>
+    </Border>
+</UserControl>

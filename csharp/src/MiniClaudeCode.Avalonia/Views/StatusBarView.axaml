@@ -1,0 +1,144 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             x:Class="MiniClaudeCode.Avalonia.Views.StatusBarView"
+             x:DataType="vm:StatusBarViewModel"
+             Height="24">
+
+    <Border Background="#181825">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+            <!-- Left side items -->
+            <StackPanel Grid.Column="0"
+                        Orientation="Horizontal"
+                        Spacing="12"
+                        Margin="8,0">
+                <!-- Git branch -->
+                <Button Background="Transparent"
+                        BorderThickness="0"
+                        Padding="4,0"
+                        Command="{Binding ClickBranchCommand}"
+                        IsVisible="{Binding HasBranch}"
+                        Cursor="Hand">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="\U0001F500" FontSize="10" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding BranchName}"
+                                   FontSize="11"
+                                   Foreground="#60A5FA"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding SyncStatus}"
+                                   FontSize="10"
+                                   Opacity="0.5"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <!-- Problems -->
+                <Button Background="Transparent"
+                        BorderThickness="0"
+                        Padding="4,0"
+                        Command="{Binding ClickProblemsCommand}"
+                        Cursor="Hand">
+                    <TextBlock Text="{Binding ProblemsDisplay}"
+                               FontSize="11"
+                               Foreground="#F87171"
+                               VerticalAlignment="Center" />
+                </Button>
+
+                <!-- Workspace name -->
+                <TextBlock Text="{Binding WorkspaceName}"
+                           FontSize="11"
+                           Opacity="0.6"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Right side items -->
+            <StackPanel Grid.Column="2"
+                        Orientation="Horizontal"
+                        Spacing="12"
+                        Margin="8,0">
+                <!-- Cursor position -->
+                <TextBlock Text="{Binding CursorPosition}"
+                           FontSize="11"
+                           Opacity="0.6"
+                           VerticalAlignment="Center"
+                           FontFamily="Cascadia Code, Consolas, monospace" />
+
+                <!-- Encoding -->
+                <TextBlock Text="{Binding Encoding}"
+                           FontSize="11"
+                           Opacity="0.6"
+                           VerticalAlignment="Center" />
+
+                <!-- Line ending -->
+                <TextBlock Text="{Binding LineEnding}"
+                           FontSize="11"
+                           Opacity="0.6"
+                           VerticalAlignment="Center" />
+
+                <!-- Language mode -->
+                <TextBlock Text="{Binding LanguageMode}"
+                           FontSize="11"
+                           Opacity="0.6"
+                           VerticalAlignment="Center" />
+
+                <!-- Plan mode badge -->
+                <Border IsVisible="{Binding IsPlanMode}"
+                        Background="#45475A"
+                        CornerRadius="3"
+                        Padding="4,1">
+                    <TextBlock Text="PLAN"
+                               FontSize="9"
+                               FontWeight="Bold"
+                               Foreground="#F9E2AF" />
+                </Border>
+
+                <!-- AI model -->
+                <TextBlock Text="{Binding ProviderDisplay}"
+                           FontSize="11"
+                           Foreground="#60A5FA"
+                           VerticalAlignment="Center" />
+
+                <!-- Turn/Tool count -->
+                <TextBlock FontSize="11"
+                           Opacity="0.5"
+                           VerticalAlignment="Center"
+                           FontFamily="Cascadia Code, Consolas, monospace">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="T:{0} TC:{1}">
+                            <Binding Path="TurnCount" />
+                            <Binding Path="ToolCallCount" />
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+
+                <!-- Notifications bell -->
+                <Button Background="Transparent"
+                        BorderThickness="0"
+                        Padding="4,0"
+                        Command="{Binding ClickNotificationsCommand}"
+                        IsVisible="{Binding HasNotifications}"
+                        Cursor="Hand">
+                    <Panel>
+                        <TextBlock Text="\U0001F514"
+                                   FontSize="12"
+                                   VerticalAlignment="Center" />
+                        <Border Background="#F87171"
+                                CornerRadius="6"
+                                MinWidth="14" Height="14"
+                                Padding="2,0"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Margin="0,-2,-2,0">
+                            <TextBlock Text="{Binding NotificationCount}"
+                                       FontSize="8"
+                                       FontWeight="Bold"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                        </Border>
+                    </Panel>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:models="using:MiniClaudeCode.Avalonia.Models"
+             xmlns:conv="using:MiniClaudeCode.Avalonia.Converters"
+             x:Class="MiniClaudeCode.Avalonia.Views.ActivityBarView"
+             x:DataType="vm:ActivityBarViewModel"
+             Width="48">
+
+    <Border Background="#181825">
+        <DockPanel>
+            <!-- Top: Main navigation icons -->
+            <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding Items}" Margin="0,4">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:ActivityBarItem">
+                        <Button Command="{Binding $parent[ItemsControl].((vm:ActivityBarViewModel)DataContext).SelectItemCommand}"
+                                CommandParameter="{Binding}"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Padding="0"
+                                Width="48" Height="48"
+                                HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center"
+                                Cursor="Hand"
+                                ToolTip.Tip="{Binding Label}">
+                            <Panel>
+                                <!-- Active indicator bar (left edge) -->
+                                <Border Width="2"
+                                        HorizontalAlignment="Left"
+                                        Background="#60A5FA"
+                                        IsVisible="{Binding IsActive}"
+                                        CornerRadius="0,1,1,0" />
+
+                                <!-- Icon -->
+                                <TextBlock Text="{Binding Icon}"
+                                           FontSize="20"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Opacity="{Binding IsActive, Converter={x:Static conv:BoolToOpacityConverter.Instance}}" />
+
+                                <!-- Badge -->
+                                <Border IsVisible="{Binding HasBadge}"
+                                        Background="#F87171"
+                                        CornerRadius="6"
+                                        MinWidth="16" Height="16"
+                                        Padding="3,0"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Top"
+                                        Margin="0,6,6,0">
+                                    <TextBlock Text="{Binding BadgeCount}"
+                                               FontSize="9"
+                                               FontWeight="Bold"
+                                               Foreground="White"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                </Border>
+                            </Panel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Bottom: Settings gear -->
+            <Button DockPanel.Dock="Bottom"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Width="48" Height="48"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    Cursor="Hand"
+                    ToolTip.Tip="Settings"
+                    Margin="0,0,0,4">
+                <TextBlock Text="&#x2699;" FontSize="20" Opacity="0.6" HorizontalAlignment="Center" />
+            </Button>
+
+            <!-- Spacer -->
+            <Panel />
+        </DockPanel>
+    </Border>
+</UserControl>

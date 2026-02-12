@@ -1,0 +1,145 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:views="using:MiniClaudeCode.Avalonia.Views"
+             xmlns:conv="using:MiniClaudeCode.Avalonia.Converters"
+             x:Class="MiniClaudeCode.Avalonia.Views.BottomPanelView"
+             x:DataType="vm:MainWindowViewModel">
+
+    <Border Background="#181825"
+            BorderBrush="#313244"
+            BorderThickness="0,1,0,0">
+        <DockPanel>
+            <!-- Tab strip header -->
+            <Border DockPanel.Dock="Top"
+                    Background="#1E1E2E"
+                    Padding="0">
+                <DockPanel>
+                    <!-- Panel tabs -->
+                    <StackPanel Orientation="Horizontal" Spacing="0">
+                        <!-- Terminal tab -->
+                        <Button Content="Terminal"
+                                Command="{Binding BottomPanel.SwitchTabCommand}"
+                                CommandParameter="terminal"
+                                FontSize="11"
+                                Padding="10,5"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="{Binding BottomPanel.IsTerminalTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}"
+                                Cursor="Hand" />
+
+                        <!-- Problems tab -->
+                        <Button Content="Problems"
+                                Command="{Binding BottomPanel.SwitchTabCommand}"
+                                CommandParameter="problems"
+                                FontSize="11"
+                                Padding="10,5"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="{Binding BottomPanel.IsProblemsTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}"
+                                Cursor="Hand" />
+
+                        <!-- Output tab -->
+                        <Button Content="Output"
+                                Command="{Binding BottomPanel.SwitchTabCommand}"
+                                CommandParameter="output"
+                                FontSize="11"
+                                Padding="10,5"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="{Binding BottomPanel.IsOutputTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}"
+                                Cursor="Hand" />
+
+                        <!-- Tool Calls tab -->
+                        <Button Content="Tool Calls"
+                                Command="{Binding BottomPanel.SwitchTabCommand}"
+                                CommandParameter="toolcalls"
+                                FontSize="11"
+                                Padding="10,5"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="{Binding BottomPanel.IsToolCallsTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}"
+                                Cursor="Hand" />
+
+                        <!-- Agents tab -->
+                        <Button Content="Agents"
+                                Command="{Binding BottomPanel.SwitchTabCommand}"
+                                CommandParameter="agents"
+                                FontSize="11"
+                                Padding="10,5"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="{Binding BottomPanel.IsAgentsTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}"
+                                Cursor="Hand" />
+
+                        <!-- Todos tab -->
+                        <Button Content="Todos"
+                                Command="{Binding BottomPanel.SwitchTabCommand}"
+                                CommandParameter="todos"
+                                FontSize="11"
+                                Padding="10,5"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="{Binding BottomPanel.IsTodosTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}"
+                                Cursor="Hand" />
+                    </StackPanel>
+
+                    <!-- Panel controls (right side) -->
+                    <StackPanel DockPanel.Dock="Right"
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                Spacing="2"
+                                Margin="4,0">
+                        <Button Content="\u2191"
+                                Command="{Binding BottomPanel.ToggleMaximizeCommand}"
+                                ToolTip.Tip="Maximize Panel"
+                                FontSize="10" Padding="4,2"
+                                Background="Transparent" Foreground="#6C7086" />
+                        <Button Content="\u2715"
+                                Command="{Binding BottomPanel.ClosePanelCommand}"
+                                ToolTip.Tip="Close Panel"
+                                FontSize="10" Padding="4,2"
+                                Background="Transparent" Foreground="#6C7086" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Tab content area -->
+            <Panel>
+                <!-- Terminal -->
+                <views:TerminalView DataContext="{Binding Terminal}"
+                                     IsVisible="{Binding $parent[views:BottomPanelView].((vm:MainWindowViewModel)DataContext).BottomPanel.IsTerminalTab}" />
+
+                <!-- Tool Calls -->
+                <views:ToolCallPanelView DataContext="{Binding ToolCallPanel}"
+                                          IsVisible="{Binding $parent[views:BottomPanelView].((vm:MainWindowViewModel)DataContext).BottomPanel.IsToolCallsTab}" />
+
+                <!-- Agents -->
+                <views:AgentPanelView DataContext="{Binding AgentPanel}"
+                                       IsVisible="{Binding $parent[views:BottomPanelView].((vm:MainWindowViewModel)DataContext).BottomPanel.IsAgentsTab}" />
+
+                <!-- Todos -->
+                <views:TodoPanelView DataContext="{Binding TodoPanel}"
+                                      IsVisible="{Binding $parent[views:BottomPanelView].((vm:MainWindowViewModel)DataContext).BottomPanel.IsTodosTab}" />
+
+                <!-- Problems (placeholder) -->
+                <Border Background="#181825"
+                        IsVisible="{Binding $parent[views:BottomPanelView].((vm:MainWindowViewModel)DataContext).BottomPanel.IsProblemsTab}">
+                    <TextBlock Text="No problems detected."
+                               FontSize="12"
+                               Foreground="#6C7086"
+                               Margin="12,8" />
+                </Border>
+
+                <!-- Output (placeholder) -->
+                <Border Background="#181825"
+                        IsVisible="{Binding $parent[views:BottomPanelView].((vm:MainWindowViewModel)DataContext).BottomPanel.IsOutputTab}">
+                    <TextBlock Text="No output channels."
+                               FontSize="12"
+                               Foreground="#6C7086"
+                               Margin="12,8" />
+                </Border>
+            </Panel>
+        </DockPanel>
+    </Border>
+</UserControl>

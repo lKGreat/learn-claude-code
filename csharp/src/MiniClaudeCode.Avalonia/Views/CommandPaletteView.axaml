@@ -1,0 +1,81 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:models="using:MiniClaudeCode.Avalonia.Models"
+             x:Class="MiniClaudeCode.Avalonia.Views.CommandPaletteView"
+             x:DataType="vm:CommandPaletteViewModel">
+
+    <!-- Overlay panel -->
+    <Panel IsVisible="{Binding IsVisible}"
+           Background="#80000000">
+        <!-- Command palette centered box -->
+        <Border Width="600"
+                MaxHeight="500"
+                Background="#1E1E2E"
+                BorderBrush="#45475A"
+                BorderThickness="1"
+                CornerRadius="8"
+                BoxShadow="0 4 24 0 #40000000"
+                VerticalAlignment="Top"
+                Margin="0,100,0,0">
+            <DockPanel>
+                <!-- Input box -->
+                <Border DockPanel.Dock="Top"
+                        Padding="12,10"
+                        BorderBrush="#313244"
+                        BorderThickness="0,0,0,1">
+                    <TextBox x:Name="QueryInput"
+                             Text="{Binding QueryText, Mode=TwoWay}"
+                             Watermark="{Binding Placeholder}"
+                             FontSize="14"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Foreground="#CDD6F4"
+                             CaretBrush="#CDD6F4" />
+                </Border>
+
+                <!-- Results list -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              MaxHeight="400">
+                    <ItemsControl ItemsSource="{Binding FilteredItems}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:CommandItem">
+                                <Button Background="Transparent"
+                                        BorderThickness="0"
+                                        Padding="12,8"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Stretch"
+                                        Command="{Binding $parent[ItemsControl].((vm:CommandPaletteViewModel)DataContext).SelectAndExecuteCommand}"
+                                        CommandParameter="{Binding}"
+                                        Cursor="Hand">
+                                    <Button.Styles>
+                                        <Style Selector="Button:pointerover">
+                                            <Setter Property="Background" Value="#313244" />
+                                        </Style>
+                                    </Button.Styles>
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Right"
+                                                   Text="{Binding Shortcut}"
+                                                   FontSize="10"
+                                                   Opacity="0.4"
+                                                   VerticalAlignment="Center"
+                                                   Margin="8,0,0,0" />
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="{Binding Label}"
+                                                       FontSize="13"
+                                                       Foreground="#CDD6F4" />
+                                            <TextBlock Text="{Binding Category}"
+                                                       FontSize="11"
+                                                       Opacity="0.5"
+                                                       IsVisible="{Binding Category, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </Panel>
+</UserControl>

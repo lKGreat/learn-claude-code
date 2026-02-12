@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:views="using:MiniClaudeCode.Avalonia.Views"
+             x:Class="MiniClaudeCode.Avalonia.Views.SidebarView"
+             x:DataType="vm:MainWindowViewModel">
+
+    <Border Background="#181825">
+        <Panel>
+            <!-- File Explorer panel -->
+            <views:FileExplorerView DataContext="{Binding FileExplorer}"
+                                     IsVisible="{Binding $parent[views:SidebarView].((vm:MainWindowViewModel)DataContext).Sidebar.IsExplorerVisible}" />
+
+            <!-- Search panel -->
+            <views:SearchPanelView DataContext="{Binding Search}"
+                                    IsVisible="{Binding $parent[views:SidebarView].((vm:MainWindowViewModel)DataContext).Sidebar.IsSearchVisible}" />
+
+            <!-- SCM panel -->
+            <views:ScmPanelView DataContext="{Binding Scm}"
+                                 IsVisible="{Binding $parent[views:SidebarView].((vm:MainWindowViewModel)DataContext).Sidebar.IsScmVisible}" />
+
+            <!-- Extensions panel -->
+            <views:ExtensionsPanelView IsVisible="{Binding $parent[views:SidebarView].((vm:MainWindowViewModel)DataContext).Sidebar.IsExtensionsVisible}" />
+
+            <!-- AI Chat panel (sidebar mode) -->
+            <views:ChatView DataContext="{Binding Chat}"
+                             IsVisible="{Binding $parent[views:SidebarView].((vm:MainWindowViewModel)DataContext).Sidebar.IsChatVisible}" />
+        </Panel>
+    </Border>
+</UserControl>

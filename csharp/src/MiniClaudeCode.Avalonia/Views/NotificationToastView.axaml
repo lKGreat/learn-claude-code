@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:models="using:MiniClaudeCode.Avalonia.Models"
+             x:Class="MiniClaudeCode.Avalonia.Views.NotificationToastView"
+             x:DataType="vm:NotificationViewModel">
+
+    <!-- Toast container (bottom-right corner) -->
+    <ItemsControl ItemsSource="{Binding ToastQueue}"
+                  VerticalAlignment="Bottom"
+                  HorizontalAlignment="Right"
+                  Margin="0,0,16,40">
+        <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+                <StackPanel Spacing="8" />
+            </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="models:NotificationItem">
+                <Border Width="350"
+                        Background="#1E1E2E"
+                        BorderBrush="#45475A"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="12,10"
+                        BoxShadow="0 4 12 0 #40000000">
+                    <DockPanel>
+                        <!-- Close button -->
+                        <Button DockPanel.Dock="Right"
+                                Content="\u2715"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                FontSize="10"
+                                Padding="4,0"
+                                Foreground="#6C7086"
+                                Command="{Binding $parent[ItemsControl].((vm:NotificationViewModel)DataContext).DismissToastCommand}"
+                                CommandParameter="{Binding}"
+                                VerticalAlignment="Top"
+                                Cursor="Hand" />
+
+                        <StackPanel Spacing="6">
+                            <!-- Icon + Message -->
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding SeverityIcon}"
+                                           FontSize="14"
+                                           Foreground="{Binding SeverityColor}"
+                                           VerticalAlignment="Top" />
+                                <TextBlock Text="{Binding Message}"
+                                           FontSize="12"
+                                           Foreground="#CDD6F4"
+                                           TextWrapping="Wrap"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <!-- Progress bar (if applicable) -->
+                            <ProgressBar Value="{Binding Progress}"
+                                         Maximum="100"
+                                         Height="3"
+                                         Foreground="#60A5FA"
+                                         Background="#313244"
+                                         IsVisible="{Binding HasProgress}"
+                                         IsIndeterminate="False" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</UserControl>

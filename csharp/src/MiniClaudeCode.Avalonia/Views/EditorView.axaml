@@ -1,0 +1,141 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             xmlns:models="using:MiniClaudeCode.Avalonia.Models"
+             x:Class="MiniClaudeCode.Avalonia.Views.EditorView"
+             x:DataType="vm:EditorViewModel">
+
+    <Border Background="#1E1E2E">
+        <DockPanel>
+            <!-- Tab bar -->
+            <Border DockPanel.Dock="Top"
+                    Background="#181825"
+                    BorderBrush="#313244"
+                    BorderThickness="0,0,0,1">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding Tabs}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:EditorTab">
+                                <Border Padding="0"
+                                        Background="Transparent"
+                                        BorderBrush="#313244"
+                                        BorderThickness="0,0,1,0"
+                                        Cursor="Hand">
+                                    <Border.Styles>
+                                        <Style Selector="Border">
+                                            <Setter Property="Background" Value="#181825" />
+                                        </Style>
+                                        <Style Selector="Border[Tag=True]">
+                                            <Setter Property="Background" Value="#1E1E2E" />
+                                        </Style>
+                                    </Border.Styles>
+                                    <Button Background="Transparent"
+                                            BorderThickness="0"
+                                            Padding="10,6"
+                                            Command="{Binding $parent[ItemsControl].((vm:EditorViewModel)DataContext).CloseTabCommand}"
+                                            CommandParameter="{Binding}"
+                                            Cursor="Hand">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <!-- Dirty indicator / icon -->
+                                            <TextBlock Text="{Binding DisplayTitle}"
+                                                       FontSize="12"
+                                                       Foreground="#CDD6F4"
+                                                       VerticalAlignment="Center" />
+                                            <!-- Close button -->
+                                            <Button Content="\u2715"
+                                                    Background="Transparent"
+                                                    BorderThickness="0"
+                                                    FontSize="9"
+                                                    Padding="2"
+                                                    Foreground="#6C7086"
+                                                    Command="{Binding $parent[ItemsControl].((vm:EditorViewModel)DataContext).CloseTabCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Breadcrumbs -->
+            <Border DockPanel.Dock="Top"
+                    Padding="10,3"
+                    Background="#1E1E2E"
+                    BorderBrush="#313244"
+                    BorderThickness="0,0,0,1"
+                    IsVisible="{Binding HasOpenFiles}">
+                <TextBlock Text="{Binding Breadcrumb}"
+                           FontSize="11"
+                           Foreground="#9CA3AF"
+                           Opacity="0.7" />
+            </Border>
+
+            <!-- Editor content area -->
+            <Panel>
+                <!-- Welcome screen when no files are open -->
+                <StackPanel VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            Spacing="12"
+                            IsVisible="{Binding !HasOpenFiles}">
+                    <TextBlock Text="MiniClaudeCode"
+                               FontSize="24"
+                               FontWeight="Light"
+                               Foreground="#CDD6F4"
+                               Opacity="0.3"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="Open a file from the explorer or use Ctrl+P to quick-open"
+                               FontSize="13"
+                               Foreground="#9CA3AF"
+                               Opacity="0.3"
+                               HorizontalAlignment="Center" />
+                    <StackPanel Spacing="4" Opacity="0.3" HorizontalAlignment="Center">
+                        <TextBlock Text="Ctrl+Shift+P  Command Palette" FontSize="11" Foreground="#6C7086" />
+                        <TextBlock Text="Ctrl+P        Quick Open File" FontSize="11" Foreground="#6C7086" />
+                        <TextBlock Text="Ctrl+Shift+E  Toggle Explorer" FontSize="11" Foreground="#6C7086" />
+                        <TextBlock Text="Ctrl+Shift+G  Source Control" FontSize="11" Foreground="#6C7086" />
+                        <TextBlock Text="Ctrl+`        Toggle Terminal" FontSize="11" Foreground="#6C7086" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Text editor (AvaloniaEdit integration or fallback TextBox) -->
+                <Border IsVisible="{Binding HasOpenFiles}"
+                        Background="#1E1E2E">
+                    <DockPanel>
+                        <!-- Line number gutter -->
+                        <Border DockPanel.Dock="Left"
+                                Width="50"
+                                Background="#181825"
+                                Padding="0,4,8,4">
+                            <!-- Line numbers are rendered by the editor component -->
+                        </Border>
+
+                        <!-- Code content -->
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Auto">
+                            <TextBox Text="{Binding CurrentContent, Mode=TwoWay}"
+                                     AcceptsReturn="True"
+                                     AcceptsTab="True"
+                                     TextWrapping="NoWrap"
+                                     FontFamily="Cascadia Code, Consolas, Menlo, monospace"
+                                     FontSize="13"
+                                     Foreground="#CDD6F4"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Padding="8,4"
+                                     CaretBrush="#CDD6F4" />
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </Panel>
+        </DockPanel>
+    </Border>
+</UserControl>

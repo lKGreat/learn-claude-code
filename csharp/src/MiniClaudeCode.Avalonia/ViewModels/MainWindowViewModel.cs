@@ -34,6 +34,17 @@ public partial class MainWindowViewModel : ObservableObject
     // =========================================================================
     // Sub-ViewModels
     // =========================================================================
+    
+    // Layout ViewModels (VS Code style)
+    public ActivityBarViewModel ActivityBar { get; } = new();
+    public SidebarViewModel Sidebar { get; } = new();
+    public EditorViewModel Editor { get; } = new();
+    public PanelViewModel BottomPanel { get; } = new();
+    public StatusBarViewModel StatusBar { get; } = new();
+    public CommandPaletteViewModel CommandPalette { get; } = new();
+    public NotificationViewModel Notification { get; } = new();
+    
+    // Panel ViewModels
     public ChatViewModel Chat { get; } = new();
     public AgentPanelViewModel AgentPanel { get; } = new();
     public TodoPanelViewModel TodoPanel { get; } = new();
@@ -42,6 +53,8 @@ public partial class MainWindowViewModel : ObservableObject
     public QuestionDialogViewModel QuestionDialog { get; } = new();
     public FileExplorerViewModel FileExplorer { get; } = new();
     public TerminalViewModel Terminal { get; } = new();
+    public SearchPanelViewModel Search { get; } = new();
+    public ScmViewModel Scm { get; } = new();
 
     // =========================================================================
     // Observable Properties
@@ -105,10 +118,49 @@ public partial class MainWindowViewModel : ObservableObject
         AgentPanel.LaunchAgentRequested += OnLaunchAgent;
         AgentPanel.ResumeAgentRequested += OnResumeAgent;
         LoadRecentWorkspacesList();
+        
+        // Wire up layout event handlers
+        ActivityBar.ActivePanelChanged += OnActivityBarPanelChanged;
+        Editor.CursorPositionChanged += (line, col) =>
+        {
+            StatusBar.CursorLine = line;
+            StatusBar.CursorColumn = col;
+        };
+        Editor.ActiveFileChanged += (tab) =>
+        {
+            StatusBar.LanguageMode = tab?.Language ?? "Plain Text";
+        };
+        FileExplorer.FileViewRequested += (path) => Editor.OpenFile(path);
+        Search.FileOpenRequested += (path, line) =>
+        {
+            Editor.OpenFile(path);
+            // TODO: Navigate to line
+        };
+        CommandPalette.FileOpenRequested += (path) => Editor.OpenFile(path);
+        CommandPalette.GoToLineRequested += (line) =>
+        {
+            // TODO: Go to line in active editor
+        };
+        StatusBar.BranchClicked += () => Notification.ShowInfo("Branch picker - coming soon!");
+        StatusBar.ProblemsClicked += () => BottomPanel.SwitchTabCommand.Execute("problems");
+        StatusBar.NotificationsClicked += () => Notification.ToggleCenterCommand.Execute(null);
+        
+        // Set initial active panel
+        Sidebar.SetActivePanel("explorer");
     }
 
-    partial void OnIsPlanModeChanged(bool value) => OnPropertyChanged(nameof(ShowContextRow));
+    partial void OnIsPlanModeChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ShowContextRow));
+        StatusBar.IsPlanMode = value;
+    }
+    
     partial void OnHasWorkspaceChanged(bool value) => OnPropertyChanged(nameof(ShowContextRow));
+
+    private void OnActivityBarPanelChanged(string? panelId)
+    {
+        Sidebar.SetActivePanel(panelId);
+    }
 
     /// <summary>
     /// Set the main window reference for dialogs.
@@ -225,6 +277,7 @@ public partial class MainWindowViewModel : ObservableObject
         DispatcherService.Post(() =>
         {
             ProviderDisplay = activeConfig.DisplayName;
+            StatusBar.ProviderDisplay = activeConfig.DisplayName;
             HasWorkspace = true;
             UpdateTitle();
             StatusText = $"{activeConfig.DisplayName} | {workDir}";
@@ -234,6 +287,11 @@ public partial class MainWindowViewModel : ObservableObject
 
             // Load file explorer
             FileExplorer.LoadWorkspace(workDir);
+
+            // Set workspace for other panels
+            Search.SetWorkspace(workDir);
+            Scm.SetWorkspace(workDir);
+            StatusBar.WorkspaceName = Path.GetFileName(workDir);
 
             // Start terminal in workspace
             Terminal.WorkingDirectory = workDir;
@@ -328,6 +386,7 @@ public partial class MainWindowViewModel : ObservableObject
             DispatcherService.Post(() =>
             {
                 ProviderDisplay = model.DisplayName;
+                StatusBar.ProviderDisplay = model.DisplayName;
                 StatusText = $"{model.DisplayName} | {workDir}";
                 UpdateTitle();
                 Chat.AddSystemMessage($"Switched to {model.DisplayName}. Conversation reset.");
@@ -586,6 +645,8 @@ public partial class MainWindowViewModel : ObservableObject
         {
             TurnCount = _engine.TurnCount;
             ToolCallCount = _engine.TotalToolCalls;
+            StatusBar.TurnCount = TurnCount;
+            StatusBar.ToolCallCount = ToolCallCount;
             UpdateTitle();
         });
 

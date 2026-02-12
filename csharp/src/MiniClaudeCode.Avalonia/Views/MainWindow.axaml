@@ -10,21 +10,33 @@
         WindowStartupLocation="CenterScreen">
 
     <Window.KeyBindings>
+        <!-- File -->
         <KeyBinding Gesture="Ctrl+N" Command="{Binding NewConversationCommand}" />
-        <KeyBinding Gesture="Ctrl+L" Command="{Binding ClearChatCommand}" />
         <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenWorkspaceCommand}" />
-        <KeyBinding Gesture="Ctrl+OemTilde" Command="{Binding ToggleTerminalCommand}" />
-        <KeyBinding Gesture="Ctrl+Shift+E" Command="{Binding FileExplorer.ToggleVisibilityCommand}" />
-        <KeyBinding Gesture="Ctrl+Shift+P" Command="{Binding TogglePlanModeCommand}" />
+        <KeyBinding Gesture="Ctrl+S" Command="{Binding Editor.SaveFileCommand}" />
+        
+        <!-- View -->
+        <KeyBinding Gesture="Ctrl+Shift+E" Command="{Binding ActivityBar.SelectItemCommand}" CommandParameter="{Binding ActivityBar.Items[0]}" />
+        <KeyBinding Gesture="Ctrl+Shift+F" Command="{Binding ActivityBar.SelectItemCommand}" CommandParameter="{Binding ActivityBar.Items[1]}" />
+        <KeyBinding Gesture="Ctrl+Shift+G" Command="{Binding ActivityBar.SelectItemCommand}" CommandParameter="{Binding ActivityBar.Items[2]}" />
+        <KeyBinding Gesture="Ctrl+Shift+X" Command="{Binding ActivityBar.SelectItemCommand}" CommandParameter="{Binding ActivityBar.Items[3]}" />
+        <KeyBinding Gesture="Ctrl+Shift+C" Command="{Binding ActivityBar.SelectItemCommand}" CommandParameter="{Binding ActivityBar.Items[4]}" />
+        <KeyBinding Gesture="Ctrl+OemTilde" Command="{Binding BottomPanel.ToggleVisibilityCommand}" />
+        
+        <!-- Command Palette -->
+        <KeyBinding Gesture="Ctrl+Shift+P" Command="{Binding CommandPalette.ShowCommand}" />
+        <KeyBinding Gesture="Ctrl+P" Command="{Binding CommandPalette.ShowQuickOpenCommand}" />
+        
+        <!-- Other -->
         <KeyBinding Gesture="Escape" Command="{Binding CancelOperationCommand}" />
     </Window.KeyBindings>
 
     <!-- Use Panel as root to allow overlay dialogs -->
     <Panel>
-        <!-- Main content -->
+        <!-- Main VS Code-style 6-region layout -->
         <DockPanel>
-            <!-- Menu Bar -->
-            <Menu DockPanel.Dock="Top">
+            <!-- Top: Menu Bar -->
+            <Menu DockPanel.Dock="Top" Background="#181825">
                 <MenuItem Header="_File">
                     <MenuItem Header="_Open Folder..." InputGesture="Ctrl+O" Command="{Binding OpenWorkspaceCommand}" />
                     <MenuItem Header="Recent _Workspaces" ItemsSource="{Binding RecentWorkspaceMenuItems}">
@@ -37,130 +49,82 @@
                     </MenuItem>
                     <Separator />
                     <MenuItem Header="_New Conversation" InputGesture="Ctrl+N" Command="{Binding NewConversationCommand}" />
-                    <MenuItem Header="_Clear Chat" InputGesture="Ctrl+L" Command="{Binding ClearChatCommand}" />
-                    <Separator />
-                    <MenuItem Header="_Status" Command="{Binding ShowStatusCommand}" />
+                    <MenuItem Header="_Save File" InputGesture="Ctrl+S" Command="{Binding Editor.SaveFileCommand}" />
                     <Separator />
                     <MenuItem Header="E_xit" Command="{Binding ExitAppCommand}" />
                 </MenuItem>
+                <MenuItem Header="_Edit">
+                    <MenuItem Header="_Find" InputGesture="Ctrl+F" />
+                    <MenuItem Header="_Replace" InputGesture="Ctrl+H" />
+                </MenuItem>
                 <MenuItem Header="_View">
-                    <MenuItem Header="_Explorer" InputGesture="Ctrl+Shift+E" Command="{Binding FileExplorer.ToggleVisibilityCommand}" />
-                    <MenuItem Header="_Terminal" InputGesture="Ctrl+OemTilde" Command="{Binding ToggleTerminalCommand}" />
-                    <MenuItem Header="_Plan Mode" InputGesture="Ctrl+Shift+P" Command="{Binding TogglePlanModeCommand}" />
+                    <MenuItem Header="_Command Palette..." InputGesture="Ctrl+Shift+P" Command="{Binding CommandPalette.ShowCommand}" />
+                    <MenuItem Header="_Open File..." InputGesture="Ctrl+P" Command="{Binding CommandPalette.ShowQuickOpenCommand}" />
                     <Separator />
-                    <MenuItem Header="_Status" Command="{Binding ShowStatusCommand}" />
+                    <MenuItem Header="_Explorer" InputGesture="Ctrl+Shift+E" />
+                    <MenuItem Header="_Search" InputGesture="Ctrl+Shift+F" />
+                    <MenuItem Header="_Source Control" InputGesture="Ctrl+Shift+G" />
+                    <MenuItem Header="E_xtensions" InputGesture="Ctrl+Shift+X" />
+                    <Separator />
+                    <MenuItem Header="_Terminal" InputGesture="Ctrl+`" Command="{Binding BottomPanel.ToggleVisibilityCommand}" />
+                    <MenuItem Header="_Plan Mode" Command="{Binding TogglePlanModeCommand}" />
                 </MenuItem>
                 <MenuItem Header="_Help">
                     <MenuItem Header="_About" Click="OnAboutClick" />
                 </MenuItem>
             </Menu>
 
-            <!-- Status Bar -->
-            <Border DockPanel.Dock="Bottom"
-                    Background="#1E1E2E"
-                    Padding="10,4">
-                <Grid ColumnDefinitions="Auto,*,Auto">
-                    <!-- Plan Mode indicator -->
-                    <Border Grid.Column="0"
-                            IsVisible="{Binding IsPlanMode}"
-                            Background="#45475A"
-                            CornerRadius="3"
-                            Padding="6,2"
-                            Margin="0,0,8,0">
-                        <TextBlock Text="PLAN"
-                                   FontSize="10"
-                                   FontWeight="Bold"
-                                   Foreground="#F9E2AF" />
+            <!-- Bottom: Status Bar -->
+            <views:StatusBarView DockPanel.Dock="Bottom"
+                                  DataContext="{Binding StatusBar}" />
+
+            <!-- Main content area with 3-column layout: ActivityBar | Sidebar | EditorArea+BottomPanel -->
+            <Grid ColumnDefinitions="Auto,Auto,*">
+                
+                <!-- Column 0: Activity Bar (48px, left-most icon strip) -->
+                <views:ActivityBarView Grid.Column="0"
+                                        DataContext="{Binding ActivityBar}" />
+
+                <!-- Column 1: Sidebar (collapsible, 250px) -->
+                <Border Grid.Column="1"
+                        Width="{Binding Sidebar.Width}"
+                        IsVisible="{Binding Sidebar.IsVisible}">
+                    <Grid ColumnDefinitions="*,5">
+                        <views:SidebarView Grid.Column="0" />
+                        
+                        <GridSplitter Grid.Column="1"
+                                      ResizeDirection="Columns"
+                                      Background="#313244" />
+                    </Grid>
+                </Border>
+
+                <!-- Column 2: Editor Area + Bottom Panel -->
+                <DockPanel Grid.Column="2">
+                    <!-- Bottom Panel (collapsible) -->
+                    <Border DockPanel.Dock="Bottom"
+                            Height="{Binding BottomPanel.Height}"
+                            IsVisible="{Binding BottomPanel.IsVisible}">
+                        <Grid RowDefinitions="5,*">
+                            <GridSplitter Grid.Row="0"
+                                          ResizeDirection="Rows"
+                                          Background="#313244"
+                                          HorizontalAlignment="Stretch" />
+                            
+                            <views:BottomPanelView Grid.Row="1" />
+                        </Grid>
                     </Border>
 
-                    <TextBlock Grid.Column="1"
-                               Text="{Binding StatusText}"
-                               FontSize="11"
-                               Opacity="0.7"
-                               VerticalAlignment="Center" />
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16">
-                        <TextBlock FontSize="11" Opacity="0.7" VerticalAlignment="Center">
-                            <TextBlock.Text>
-                                <MultiBinding StringFormat="T:{0} | TC:{1}">
-                                    <Binding Path="TurnCount" />
-                                    <Binding Path="ToolCallCount" />
-                                </MultiBinding>
-                            </TextBlock.Text>
-                        </TextBlock>
-                        <TextBlock Text="{Binding ProviderDisplay}"
-                                   FontSize="11"
-                                   Foreground="#60A5FA"
-                                   VerticalAlignment="Center" />
-                    </StackPanel>
-                </Grid>
-            </Border>
-
-            <!-- Main Content Area: File Explorer | Chat+Terminal | Right Panels -->
-            <Grid ColumnDefinitions="Auto,Auto,*,5,340">
-
-                <!-- LEFT SIDEBAR: File Explorer (collapsible) -->
-                <views:FileExplorerView Grid.Column="0"
-                                         DataContext="{Binding FileExplorer}"
-                                         IsVisible="{Binding IsVisible}"
-                                         Width="250" />
-
-                <GridSplitter Grid.Column="1"
-                              IsVisible="{Binding FileExplorer.IsVisible}"
-                              ResizeDirection="Columns"
-                              Background="#2D2D3F"
-                              Width="5" />
-
-                <!-- CENTER: Chat + Input + Terminal -->
-                <DockPanel Grid.Column="2">
-                    <!-- Terminal Panel (bottom, collapsible) -->
-                    <GridSplitter DockPanel.Dock="Bottom"
-                                  IsVisible="{Binding Terminal.IsVisible}"
-                                  ResizeDirection="Rows"
-                                  Background="#2D2D3F"
-                                  Height="5" />
-                    <views:TerminalView DockPanel.Dock="Bottom"
-                                         DataContext="{Binding Terminal}"
-                                         IsVisible="{Binding IsVisible}"
-                                         Height="250" />
-
-                    <!-- Input Area at bottom (uses MainWindowViewModel directly for model selector) -->
-                    <views:InputView DockPanel.Dock="Bottom"
-                                     Margin="0" />
-
-                    <!-- Chat Area fills remaining -->
-                    <views:ChatView DataContext="{Binding Chat}" />
+                    <!-- Center: Editor Area -->
+                    <views:EditorView DataContext="{Binding Editor}" />
                 </DockPanel>
-
-                <!-- Vertical Splitter -->
-                <GridSplitter Grid.Column="3"
-                              ResizeDirection="Columns"
-                              Background="#2D2D3F" />
-
-                <!-- RIGHT: Agent + Todo + ToolCall panels -->
-                <Grid Grid.Column="4" RowDefinitions="*,5,*,5,*">
-
-                    <!-- Agent Panel -->
-                    <views:AgentPanelView Grid.Row="0"
-                                           DataContext="{Binding AgentPanel}" />
-
-                    <GridSplitter Grid.Row="1"
-                                  ResizeDirection="Rows"
-                                  Background="#2D2D3F" />
-
-                    <!-- Todo Panel -->
-                    <views:TodoPanelView Grid.Row="2"
-                                          DataContext="{Binding TodoPanel}" />
-
-                    <GridSplitter Grid.Row="3"
-                                  ResizeDirection="Rows"
-                                  Background="#2D2D3F" />
-
-                    <!-- Tool Call Panel -->
-                    <views:ToolCallPanelView Grid.Row="4"
-                                              DataContext="{Binding ToolCallPanel}" />
-                </Grid>
             </Grid>
         </DockPanel>
+
+        <!-- Overlay: Command Palette -->
+        <views:CommandPaletteView DataContext="{Binding CommandPalette}" />
+
+        <!-- Overlay: Notification Toasts -->
+        <views:NotificationToastView DataContext="{Binding Notification}" />
 
         <!-- Overlay: Setup Wizard Dialog -->
         <views:SetupWizardDialog DataContext="{Binding SetupWizard}"

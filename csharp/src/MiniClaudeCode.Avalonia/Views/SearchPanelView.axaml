@@ -1,0 +1,114 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:MiniClaudeCode.Avalonia.ViewModels"
+             x:Class="MiniClaudeCode.Avalonia.Views.SearchPanelView"
+             x:DataType="vm:SearchPanelViewModel">
+
+    <Border Background="#181825" Padding="4">
+        <DockPanel>
+            <!-- Header -->
+            <Border DockPanel.Dock="Top" Padding="8,6" Background="#1E1E2E" CornerRadius="4,4,0,0">
+                <TextBlock Text="Search"
+                           FontWeight="Bold"
+                           FontSize="12"
+                           Foreground="#CDD6F4" />
+            </Border>
+
+            <!-- Search inputs -->
+            <Border DockPanel.Dock="Top" Padding="8,6" Background="#1E1E2E">
+                <StackPanel Spacing="4">
+                    <!-- Search text -->
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right"
+                                Content="Aa"
+                                ToolTip.Tip="Match Case"
+                                FontSize="10" Padding="4,2"
+                                Background="Transparent" />
+                        <TextBox Text="{Binding SearchText}"
+                                 Watermark="Search"
+                                 FontSize="12"
+                                 Background="#11111B"
+                                 BorderBrush="#313244" />
+                    </DockPanel>
+
+                    <!-- Replace text (collapsible) -->
+                    <TextBox Text="{Binding ReplaceText}"
+                             Watermark="Replace"
+                             FontSize="12"
+                             Background="#11111B"
+                             BorderBrush="#313244"
+                             IsVisible="{Binding ShowReplace}" />
+
+                    <!-- Toggle options -->
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <Button Content="\u21C5"
+                                Command="{Binding ToggleReplaceCommand}"
+                                ToolTip.Tip="Toggle Replace"
+                                FontSize="10" Padding="4,2" Background="Transparent" />
+                        <Button Content=".*"
+                                ToolTip.Tip="Use Regex"
+                                FontSize="10" Padding="4,2" Background="Transparent" />
+                        <Button Content="|W|"
+                                ToolTip.Tip="Whole Word"
+                                FontSize="10" Padding="4,2" Background="Transparent" />
+                    </StackPanel>
+
+                    <!-- File filters -->
+                    <TextBox Text="{Binding IncludePattern}"
+                             Watermark="files to include (e.g. *.cs)"
+                             FontSize="10"
+                             Background="#11111B"
+                             BorderBrush="#313244" />
+
+                    <!-- Search button -->
+                    <Button Content="Search"
+                            Command="{Binding SearchCommand}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Padding="6,3"
+                            FontSize="11"
+                            IsEnabled="{Binding !IsSearching}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Results summary -->
+            <TextBlock DockPanel.Dock="Top"
+                       Text="{Binding ResultsSummary}"
+                       FontSize="10"
+                       Opacity="0.5"
+                       Margin="8,4"
+                       IsVisible="{Binding ResultsSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+            <!-- Results list -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Results}" Padding="4">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SearchResult">
+                            <Button Background="Transparent"
+                                    BorderThickness="0"
+                                    Padding="4,2"
+                                    Cursor="Hand"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left"
+                                    Command="{Binding $parent[ItemsControl].((vm:SearchPanelViewModel)DataContext).OpenResultCommand}"
+                                    CommandParameter="{Binding}">
+                                <StackPanel Spacing="1">
+                                    <TextBlock Text="{Binding FileName}"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="#CDD6F4" />
+                                    <TextBlock Text="{Binding MatchPreview}"
+                                               FontSize="10"
+                                               Foreground="#9CA3AF"
+                                               TextTrimming="CharacterEllipsis"
+                                               MaxLines="1"
+                                               FontFamily="Cascadia Code, Consolas, monospace" />
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</UserControl>

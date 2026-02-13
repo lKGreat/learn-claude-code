@@ -10,7 +10,7 @@
             <!-- Left side items -->
             <StackPanel Grid.Column="0"
                         Orientation="Horizontal"
-                        Spacing="12"
+                        Spacing="10"
                         Margin="8,0">
                 <!-- Git branch -->
                 <Button Classes="statusBarItem"
@@ -19,127 +19,234 @@
                         IsVisible="{Binding HasBranch}"
                         Cursor="Hand">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                        <TextBlock Text="\U0001F500" FontSize="10" VerticalAlignment="Center" />
+                        <TextBlock Text="⎇" FontSize="11" VerticalAlignment="Center" />
                         <TextBlock Text="{Binding BranchName}"
                                    FontSize="11"
                                    Foreground="{DynamicResource ThemeStatusBarForeground}"
                                    VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding SyncStatus}"
-                                   FontSize="10"
-                                   Opacity="0.5"
-                                   VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
 
-                <!-- Problems -->
+                <!-- Cloud sync -->
+                <Button Classes="statusBarItem"
+                        Padding="4,0"
+                        Cursor="Hand">
+                    <TextBlock Text="☁"
+                               FontSize="11"
+                               VerticalAlignment="Center" />
+                </Button>
+
+                <!-- Sync status -->
+                <Button Classes="statusBarItem"
+                        Padding="4,0"
+                        Cursor="Hand">
+                    <StackPanel Orientation="Horizontal" Spacing="2">
+                        <TextBlock Text="0↓" FontSize="11" VerticalAlignment="Center" />
+                        <TextBlock Text="6↑" FontSize="11" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <!-- Errors -->
                 <Button Classes="statusBarItem"
                         Padding="4,0"
                         Command="{Binding ClickProblemsCommand}"
                         Cursor="Hand">
-                    <TextBlock Text="{Binding ProblemsDisplay}"
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="✕"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource ThemeDanger}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="0"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource ThemeStatusBarForeground}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <!-- Warnings -->
+                <Button Classes="statusBarItem"
+                        Padding="4,0"
+                        Cursor="Hand">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="⚠"
+                                   FontSize="10"
+                                   Foreground="{DynamicResource ThemeYellow}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="0"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource ThemeStatusBarForeground}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <!-- Notifications bell -->
+                <Button Classes="statusBarItem"
+                        Padding="4,0"
+                        Cursor="Hand">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="🔔"
+                                   FontSize="10"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="0"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource ThemeStatusBarForeground}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <!-- Projects count -->
+                <Button Classes="statusBarItem"
+                        Padding="4,0"
+                        Cursor="Hand">
+                    <TextBlock Text="项目: 4"
                                FontSize="11"
-                               Foreground="{DynamicResource ThemeDanger}"
+                               Foreground="{DynamicResource ThemeStatusBarForeground}"
                                VerticalAlignment="Center" />
                 </Button>
 
-                <!-- Workspace name -->
-                <TextBlock Text="{Binding WorkspaceName}"
-                           FontSize="11"
-                           Opacity="0.6"
-                           Foreground="{DynamicResource ThemeStatusBarForeground}"
-                           VerticalAlignment="Center" />
+                <!-- Build config -->
+                <Button Classes="statusBarItem"
+                        Padding="4,0"
+                        Cursor="Hand">
+                    <TextBlock Text="Debug Any CPU"
+                               FontSize="11"
+                               Foreground="{DynamicResource ThemeStatusBarForeground}"
+                               VerticalAlignment="Center" />
+                </Button>
+
+                <!-- Solution file -->
+                <Button Classes="statusBarItem"
+                        Padding="4,0"
+                        Cursor="Hand">
+                    <TextBlock Text="已打开解决方案文件: MiniClaudeCode.slnx"
+                               FontSize="11"
+                               Foreground="{DynamicResource ThemeStatusBarForeground}"
+                               VerticalAlignment="Center" />
+                </Button>
             </StackPanel>
 
             <!-- Right side items -->
             <StackPanel Grid.Column="2"
                         Orientation="Horizontal"
-                        Spacing="12"
+                        Spacing="10"
                         Margin="8,0">
                 <!-- Cursor position -->
-                <TextBlock Text="{Binding CursorPosition}"
-                           FontSize="11"
-                           Opacity="0.6"
-                           Foreground="{DynamicResource ThemeStatusBarForeground}"
-                           VerticalAlignment="Center"
-                           FontFamily="Cascadia Code, Consolas, monospace" />
+                <Button Classes="statusBarItem"
+                        Padding="4,0"
+                        Cursor="Hand">
+                    <TextBlock Text="{Binding CursorPosition}"
+                               FontSize="11"
+                               Foreground="{DynamicResource ThemeStatusBarForeground}"
+                               VerticalAlignment="Center"
+                               FontFamily="Cascadia Code, Consolas, monospace" />
+                </Button>
 
                 <!-- Encoding -->
-                <TextBlock Text="{Binding Encoding}"
-                           FontSize="11"
-                           Opacity="0.6"
-                           Foreground="{DynamicResource ThemeStatusBarForeground}"
-                           VerticalAlignment="Center" />
+                <Button Classes="statusBarItem"
+                        Padding="4,0"
+                        Cursor="Hand">
+                    <TextBlock Text="{Binding Encoding}"
+                               FontSize="11"
+                               Foreground="{DynamicResource ThemeStatusBarForeground}"
+                               VerticalAlignment="Center" />
+                </Button>
 
                 <!-- Line ending -->
-                <TextBlock Text="{Binding LineEnding}"
-                           FontSize="11"
-                           Opacity="0.6"
-                           Foreground="{DynamicResource ThemeStatusBarForeground}"
-                           VerticalAlignment="Center" />
+                <Button Classes="statusBarItem"
+                        Padding="4,0"
+                        Cursor="Hand">
+                    <TextBlock Text="{Binding LineEnding}"
+                               FontSize="11"
+                               Foreground="{DynamicResource ThemeStatusBarForeground}"
+                               VerticalAlignment="Center" />
+                </Button>
 
                 <!-- Language mode -->
-                <TextBlock Text="{Binding LanguageMode}"
-                           FontSize="11"
-                           Opacity="0.6"
-                           Foreground="{DynamicResource ThemeStatusBarForeground}"
-                           VerticalAlignment="Center" />
+                <Button Classes="statusBarItem"
+                        Padding="4,0"
+                        Cursor="Hand">
+                    <TextBlock Text="{Binding LanguageMode}"
+                               FontSize="11"
+                               Foreground="{DynamicResource ThemeStatusBarForeground}"
+                               VerticalAlignment="Center" />
+                </Button>
 
                 <!-- Plan mode badge -->
                 <Border IsVisible="{Binding IsPlanMode}"
                         Background="{DynamicResource ThemeListActiveBackground}"
                         CornerRadius="3"
-                        Padding="4,1">
+                        Padding="4,1"
+                        VerticalAlignment="Center">
                     <TextBlock Text="PLAN"
                                FontSize="9"
                                FontWeight="Bold"
                                Foreground="{DynamicResource ThemeStatusBarForeground}" />
                 </Border>
 
-                <!-- AI model -->
-                <TextBlock Text="{Binding ProviderDisplay}"
-                           FontSize="11"
-                           Foreground="{DynamicResource ThemeStatusBarForeground}"
-                           VerticalAlignment="Center" />
-
-                <!-- Turn/Tool count -->
-                <TextBlock FontSize="11"
-                           Opacity="0.5"
-                           Foreground="{DynamicResource ThemeStatusBarForeground}"
-                           VerticalAlignment="Center"
-                           FontFamily="Cascadia Code, Consolas, monospace">
-                    <TextBlock.Text>
-                        <MultiBinding StringFormat="T:{0} TC:{1}">
-                            <Binding Path="TurnCount" />
-                            <Binding Path="ToolCallCount" />
-                        </MultiBinding>
-                    </TextBlock.Text>
-                </TextBlock>
-
-                <!-- Notifications bell -->
+                <!-- AI model/provider -->
                 <Button Classes="statusBarItem"
                         Padding="4,0"
-                        Command="{Binding ClickNotificationsCommand}"
-                        IsVisible="{Binding HasNotifications}"
                         Cursor="Hand">
-                    <Panel>
-                        <TextBlock Text="\U0001F514"
-                                   FontSize="12"
+                    <TextBlock Text="{Binding ProviderDisplay}"
+                               FontSize="11"
+                               Foreground="{DynamicResource ThemeStatusBarForeground}"
+                               VerticalAlignment="Center" />
+                </Button>
+
+                <!-- Turn/Tool count -->
+                <Button Classes="statusBarItem"
+                        Padding="4,0"
+                        Cursor="Hand">
+                    <TextBlock FontSize="11"
+                               Foreground="{DynamicResource ThemeStatusBarForeground}"
+                               VerticalAlignment="Center"
+                               FontFamily="Cascadia Code, Consolas, monospace">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="T:{0} TC:{1}">
+                                <Binding Path="TurnCount" />
+                                <Binding Path="ToolCallCount" />
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </Button>
+
+                <!-- Signed out status -->
+                <Button Classes="statusBarItem"
+                        Padding="4,0"
+                        Cursor="Hand">
+                    <TextBlock Text="Signed out"
+                               FontSize="11"
+                               Foreground="{DynamicResource ThemeStatusBarForeground}"
+                               VerticalAlignment="Center" />
+                </Button>
+
+                <!-- Go Live -->
+                <Button Classes="statusBarItem"
+                        Padding="4,0"
+                        Background="#45475A"
+                        Cursor="Hand">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="🌐"
+                                   FontSize="10"
                                    VerticalAlignment="Center" />
-                        <Border Background="{DynamicResource ThemeBadgeBackground}"
-                                CornerRadius="6"
-                                MinWidth="14" Height="14"
-                                Padding="2,0"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Top"
-                                Margin="0,-2,-2,0">
-                            <TextBlock Text="{Binding NotificationCount}"
-                                       FontSize="8"
-                                       FontWeight="Bold"
-                                       Foreground="{DynamicResource ThemeBadgeForeground}"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" />
-                        </Border>
-                    </Panel>
+                        <TextBlock Text="Go Live"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource ThemeStatusBarForeground}"
+                                   VerticalAlignment="Center" />
+                        <Ellipse Width="6" Height="6"
+                                 Fill="{DynamicResource ThemeGreen}"
+                                 VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+
+                <!-- More actions -->
+                <Button Classes="statusBarItem"
+                        Padding="4,0"
+                        Cursor="Hand">
+                    <TextBlock Text="..."
+                               FontSize="11"
+                               Foreground="{DynamicResource ThemeStatusBarForeground}"
+                               VerticalAlignment="Center" />
                 </Button>
             </StackPanel>
         </Grid>

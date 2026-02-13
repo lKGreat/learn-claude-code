@@ -18,70 +18,137 @@
                     <!-- Panel tabs -->
                     <StackPanel Orientation="Horizontal" Spacing="0">
                         <!-- Terminal tab -->
-                        <Button Content="Terminal"
-                                Command="{Binding BottomPanel.SwitchTabCommand}"
+                        <Button Command="{Binding BottomPanel.SwitchTabCommand}"
                                 CommandParameter="terminal"
                                 FontSize="11"
-                                Padding="10,5"
+                                Padding="10,5,10,3"
                                 Background="Transparent"
                                 BorderThickness="0"
-                                Foreground="{Binding BottomPanel.IsTerminalTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}"
-                                Cursor="Hand" />
+                                Cursor="Hand">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Bottom"
+                                        Classes="tabActiveIndicator"
+                                        IsVisible="{Binding BottomPanel.IsTerminalTab}"
+                                        Margin="0,2,0,0" />
+                                <TextBlock Text="Terminal"
+                                           Foreground="{DynamicResource ThemeText}"
+                                           Opacity="{Binding BottomPanel.IsTerminalTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}" />
+                            </DockPanel>
+                        </Button>
 
                         <!-- Problems tab -->
-                        <Button Content="Problems"
-                                Command="{Binding BottomPanel.SwitchTabCommand}"
+                        <Button Command="{Binding BottomPanel.SwitchTabCommand}"
                                 CommandParameter="problems"
                                 FontSize="11"
-                                Padding="10,5"
+                                Padding="10,5,10,3"
                                 Background="Transparent"
                                 BorderThickness="0"
-                                Foreground="{Binding BottomPanel.IsProblemsTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}"
-                                Cursor="Hand" />
+                                Cursor="Hand">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Bottom"
+                                        Classes="tabActiveIndicator"
+                                        IsVisible="{Binding BottomPanel.IsProblemsTab}"
+                                        Margin="0,2,0,0" />
+                                <TextBlock Text="Problems"
+                                           Foreground="{DynamicResource ThemeText}"
+                                           Opacity="{Binding BottomPanel.IsProblemsTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}" />
+                            </DockPanel>
+                        </Button>
 
                         <!-- Output tab -->
-                        <Button Content="Output"
-                                Command="{Binding BottomPanel.SwitchTabCommand}"
+                        <Button Command="{Binding BottomPanel.SwitchTabCommand}"
                                 CommandParameter="output"
                                 FontSize="11"
-                                Padding="10,5"
+                                Padding="10,5,10,3"
                                 Background="Transparent"
                                 BorderThickness="0"
-                                Foreground="{Binding BottomPanel.IsOutputTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}"
-                                Cursor="Hand" />
+                                Cursor="Hand">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Bottom"
+                                        Classes="tabActiveIndicator"
+                                        IsVisible="{Binding BottomPanel.IsOutputTab}"
+                                        Margin="0,2,0,0" />
+                                <TextBlock Text="Output"
+                                           Foreground="{DynamicResource ThemeText}"
+                                           Opacity="{Binding BottomPanel.IsOutputTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}" />
+                            </DockPanel>
+                        </Button>
+
+                        <!-- Debug Console tab -->
+                        <Button Command="{Binding BottomPanel.SwitchTabCommand}"
+                                CommandParameter="debugconsole"
+                                FontSize="11"
+                                Padding="10,5,10,3"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Cursor="Hand">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Bottom"
+                                        Classes="tabActiveIndicator"
+                                        IsVisible="False"
+                                        Margin="0,2,0,0" />
+                                <TextBlock Text="Debug Console"
+                                           Foreground="{DynamicResource ThemeText}"
+                                           Opacity="0.6" />
+                            </DockPanel>
+                        </Button>
 
                         <!-- Tool Calls tab -->
-                        <Button Content="Tool Calls"
-                                Command="{Binding BottomPanel.SwitchTabCommand}"
+                        <Button Command="{Binding BottomPanel.SwitchTabCommand}"
                                 CommandParameter="toolcalls"
                                 FontSize="11"
-                                Padding="10,5"
+                                Padding="10,5,10,3"
                                 Background="Transparent"
                                 BorderThickness="0"
-                                Foreground="{Binding BottomPanel.IsToolCallsTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}"
-                                Cursor="Hand" />
+                                Cursor="Hand">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Bottom"
+                                        Classes="tabActiveIndicator"
+                                        IsVisible="{Binding BottomPanel.IsToolCallsTab}"
+                                        Margin="0,2,0,0" />
+                                <TextBlock Text="Tool Calls"
+                                           Foreground="{DynamicResource ThemeText}"
+                                           Opacity="{Binding BottomPanel.IsToolCallsTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}" />
+                            </DockPanel>
+                        </Button>
 
                         <!-- Agents tab -->
-                        <Button Content="Agents"
-                                Command="{Binding BottomPanel.SwitchTabCommand}"
+                        <Button Command="{Binding BottomPanel.SwitchTabCommand}"
                                 CommandParameter="agents"
                                 FontSize="11"
-                                Padding="10,5"
+                                Padding="10,5,10,3"
                                 Background="Transparent"
                                 BorderThickness="0"
-                                Foreground="{Binding BottomPanel.IsAgentsTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}"
-                                Cursor="Hand" />
+                                Cursor="Hand">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Bottom"
+                                        Classes="tabActiveIndicator"
+                                        IsVisible="{Binding BottomPanel.IsAgentsTab}"
+                                        Margin="0,2,0,0" />
+                                <TextBlock Text="Agents"
+                                           Foreground="{DynamicResource ThemeText}"
+                                           Opacity="{Binding BottomPanel.IsAgentsTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}" />
+                            </DockPanel>
+                        </Button>
 
                         <!-- Todos tab -->
-                        <Button Content="Todos"
-                                Command="{Binding BottomPanel.SwitchTabCommand}"
+                        <Button Command="{Binding BottomPanel.SwitchTabCommand}"
                                 CommandParameter="todos"
                                 FontSize="11"
-                                Padding="10,5"
+                                Padding="10,5,10,3"
                                 Background="Transparent"
                                 BorderThickness="0"
-                                Foreground="{Binding BottomPanel.IsTodosTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}"
-                                Cursor="Hand" />
+                                Cursor="Hand">
+                            <DockPanel>
+                                <Border DockPanel.Dock="Bottom"
+                                        Classes="tabActiveIndicator"
+                                        IsVisible="{Binding BottomPanel.IsTodosTab}"
+                                        Margin="0,2,0,0" />
+                                <TextBlock Text="Todos"
+                                           Foreground="{DynamicResource ThemeText}"
+                                           Opacity="{Binding BottomPanel.IsTodosTab, Converter={x:Static conv:BoolToOpacityConverter.Instance}}" />
+                            </DockPanel>
+                        </Button>
                     </StackPanel>
 
                     <!-- Panel controls (right side) -->

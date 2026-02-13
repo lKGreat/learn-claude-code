@@ -64,4 +64,9 @@
 
     <SolidColorBrush x:Key="ThemeMutedForeground" Color="#A6ADC8" />
     <SolidColorBrush x:Key="ThemeFocusBorder" Color="#89B4FA" />
+    
+    <!-- Additional VS Code-style semantic tokens -->
+    <SolidColorBrush x:Key="ThemeTabActiveIndicator" Color="#89B4FA" />
+    <SolidColorBrush x:Key="ThemeWelcomeHighlight" Color="#313244" />
+    <SolidColorBrush x:Key="ThemeMenuBarBackground" Color="#181825" />
 </ResourceDictionary>

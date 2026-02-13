@@ -342,4 +342,69 @@
         <Setter Property="BorderBrush" Value="{DynamicResource ThemeInputFocusBorder}" />
     </Style>
 
+    <!-- ============================================================ -->
+    <!--  Title Bar Icon Buttons                                      -->
+    <!-- ============================================================ -->
+
+    <Style Selector="Button.titleBarIconButton">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Width" Value="32" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeMutedForeground}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style Selector="Button.titleBarIconButton:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ThemeListHoverBackground}" />
+        <Setter Property="Foreground" Value="{DynamicResource ThemeText}" />
+    </Style>
+
+    <!-- ============================================================ -->
+    <!--  Menu Bar Row                                                -->
+    <!-- ============================================================ -->
+
+    <Style Selector="Border.menuBarRow">
+        <Setter Property="Background" Value="{DynamicResource ThemeMenuBarBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ThemePanelBorder}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Height" Value="28" />
+    </Style>
+
+    <!-- ============================================================ -->
+    <!--  Welcome Page Links                                          -->
+    <!-- ============================================================ -->
+
+    <Style Selector="Button.welcomeLink">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style Selector="Button.welcomeLink:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ThemeListHoverBackground}" />
+    </Style>
+
+    <Style Selector="Button.welcomeLinkHighlight">
+        <Setter Property="Background" Value="{DynamicResource ThemeWelcomeHighlight}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ThemeAccent}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <!-- ============================================================ -->
+    <!--  Tab Active Indicator                                        -->
+    <!-- ============================================================ -->
+
+    <Style Selector="Border.tabActiveIndicator">
+        <Setter Property="Height" Value="2" />
+        <Setter Property="Background" Value="{DynamicResource ThemeTabActiveIndicator}" />
+        <Setter Property="VerticalAlignment" Value="Bottom" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+
 </Styles>

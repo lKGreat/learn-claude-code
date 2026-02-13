@@ -21,72 +21,120 @@
                     BorderBrush="#313244"
                     BorderThickness="0,0,0,1"
                     IsVisible="{Binding HasOpenFiles}">
-                <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                              VerticalScrollBarVisibility="Disabled">
-                    <ItemsControl ItemsSource="{Binding Tabs}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="models:EditorTab">
-                                <Border Padding="0"
-                                        BorderBrush="#313244"
-                                        BorderThickness="0,0,1,0"
-                                        Cursor="Hand">
-                                    <Border.Styles>
-                                        <Style Selector="Border">
-                                            <Setter Property="Background" Value="#181825" />
-                                        </Style>
-                                        <Style Selector="Border:pointerover">
-                                            <Setter Property="Background" Value="#1E1E2E" />
-                                        </Style>
-                                    </Border.Styles>
-                                    <DockPanel>
-                                        <!-- Close button -->
-                                        <Button DockPanel.Dock="Right"
-                                                Content="x"
-                                                Background="Transparent"
-                                                BorderThickness="0"
-                                                FontSize="11"
-                                                Padding="4,0,6,0"
-                                                Foreground="#6C7086"
-                                                Command="{Binding $parent[ItemsControl].((vm:EditorViewModel)DataContext).CloseTabCommand}"
-                                                CommandParameter="{Binding}"
-                                                VerticalAlignment="Center"
-                                                Cursor="Hand"
-                                                ToolTip.Tip="Close">
-                                            <Button.Styles>
-                                                <Style Selector="Button:pointerover">
-                                                    <Setter Property="Foreground" Value="#CDD6F4" />
-                                                </Style>
-                                            </Button.Styles>
-                                        </Button>
+                <DockPanel>
+                    <!-- Tab scroll area -->
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Tabs}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:EditorTab">
+                                    <Border Padding="0"
+                                            BorderBrush="#313244"
+                                            BorderThickness="0,0,1,0"
+                                            Cursor="Hand">
+                                        <Border.Styles>
+                                            <Style Selector="Border">
+                                                <Setter Property="Background" Value="#181825" />
+                                            </Style>
+                                            <Style Selector="Border:pointerover">
+                                                <Setter Property="Background" Value="#1E1E2E" />
+                                            </Style>
+                                        </Border.Styles>
+                                        <DockPanel>
+                                            <!-- Close button -->
+                                            <Button DockPanel.Dock="Right"
+                                                    Content="x"
+                                                    Background="Transparent"
+                                                    BorderThickness="0"
+                                                    FontSize="11"
+                                                    Padding="4,0,6,0"
+                                                    Foreground="#6C7086"
+                                                    Command="{Binding $parent[ItemsControl].((vm:EditorViewModel)DataContext).CloseTabCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    VerticalAlignment="Center"
+                                                    Cursor="Hand"
+                                                    ToolTip.Tip="Close">
+                                                <Button.Styles>
+                                                    <Style Selector="Button:pointerover">
+                                                        <Setter Property="Foreground" Value="#CDD6F4" />
+                                                    </Style>
+                                                </Button.Styles>
+                                            </Button>
 
-                                        <!-- Tab content (clickable to activate) -->
-                                        <Button Background="Transparent"
-                                                BorderThickness="0"
-                                                Padding="10,6"
-                                                Cursor="Hand"
-                                                Tag="{Binding}"
-                                                Click="OnTabClick">
-                                            <TextBlock Text="{Binding DisplayTitle}"
-                                                       FontSize="12"
-                                                       FontStyle="{Binding IsPreview, Converter={StaticResource BoolToItalic}}"
-                                                       Foreground="#CDD6F4"
-                                                       Opacity="{Binding IsActive, Converter={StaticResource BoolOpacity}}"
-                                                       VerticalAlignment="Center" />
-                                        </Button>
-                                    </DockPanel>
+                                            <!-- Tab content (clickable to activate) -->
+                                            <Button Background="Transparent"
+                                                    BorderThickness="0"
+                                                    Padding="10,6,10,4"
+                                                    Cursor="Hand"
+                                                    Tag="{Binding}"
+                                                    Click="OnTabClick">
+                                                <DockPanel>
+                                                    <!-- Active tab indicator at bottom -->
+                                                    <Border DockPanel.Dock="Bottom"
+                                                            Classes="tabActiveIndicator"
+                                                            IsVisible="{Binding IsActive}"
+                                                            Margin="0,2,0,0" />
 
-                                    <!-- Active tab indicator (bottom border) -->
-                                    <!-- Using a top border workaround: active tabs get brighter background -->
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                                                    <!-- Tab title with optional dirty dot -->
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <TextBlock Text="{Binding DisplayTitle}"
+                                                                   FontSize="12"
+                                                                   FontStyle="{Binding IsPreview, Converter={StaticResource BoolToItalic}}"
+                                                                   Foreground="#CDD6F4"
+                                                                   Opacity="{Binding IsActive, Converter={StaticResource BoolOpacity}}"
+                                                                   VerticalAlignment="Center" />
+                                                        <!-- Modified indicator dot -->
+                                                        <TextBlock Text="●"
+                                                                   FontSize="10"
+                                                                   Foreground="{DynamicResource ThemeText}"
+                                                                   VerticalAlignment="Center"
+                                                                   IsVisible="{Binding IsDirty}" />
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </Button>
+                                        </DockPanel>
+
+                                        <!-- Active tab gets brighter background -->
+                                        <Border.Styles>
+                                            <Style Selector="Border" x:DataType="models:EditorTab">
+                                                <Setter Property="Background" Value="#181825" />
+                                            </Style>
+                                            <Style Selector="Border:pointerover" x:DataType="models:EditorTab">
+                                                <Setter Property="Background" Value="#1E1E2E" />
+                                            </Style>
+                                        </Border.Styles>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <!-- New tab button -->
+                    <Button DockPanel.Dock="Right"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Width="32"
+                            Height="35"
+                            Padding="0"
+                            Cursor="Hand"
+                            ToolTip.Tip="New File">
+                        <TextBlock Text="+"
+                                   FontSize="16"
+                                   Foreground="#6C7086"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                        <Button.Styles>
+                            <Style Selector="Button:pointerover">
+                                <Setter Property="Background" Value="#1E1E2E" />
+                            </Style>
+                        </Button.Styles>
+                    </Button>
+                </DockPanel>
             </Border>
 
             <!-- Breadcrumbs -->

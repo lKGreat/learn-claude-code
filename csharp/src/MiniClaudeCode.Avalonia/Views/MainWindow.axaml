@@ -46,114 +46,104 @@
         <DockPanel>
 
             <!-- ============================================================ -->
-            <!-- Custom Title Bar (replaces OS title bar)                     -->
+            <!-- Row 1: Custom Title Bar (replaces OS title bar)              -->
             <!-- ============================================================ -->
-                <Border DockPanel.Dock="Top"
+            <Border DockPanel.Dock="Top"
                     Classes="workbenchTitleBar"
                     Height="36"
                     Background="{DynamicResource ThemeTitleBarBackground}">
-                <Grid ColumnDefinitions="Auto,*,Auto">
+                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
 
-                    <!-- Left: App Logo + Menu -->
-                    <StackPanel Grid.Column="0"
+                    <!-- Left: App Logo -->
+                    <Border Grid.Column="0"
+                            Background="#89B4FA"
+                            CornerRadius="4"
+                            Width="20" Height="20"
+                            Margin="8,0,8,0"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="M"
+                                   FontSize="11"
+                                   FontWeight="Bold"
+                                   Foreground="#11111B"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                    </Border>
+
+                    <!-- Center-Left: Navigation Buttons -->
+                    <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
+                                Spacing="2"
                                 VerticalAlignment="Center"
-                                Margin="8,0,0,0">
-                        <!-- App Logo -->
-                        <Border Background="#89B4FA"
-                                CornerRadius="4"
-                                Width="20" Height="20"
-                                Margin="4,0,8,0"
-                                VerticalAlignment="Center">
-                            <TextBlock Text="M"
-                                       FontSize="11"
-                                       FontWeight="Bold"
-                                       Foreground="#11111B"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" />
-                        </Border>
-
-                        <!-- Menu Bar -->
-                        <Menu Background="Transparent"
-                              VerticalAlignment="Center">
-                            <MenuItem Header="_File">
-                                <MenuItem Header="_New Conversation" InputGesture="Ctrl+N" Command="{Binding NewConversationCommand}" />
-                                <Separator />
-                                <MenuItem Header="_Open File..." InputGesture="Ctrl+Shift+O" Command="{Binding OpenFileDialogCommand}" />
-                                <MenuItem Header="Open _Folder..." InputGesture="Ctrl+O" Command="{Binding OpenWorkspaceCommand}" />
-                                <MenuItem Header="Recent _Workspaces" ItemsSource="{Binding RecentWorkspaceMenuItems}">
-                                    <MenuItem.ItemContainerTheme>
-                                        <ControlTheme TargetType="MenuItem" x:DataType="vm:RecentWorkspaceMenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
-                                            <Setter Property="Header" Value="{Binding DisplayName}" />
-                                            <Setter Property="Command" Value="{Binding OpenCommand}" />
-                                        </ControlTheme>
-                                    </MenuItem.ItemContainerTheme>
-                                </MenuItem>
-                                <Separator />
-                                <MenuItem Header="_Save" InputGesture="Ctrl+S" Command="{Binding Editor.SaveFileCommand}" />
-                                <MenuItem Header="Save _As..." InputGesture="Ctrl+Shift+S" Command="{Binding SaveFileAsCommand}" />
-                                <Separator />
-                                <MenuItem Header="_Close Editor" InputGesture="Ctrl+W" Command="{Binding CloseActiveEditorCommand}" />
-                                <Separator />
-                                <MenuItem Header="E_xit" Command="{Binding ExitAppCommand}" />
-                            </MenuItem>
-                            <MenuItem Header="_Edit">
-                                <MenuItem Header="_Find" InputGesture="Ctrl+F" Command="{Binding ShowFindCommand}" />
-                                <MenuItem Header="_Replace" InputGesture="Ctrl+H" Command="{Binding ShowReplaceCommand}" />
-                                <Separator />
-                                <MenuItem Header="Find in _Files" InputGesture="Ctrl+Shift+F" />
-                            </MenuItem>
-                            <MenuItem Header="_View">
-                                <MenuItem Header="_Command Palette..." InputGesture="Ctrl+Shift+P" Command="{Binding CommandPalette.ShowCommand}" />
-                                <MenuItem Header="_Quick Open File..." InputGesture="Ctrl+P" Command="{Binding CommandPalette.ShowQuickOpenCommand}" />
-                                <Separator />
-                                <MenuItem Header="_Explorer" InputGesture="Ctrl+Shift+E" />
-                                <MenuItem Header="_Search" InputGesture="Ctrl+Shift+F" />
-                                <MenuItem Header="Source _Control" InputGesture="Ctrl+Shift+G" />
-                                <MenuItem Header="E_xtensions" InputGesture="Ctrl+Shift+X" />
-                                <MenuItem Header="_AI Chat" InputGesture="Ctrl+Shift+C" />
-                                <Separator />
-                                <MenuItem Header="_Terminal" InputGesture="Ctrl+OemTilde" Command="{Binding BottomPanel.ToggleVisibilityCommand}" />
-                                <MenuItem Header="_Plan Mode" Command="{Binding TogglePlanModeCommand}" />
-                                <Separator />
-                                <MenuItem Header="Color Theme">
-                                    <MenuItem Header="Catppuccin Mocha (Dark)" Command="{Binding SwitchThemeCommand}" CommandParameter="catppuccin-mocha" />
-                                    <MenuItem Header="Catppuccin Latte (Light)" Command="{Binding SwitchThemeCommand}" CommandParameter="catppuccin-latte" />
-                                    <MenuItem Header="High Contrast" Command="{Binding SwitchThemeCommand}" CommandParameter="high-contrast" />
-                                </MenuItem>
-                                <Separator />
-                                <MenuItem Header="Toggle _Minimap" Command="{Binding ToggleMinimapCommand}" />
-                                <MenuItem Header="Toggle Code _Folding" Command="{Binding ToggleFoldingCommand}" />
-                                <MenuItem Header="Toggle _Indent Guides" Command="{Binding ToggleIndentGuidesCommand}" />
-                            </MenuItem>
-                            <MenuItem Header="_Go">
-                                <MenuItem Header="Go to _File..." InputGesture="Ctrl+P" Command="{Binding CommandPalette.ShowQuickOpenCommand}" />
-                                <MenuItem Header="Go to _Line..." />
-                            </MenuItem>
-                            <MenuItem Header="_Terminal">
-                                <MenuItem Header="_New Terminal" Command="{Binding BottomPanel.ToggleVisibilityCommand}" />
-                            </MenuItem>
-                            <MenuItem Header="_Help">
-                                <MenuItem Header="_About" Click="OnAboutClick" />
-                            </MenuItem>
-                        </Menu>
+                                Margin="0,0,8,0">
+                        <Button Classes="titleBarIconButton"
+                                ToolTip.Tip="Go Back"
+                                Width="28" Height="28">
+                            <TextBlock Text="&#x2190;" FontSize="16" />
+                        </Button>
+                        <Button Classes="titleBarIconButton"
+                                ToolTip.Tip="Go Forward"
+                                Width="28" Height="28">
+                            <TextBlock Text="&#x2192;" FontSize="16" />
+                        </Button>
                     </StackPanel>
 
-                    <!-- Center: Window Title (drag area) -->
-                    <TextBlock Grid.Column="1"
-                               Text="{Binding WindowTitle}"
-                               FontSize="12"
-                               Opacity="0.5"
-                               Foreground="{DynamicResource ThemeText}"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               IsHitTestVisible="False" />
+                    <!-- Center: Search/Command Input Box -->
+                    <TextBox Grid.Column="2"
+                             Text="{Binding WindowTitle}"
+                             IsReadOnly="True"
+                             Background="{DynamicResource ThemeInputBackground}"
+                             BorderBrush="{DynamicResource ThemeInputBorder}"
+                             BorderThickness="1"
+                             CornerRadius="4"
+                             Padding="8,4"
+                             FontSize="12"
+                             Foreground="{DynamicResource ThemeMutedForeground}"
+                             MaxWidth="400"
+                             VerticalAlignment="Center"
+                             HorizontalAlignment="Center" />
 
-                    <!-- Right: Window Control Buttons -->
-                    <StackPanel Grid.Column="2"
+                    <!-- Right Toolbar: Layout/Split/Fullscreen/Settings/Theme/More -->
+                    <StackPanel Grid.Column="3"
+                                Orientation="Horizontal"
+                                Spacing="2"
+                                VerticalAlignment="Center"
+                                Margin="8,0">
+                        <Button Classes="titleBarIconButton"
+                                ToolTip.Tip="Customize Layout"
+                                Width="28" Height="28">
+                            <TextBlock Text="&#x2630;" FontSize="14" />
+                        </Button>
+                        <Button Classes="titleBarIconButton"
+                                ToolTip.Tip="Split Editor"
+                                Width="28" Height="28">
+                            <TextBlock Text="&#x25A7;" FontSize="14" />
+                        </Button>
+                        <Button Classes="titleBarIconButton"
+                                ToolTip.Tip="Toggle Fullscreen"
+                                Width="28" Height="28">
+                            <TextBlock Text="&#x26F6;" FontSize="14" />
+                        </Button>
+                        <Button Classes="titleBarIconButton"
+                                ToolTip.Tip="Settings"
+                                Width="28" Height="28">
+                            <TextBlock Text="&#x2699;" FontSize="14" />
+                        </Button>
+                        <Button Classes="titleBarIconButton"
+                                ToolTip.Tip="Toggle Theme"
+                                Width="28" Height="28">
+                            <TextBlock Text="&#x263D;" FontSize="14" />
+                        </Button>
+                        <Button Classes="titleBarIconButton"
+                                ToolTip.Tip="More Actions"
+                                Width="28" Height="28">
+                            <TextBlock Text="&#x22EF;" FontSize="16" />
+                        </Button>
+                    </StackPanel>
+
+                    <!-- Far Right: Window Control Buttons -->
+                    <StackPanel Grid.Column="4"
                                 Orientation="Horizontal"
                                 VerticalAlignment="Stretch">
-
                         <!-- Minimize -->
                         <Button Classes="windowControl"
                                 Click="OnMinimizeClick"
@@ -187,6 +177,82 @@
                         </Button>
                     </StackPanel>
                 </Grid>
+            </Border>
+
+            <!-- ============================================================ -->
+            <!-- Row 2: Menu Bar (separate row below title bar)               -->
+            <!-- ============================================================ -->
+            <Border DockPanel.Dock="Top"
+                    Classes="menuBarRow">
+                <Menu Background="Transparent"
+                      VerticalAlignment="Center"
+                      Margin="8,0,0,0">
+                    <MenuItem Header="_File">
+                        <MenuItem Header="_New Conversation" InputGesture="Ctrl+N" Command="{Binding NewConversationCommand}" />
+                        <Separator />
+                        <MenuItem Header="_Open File..." InputGesture="Ctrl+Shift+O" Command="{Binding OpenFileDialogCommand}" />
+                        <MenuItem Header="Open _Folder..." InputGesture="Ctrl+O" Command="{Binding OpenWorkspaceCommand}" />
+                        <MenuItem Header="Recent _Workspaces" ItemsSource="{Binding RecentWorkspaceMenuItems}">
+                            <MenuItem.ItemContainerTheme>
+                                <ControlTheme TargetType="MenuItem" x:DataType="vm:RecentWorkspaceMenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                                    <Setter Property="Header" Value="{Binding DisplayName}" />
+                                    <Setter Property="Command" Value="{Binding OpenCommand}" />
+                                </ControlTheme>
+                            </MenuItem.ItemContainerTheme>
+                        </MenuItem>
+                        <Separator />
+                        <MenuItem Header="_Save" InputGesture="Ctrl+S" Command="{Binding Editor.SaveFileCommand}" />
+                        <MenuItem Header="Save _As..." InputGesture="Ctrl+Shift+S" Command="{Binding SaveFileAsCommand}" />
+                        <Separator />
+                        <MenuItem Header="_Close Editor" InputGesture="Ctrl+W" Command="{Binding CloseActiveEditorCommand}" />
+                        <Separator />
+                        <MenuItem Header="E_xit" Command="{Binding ExitAppCommand}" />
+                    </MenuItem>
+                    <MenuItem Header="_Edit">
+                        <MenuItem Header="_Find" InputGesture="Ctrl+F" Command="{Binding ShowFindCommand}" />
+                        <MenuItem Header="_Replace" InputGesture="Ctrl+H" Command="{Binding ShowReplaceCommand}" />
+                        <Separator />
+                        <MenuItem Header="Find in _Files" InputGesture="Ctrl+Shift+F" />
+                    </MenuItem>
+                    <MenuItem Header="_Selection">
+                        <MenuItem Header="Select _All" InputGesture="Ctrl+A" />
+                        <MenuItem Header="Expand Selection" InputGesture="Shift+Alt+Right" />
+                        <MenuItem Header="Shrink Selection" InputGesture="Shift+Alt+Left" />
+                    </MenuItem>
+                    <MenuItem Header="_View">
+                        <MenuItem Header="_Command Palette..." InputGesture="Ctrl+Shift+P" Command="{Binding CommandPalette.ShowCommand}" />
+                        <MenuItem Header="_Quick Open File..." InputGesture="Ctrl+P" Command="{Binding CommandPalette.ShowQuickOpenCommand}" />
+                        <Separator />
+                        <MenuItem Header="_Explorer" InputGesture="Ctrl+Shift+E" />
+                        <MenuItem Header="_Search" InputGesture="Ctrl+Shift+F" />
+                        <MenuItem Header="Source _Control" InputGesture="Ctrl+Shift+G" />
+                        <MenuItem Header="E_xtensions" InputGesture="Ctrl+Shift+X" />
+                        <MenuItem Header="_AI Chat" InputGesture="Ctrl+Shift+C" />
+                        <Separator />
+                        <MenuItem Header="_Terminal" InputGesture="Ctrl+OemTilde" Command="{Binding BottomPanel.ToggleVisibilityCommand}" />
+                        <MenuItem Header="_Plan Mode" Command="{Binding TogglePlanModeCommand}" />
+                        <Separator />
+                        <MenuItem Header="Color Theme">
+                            <MenuItem Header="Catppuccin Mocha (Dark)" Command="{Binding SwitchThemeCommand}" CommandParameter="catppuccin-mocha" />
+                            <MenuItem Header="Catppuccin Latte (Light)" Command="{Binding SwitchThemeCommand}" CommandParameter="catppuccin-latte" />
+                            <MenuItem Header="High Contrast" Command="{Binding SwitchThemeCommand}" CommandParameter="high-contrast" />
+                        </MenuItem>
+                        <Separator />
+                        <MenuItem Header="Toggle _Minimap" Command="{Binding ToggleMinimapCommand}" />
+                        <MenuItem Header="Toggle Code _Folding" Command="{Binding ToggleFoldingCommand}" />
+                        <MenuItem Header="Toggle _Indent Guides" Command="{Binding ToggleIndentGuidesCommand}" />
+                    </MenuItem>
+                    <MenuItem Header="_Go">
+                        <MenuItem Header="Go to _File..." InputGesture="Ctrl+P" Command="{Binding CommandPalette.ShowQuickOpenCommand}" />
+                        <MenuItem Header="Go to _Line..." />
+                    </MenuItem>
+                    <MenuItem Header="_Terminal">
+                        <MenuItem Header="_New Terminal" Command="{Binding BottomPanel.ToggleVisibilityCommand}" />
+                    </MenuItem>
+                    <MenuItem Header="_Help">
+                        <MenuItem Header="_About" Click="OnAboutClick" />
+                    </MenuItem>
+                </Menu>
             </Border>
 
             <!-- ============================================================ -->
@@ -238,73 +304,13 @@
                         </Grid>
                     </Border>
 
-                    <!-- Main Content: AI Chat Panel (when no files) or Editor (when files open) -->
+                    <!-- Main Content: Welcome Page (when no files) or Editor (when files open) -->
                     <Panel>
                         <!-- ================================================ -->
-                        <!-- AI Chat Panel (shown when no editor files open)  -->
+                        <!-- Welcome Page (shown when no editor files open)   -->
                         <!-- ================================================ -->
-                        <DockPanel IsVisible="{Binding !Editor.HasOpenFiles}">
-
-                            <!-- AI Chat Header -->
-                            <Border DockPanel.Dock="Top"
-                                    Classes="workbenchPanel"
-                                    Background="{DynamicResource ThemePanelBackground}"
-                                    BorderBrush="{DynamicResource ThemePanelBorder}"
-                                    BorderThickness="0,0,0,1"
-                                    Padding="16,10">
-                                <DockPanel>
-                                    <TextBlock Text="New Chat"
-                                               FontSize="16"
-                                               FontWeight="SemiBold"
-                                               Foreground="{DynamicResource ThemeText}"
-                                               VerticalAlignment="Center" />
-
-                                    <!-- Right side: action buttons -->
-                                    <StackPanel DockPanel.Dock="Right"
-                                                Orientation="Horizontal"
-                                                Spacing="4"
-                                                VerticalAlignment="Center">
-                                        <!-- New Chat -->
-                                        <Button Background="Transparent"
-                                                BorderThickness="0"
-                                                Padding="6,4"
-                                                Cursor="Hand"
-                                                ToolTip.Tip="New Chat (Ctrl+N)"
-                                                Command="{Binding NewConversationCommand}">
-                                            <TextBlock Text="+"
-                                                       FontSize="16"
-                                                       Foreground="{DynamicResource ThemeMutedForeground}" />
-                                        </Button>
-                                        <!-- History -->
-                                        <Button Background="Transparent"
-                                                BorderThickness="0"
-                                                Padding="6,4"
-                                                Cursor="Hand"
-                                                ToolTip.Tip="Chat History">
-                                            <TextBlock Text="&#x23F0;"
-                                                       FontSize="13"
-                                                       Foreground="{DynamicResource ThemeMutedForeground}" />
-                                        </Button>
-                                        <!-- More -->
-                                        <Button Background="Transparent"
-                                                BorderThickness="0"
-                                                Padding="6,4"
-                                                Cursor="Hand"
-                                                ToolTip.Tip="More Options">
-                                            <TextBlock Text="&#x22EF;"
-                                                       FontSize="16"
-                                                       Foreground="{DynamicResource ThemeMutedForeground}" />
-                                        </Button>
-                                    </StackPanel>
-                                </DockPanel>
-                            </Border>
-
-                            <!-- Chat Input (at bottom of chat panel) -->
-                            <views:InputView DockPanel.Dock="Bottom" />
-
-                            <!-- Chat Messages (fills remaining space) -->
-                            <views:ChatView DataContext="{Binding Chat}" />
-                        </DockPanel>
+                        <views:WelcomePage IsVisible="{Binding !Editor.HasOpenFiles}"
+                                           DataContext="{Binding}" />
 
                         <!-- ================================================ -->
                         <!-- Editor (shown when files are open)               -->

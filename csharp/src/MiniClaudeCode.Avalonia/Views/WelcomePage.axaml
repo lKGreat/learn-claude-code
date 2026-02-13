@@ -4,72 +4,230 @@
              x:Class="MiniClaudeCode.Avalonia.Views.WelcomePage"
              x:DataType="vm:MainWindowViewModel">
 
-    <Border Background="#181825">
-        <StackPanel VerticalAlignment="Center"
-                    HorizontalAlignment="Center"
-                    Spacing="20"
-                    MaxWidth="500">
+    <Border Background="{DynamicResource ThemeEditorBackground}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel MaxWidth="800"
+                        Margin="40,40"
+                        HorizontalAlignment="Center">
 
-            <!-- Logo / Title -->
-            <TextBlock Text="MiniClaudeCode"
-                       FontSize="32"
-                       FontWeight="Bold"
-                       Foreground="#CDD6F4"
-                       HorizontalAlignment="Center" />
+                <!-- Title Area -->
+                <StackPanel Spacing="8"
+                            Margin="0,0,0,32"
+                            HorizontalAlignment="Center">
+                    <TextBlock Text="Visual Studio Code"
+                               FontSize="36"
+                               FontWeight="Light"
+                               Foreground="{DynamicResource ThemeText}"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="编辑进化"
+                               FontSize="16"
+                               Foreground="{DynamicResource ThemeMutedForeground}"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
 
-            <TextBlock Text="AI-Powered Coding Assistant"
-                       FontSize="16"
-                       Foreground="#9CA3AF"
-                       HorizontalAlignment="Center" />
+                <!-- Dual Column Layout -->
+                <Grid ColumnDefinitions="1*,1.5*"
+                      RowDefinitions="Auto">
 
-            <Border Height="1" Background="#313244" Margin="40,10" />
+                    <!-- Left Column: Start + Recent -->
+                    <StackPanel Grid.Column="0"
+                                Spacing="16"
+                                Margin="0,0,20,0">
 
-            <!-- Open Folder -->
-            <Button Content="Open Folder..."
-                    Command="{Binding OpenWorkspaceCommand}"
-                    HorizontalAlignment="Center"
-                    Padding="20,10"
-                    FontSize="14" />
+                        <!-- Start Section -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="启动"
+                                       FontSize="13"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource ThemeText}"
+                                       Margin="0,0,0,4" />
 
-            <!-- Recent Workspaces Header -->
-            <TextBlock Text="Recent Workspaces"
-                       FontSize="14"
-                       FontWeight="SemiBold"
-                       Foreground="#A6ADC8"
-                       Margin="0,10,0,4" />
+                            <Button Classes="welcomeLink"
+                                    Command="{Binding OpenFileDialogCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="📄" FontSize="14" />
+                                    <TextBlock Text="新建文件..." FontSize="13" />
+                                </StackPanel>
+                            </Button>
 
-            <!-- Recent Workspaces List -->
-            <ItemsControl ItemsSource="{Binding RecentWorkspaces}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Background="Transparent"
-                                Padding="8,6"
-                                HorizontalAlignment="Stretch"
-                                HorizontalContentAlignment="Left"
-                                Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).OpenRecentCommand}"
-                                CommandParameter="{Binding Path}">
-                            <StackPanel Spacing="2">
-                                <TextBlock Text="{Binding DisplayName}"
+                            <Button Classes="welcomeLink">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="📂" FontSize="14" />
+                                    <TextBlock Text="打开文件..." FontSize="13" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button Classes="welcomeLink"
+                                    Command="{Binding OpenWorkspaceCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="📁" FontSize="14" />
+                                    <TextBlock Text="打开文件夹..." FontSize="13" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button Classes="welcomeLink">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="🔀" FontSize="14" />
+                                    <TextBlock Text="克隆 Git 仓库..." FontSize="13" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button Classes="welcomeLink">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="🔌" FontSize="14" />
+                                    <TextBlock Text="连接到..." FontSize="13" />
+                                </StackPanel>
+                            </Button>
+
+                            <Button Classes="welcomeLink">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="💬" FontSize="14" />
+                                    <TextBlock Text="生成新工作区..." FontSize="13" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <!-- Recent Section -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="最近"
+                                       FontSize="13"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource ThemeText}"
+                                       Margin="0,8,0,4" />
+
+                            <ItemsControl ItemsSource="{Binding RecentWorkspaces}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Classes="welcomeLink"
+                                                Command="{Binding $parent[ItemsControl].((vm:MainWindowViewModel)DataContext).OpenRecentCommand}"
+                                                CommandParameter="{Binding Path}">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="{Binding DisplayName}"
+                                                           FontSize="13"
+                                                           Foreground="{DynamicResource ThemeAccent}" />
+                                                <TextBlock Text="{Binding Path}"
+                                                           FontSize="11"
+                                                           Foreground="{DynamicResource ThemeOverlay0}"
+                                                           TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <Button Classes="welcomeLink">
+                                <TextBlock Text="更多..."
                                            FontSize="13"
-                                           Foreground="#89B4FA" />
-                                <TextBlock Text="{Binding Path}"
-                                           FontSize="10"
-                                           Foreground="#6C7086"
-                                           TextTrimming="CharacterEllipsis" />
+                                           Foreground="{DynamicResource ThemeAccent}" />
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Right Column: Walkthroughs -->
+                    <StackPanel Grid.Column="1"
+                                Spacing="8">
+
+                        <TextBlock Text="演练"
+                                   FontSize="13"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource ThemeText}"
+                                   Margin="0,0,0,4" />
+
+                        <!-- Highlighted Walkthrough -->
+                        <Button Classes="welcomeLink welcomeLinkHighlight"
+                                Padding="12,10">
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="⭐" FontSize="14" />
+                                    <TextBlock Text="开始使用 VS Code"
+                                               FontSize="13"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource ThemeText}" />
+                                </StackPanel>
+                                <TextBlock Text="自定义编辑器、了解基础知识并开始编码"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource ThemeMutedForeground}"
+                                           TextWrapping="Wrap"
+                                           Margin="22,0,0,0" />
                             </StackPanel>
                         </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
 
-            <!-- Hint -->
-            <TextBlock Text="Open a project folder to get started, or start chatting directly."
-                       FontSize="11"
-                       Foreground="#585B70"
-                       HorizontalAlignment="Center"
-                       TextWrapping="Wrap"
-                       TextAlignment="Center"
-                       Margin="0,20,0,0" />
-        </StackPanel>
+                        <Button Classes="welcomeLink">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="💡" FontSize="14" />
+                                <TextBlock Text="了解基础知识"
+                                           FontSize="13" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Classes="welcomeLink">
+                            <StackPanel Spacing="2">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="🔷" FontSize="14" />
+                                    <TextBlock Text="C# 开发工具包入门"
+                                               FontSize="13" />
+                                    <Border Background="{DynamicResource ThemeAccent}"
+                                            CornerRadius="3"
+                                            Padding="4,1">
+                                        <TextBlock Text="已更新"
+                                                   FontSize="9"
+                                                   Foreground="{DynamicResource ThemeAccentForeground}" />
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Classes="welcomeLink">
+                            <StackPanel Spacing="2">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="🔶" FontSize="14" />
+                                    <TextBlock Text="C++ 开发入门"
+                                               FontSize="13" />
+                                    <Border Background="{DynamicResource ThemeAccent}"
+                                            CornerRadius="3"
+                                            Padding="4,1">
+                                        <TextBlock Text="已更新"
+                                                   FontSize="9"
+                                                   Foreground="{DynamicResource ThemeAccentForeground}" />
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Classes="welcomeLink">
+                            <StackPanel Spacing="2">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="🦀" FontSize="14" />
+                                    <TextBlock Text="Learn about rust-analyzer"
+                                               FontSize="13" />
+                                    <Border Background="{DynamicResource ThemeAccent}"
+                                            CornerRadius="3"
+                                            Padding="4,1">
+                                        <TextBlock Text="已更新"
+                                                   FontSize="9"
+                                                   Foreground="{DynamicResource ThemeAccentForeground}" />
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Classes="welcomeLink">
+                            <TextBlock Text="更多..."
+                                       FontSize="13"
+                                       Foreground="{DynamicResource ThemeAccent}" />
+                        </Button>
+
+                        <!-- Show on startup checkbox -->
+                        <CheckBox Content="启动时显示欢迎页"
+                                  IsChecked="True"
+                                  Margin="0,16,0,0"
+                                  HorizontalAlignment="Right"
+                                  FontSize="12"
+                                  Foreground="{DynamicResource ThemeMutedForeground}" />
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
     </Border>
 </UserControl>

@@ -76,6 +76,86 @@
                 </DockPanel>
             </Border>
 
+            <!-- Bottom collapsible sections -->
+            <StackPanel DockPanel.Dock="Bottom"
+                        Background="{DynamicResource ThemeSideBarBackground}">
+                
+                <!-- Outline Section -->
+                <Border Classes="sidebarSectionHeader"
+                        Cursor="Hand">
+                    <DockPanel>
+                        <TextBlock Text="▶"
+                                   FontSize="10"
+                                   Margin="0,0,4,0"
+                                   Foreground="{DynamicResource ThemeMutedForeground}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="大纲"
+                                   Classes="sidebarSectionTitle"
+                                   FontSize="11" />
+                    </DockPanel>
+                </Border>
+
+                <!-- Timeline Section -->
+                <Border Classes="sidebarSectionHeader"
+                        Cursor="Hand">
+                    <DockPanel>
+                        <TextBlock Text="▶"
+                                   FontSize="10"
+                                   Margin="0,0,4,0"
+                                   Foreground="{DynamicResource ThemeMutedForeground}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="时间线"
+                                   Classes="sidebarSectionTitle"
+                                   FontSize="11" />
+                    </DockPanel>
+                </Border>
+
+                <!-- ROS Local Templates Section -->
+                <Border Classes="sidebarSectionHeader"
+                        Cursor="Hand">
+                    <DockPanel>
+                        <TextBlock Text="▶"
+                                   FontSize="10"
+                                   Margin="0,0,4,0"
+                                   Foreground="{DynamicResource ThemeMutedForeground}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="ROS LOCAL TEMPLATES"
+                                   Classes="sidebarSectionTitle"
+                                   FontSize="11" />
+                    </DockPanel>
+                </Border>
+
+                <!-- ROS Remote Templates Section -->
+                <Border Classes="sidebarSectionHeader"
+                        Cursor="Hand">
+                    <DockPanel>
+                        <TextBlock Text="▶"
+                                   FontSize="10"
+                                   Margin="0,0,4,0"
+                                   Foreground="{DynamicResource ThemeMutedForeground}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="ROS REMOTE TEMPLATES"
+                                   Classes="sidebarSectionTitle"
+                                   FontSize="11" />
+                    </DockPanel>
+                </Border>
+
+                <!-- Solution Explorer Section -->
+                <Border Classes="sidebarSectionHeader"
+                        Cursor="Hand">
+                    <DockPanel>
+                        <TextBlock Text="▶"
+                                   FontSize="10"
+                                   Margin="0,0,4,0"
+                                   Foreground="{DynamicResource ThemeMutedForeground}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="解决方案资源管理器"
+                                   Classes="sidebarSectionTitle"
+                                   FontSize="11" />
+                    </DockPanel>
+                </Border>
+            </StackPanel>
+
             <!-- Tree View -->
             <TreeView x:Name="FileTree"
                       ItemsSource="{Binding RootNodes}"
